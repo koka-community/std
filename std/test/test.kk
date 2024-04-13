@@ -5,7 +5,7 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-
+module test/test
 // The test effect
 pub effect test
   ctl test-expect(v: expect-value<a>): a
