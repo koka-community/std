@@ -7,10 +7,13 @@
 ----------------------------------------------------------------------------*/
 module std/data/linearset
 
-import core-extras
+import std/core-extras
 import std/test
 
 pub alias linearSet<v> = list<v>
+
+pub fun linear-set(l: list<v>, ?(==): (v, v) -> e bool): e linearSet<v>
+  l.foldl([], fn(acc, x) acc.add(x))
 
 pub fun set/show(l: linearSet<v>, ?show: v -> e string): e string
   "{" ++ l.map(show).join(",") ++ "}"
@@ -63,8 +66,8 @@ fun is-subset-of(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e
   l1.all(fn(x) l2.member(x))
 
 pub fun test-set()
-  basic/test("Basics")
-    val s = linearSet([1, 2, 3], (==))
-    val s2 = linearSet([2, 3, 4], (==))
+  test("Basics")
+    val s = linear-set([1, 2, 3])
+    val s2 = linear-set([2, 3, 4])
     val s3 = s + s2
-    s3.println
+    s3.set/show.println
