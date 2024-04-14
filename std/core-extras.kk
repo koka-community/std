@@ -80,6 +80,7 @@ pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a 
   //js inline "(#1)[#2] = #3"
 
 // Return the element at position `index`  in vector `v`  without bounds check!
+// This function should never be called directly unless you know exactly what you are doing
 pub inline extern unsafe-idx( ^v : vector<a>, index : ssize_t ) : total a
   c  "kk_vector_at_borrow_community"
   cs inline "(#1)[#2]"
