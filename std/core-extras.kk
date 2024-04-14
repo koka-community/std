@@ -63,3 +63,9 @@ pub fun flatten( item : maybe<maybe<a>> ) : maybe<a>
   match item
     Just(x) -> x
     Nothing -> Nothing
+
+pub fun set( ^v : vector<a>, ^index : int, value : a ) : maybe<vector<a>>
+  if index < 0 || index >= v.length then
+    Nothing
+  else
+    Just( vector-init( v.length ) fn (i) if i == index then value else v.at(i).maybe(value, fn (x) x))

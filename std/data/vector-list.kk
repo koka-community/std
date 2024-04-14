@@ -74,11 +74,11 @@ pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
 
 // Set an element in the vector-list at position `index` in vector-list `v` with `value`
 // Returns `Nothing` if the `index` is out of bounds
-pub fun set( ^v : vector-list<a>, ^index : int, value : a ) : maybe<vector-list<a>>
+pub fun set( ^v : vector-list<a>, ^index : int, value : a ) : exn maybe<vector-list<a>>
   if index < 0 || index >= v.size then
     Nothing
   else
-    Just( v( data = vector-init( v.vec-length, fn (i) if i == index then Just(value) else v.data.vector/at(i).flatten ) ) )
+    Just( v( data = v.data.set( index, Just(value) ).unjust ) )
 
 
 fun resizer( current : int ) : int
@@ -87,20 +87,20 @@ fun resizer( current : int ) : int
 // Pushes `value` at the end of the vector-list `v`.
 // Push also takes implicit `resizer` to allow for custom growth factors
 // It is important that `resizer` must handle the case of where the current capacity is 0
-pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int) : vector-list<a>
+pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : exn vector-list<a>
   val vec = if v.size >= v.vec-length then
     val new-capacity = resizer(v.vec-length)
     v.resize(new-capacity)
   else 
     v
-  vec( data = vector-init( vec.vec-length, fn (i) if i == v.size then Just(value) else vec.data.vector/at(i).flatten ), size = vec.size + 1)
+  vec( data = vec.data.set( v.size, Just(value) ).unjust, size = vec.size + 1)
 
 // Removes the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
-pub fun pop( ^v : vector-list<a>) : maybe<vector-list<a>>
+pub fun pop( ^v : vector-list<a>) : exn maybe<vector-list<a>>
   if v.size == 0 then
     Nothing
   else
-    Just( v( data = vector-init( v.vec-length, fn (i) if i == v.size - 1 then Nothing else v.data.vector/at(i).flatten ), size = v.size - 1 ) )
+    Just( v( data = v.data.set( v.size - 1, Nothing ).unjust, size = v.size - 1 ) )
 
 // Gets the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
 pub fun last( ^v : vector-list<a> ) : maybe<a>
