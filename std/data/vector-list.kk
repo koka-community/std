@@ -59,7 +59,7 @@ pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
 // Resizes the vector-list to a new capacity.
 // If new-capacity is smaller than size then the vector-list is truncated
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
-  val new-data = vector-init( new-capacity ) fn (x) v.data.at(x).flatten
+  val new-data = vector-init( new-capacity ) fn (x) if x < v.data.length then v.data.unsafe-idx(x.ssize_t) else Nothing
   val updated-size = if new-capacity > v.size then v.size else new-capacity
   v( data = new-data )
 
