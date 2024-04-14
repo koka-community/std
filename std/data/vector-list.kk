@@ -156,9 +156,3 @@ fun test-vlist()
     vec := vec.push(11)
     val out = expect(20, { vec.capacity }, details="Expected 20 but got: " ++ vec.capacity.show)
     ()
-
-
-fun main()
-  var vec := unit/vector-list()
-  for(1000000) fn (i)
-    vec := vec.push(i)
