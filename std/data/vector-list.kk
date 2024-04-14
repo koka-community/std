@@ -35,42 +35,37 @@ pub fun unit/vlist() : vector-list<a>
 pub fun vector/vlist( v : vector<a> ) : vector-list<a>
   vector/vector-list(v)
 
-pub struct vector-list<a>
+pub value struct vector-list<a>
   data : vector<maybe<a>>
-  vec-length : int
   size : int
 
 // Create a new vector-list of length `n` with initial elements `default`.
 pub inline fun vector-list( n : int, default : a ) : vector-list<a>
-  Vector-list( vector-init( n, fn (_) Just(default)), n, n )
+  Vector-list( vector-init( n, fn (_) Just(default)), n )
 
 // Create a new vector-list of length `n` with initial elements given by function `f` which can have a control effect.
 pub inline fun vector-list-init( ^n : int, f : (int) -> e a ) : e vector-list<a>
   val g = fn(x : int) Just(f(x))
-  Vector-list( vector-init( n, g), n, n )
+  Vector-list( vector-init( n, g), n )
 
 // Create an empty vector-list.
 pub inline fun unit/vector-list() : vector-list<a>
-  Vector-list( unit/vector(), 0, 0 )
+  Vector-list( unit/vector(), 0 )
 
 // Create a vector-list from a vector
 pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
-  Vector-list( v.vector/map( fn (x) Just(x) ), v.length, v.length )
+  Vector-list( v.vector/map( fn (x) Just( x ) ), v.length )
 
 // Resizes the vector-list to a new capacity.
 // If new-capacity is smaller than size then the vector-list is truncated
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
-  val new-data = vector-init( new-capacity ) fn (x) match v.data.at(x)
-    Just(y) -> y
-    Nothing -> Nothing
+  val new-data = vector-init( new-capacity ) fn (x) v.data.at(x).flatten
   val updated-size = if new-capacity > v.size then v.size else new-capacity
-  v( data = new-data, vec-length = new-data.length )
+  v( data = new-data )
 
 // Return the element at position `index` in vector-list `v` or `Nothing` if out of bounds
 pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
-  match v.data.at(index)
-    Nothing -> Nothing
-    Just(x) -> x
+  v.data.at(index).flatten
 
 // Set an element in the vector-list at position `index` in vector-list `v` with `value`
 // Returns `Nothing` if the `index` is out of bounds
@@ -78,7 +73,7 @@ pub fun set( ^v : vector-list<a>, ^index : int, value : a ) : exn maybe<vector-l
   if index < 0 || index >= v.size then
     Nothing
   else
-    Just( v( data = v.data.set( index, Just(value) ).unjust ) )
+    Just( v( data = v.data.set( index, Just( value ) ).unjust ) )
 
 
 fun resizer( current : int ) : int
@@ -88,9 +83,9 @@ fun resizer( current : int ) : int
 // Push also takes implicit `resizer` to allow for custom growth factors
 // It is important that `resizer` must handle the case of where the current capacity is 0
 pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : exn vector-list<a>
-  val vec = if v.size >= v.vec-length then
-    val new-capacity = resizer(v.vec-length)
-    v.resize(new-capacity)
+  val vec = if v.size >= v.data.length then
+    val new-capacity = resizer( v.data.length )
+    v.resize( new-capacity )
   else 
     v
   vec( data = vec.data.set( v.size, Just(value) ).expect-unjust("push"), size = vec.size + 1)
@@ -113,25 +108,25 @@ pub fun length( ^v : vector-list<a> ) : int
 
 // Fetches the current capacity of the vector-list `v`. This isn't the amount of elements of the vector-list.
 pub fun capacity( ^v : vector-list<a> ) : int
-  v.vec-length
+  v.data.length
 
 // Apply a function `f` to each element in a vector-list `v`.
 pub fun map( ^v : vector-list<a>, f : (a) -> e b ) : e vector-list<b>
   val new-data = v.data.map() fn (n) match n
-    Just(x) -> Just(f(x))
+    Just(x) -> Just( f( x ) )
     Nothing -> Nothing
-  Vector-list( new-data, new-data.length, v.size )
+  Vector-list( new-data, v.size )
 
 // Invoke a function `f` for each element in a vector-list `v`.
 pub fun foreach( v : vector-list<a>, f : (a) -> e () ) : e ()
-  for( v.size ) fn (i) match v.at(i)
-    Just(x) -> f(x)
+  for( v.size ) fn (i) match v.at( i )
+    Just(x) -> f( x )
     Nothing -> ()
 
 // Invoke a function `f` for each element in a vector-list `v` with the corresponding index.
 pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
-  for( v.size ) fn (i) match v.at(i)
-    Just(x) -> f(i, x)
+  for( v.size ) fn (i) match v.at( i )
+    Just(x) -> f( i, x )
     Nothing -> ()
 
 fun test-vlist()

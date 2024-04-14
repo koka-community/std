@@ -63,7 +63,7 @@ fun split-by(s: string, pred: (char) -> bool): list<string>
           else loop(sl'.pretend-decreasing, numchars + 1, acc)
   loop(s.slice, 0, ctx _)
 
-pub fun flatten( item : maybe<maybe<a>> ) : maybe<a>
+pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
   match item
     Just(x) -> x
     Nothing -> Nothing
