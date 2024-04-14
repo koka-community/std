@@ -1,6 +1,14 @@
 // This module provides a simple resizable vector implementation
 module std/data/vectorlist
 
+/*
+  todo
+  list/vectorlist
+  foreach-while
+  list
+  vector
+*/
+
 fun flatten( item : maybe<maybe<a>> ) : maybe<a>
   match item
     Just(x) -> x
@@ -12,7 +20,7 @@ pub struct vectorlist<a>
   size : int
 
 // Create a new vectorlist of length `n` with initial elements `default`.
-pub fun arraylist( n : int, default : a ) : vectorlist<a>
+pub fun vectorlist( n : int, default : a ) : vectorlist<a>
   Vectorlist( vector-init( n, fn (_) Just(default)), n, n )
 
 // Create a new vectorlist of length `n` with initial elements given by function `f` which can have a control effect.
@@ -23,16 +31,6 @@ pub fun vectorlist-init( ^capacity : int, f : (int) -> e a ) : e vectorlist<a>
 // Create an empty vectorlist.
 pub fun unit/vectorlist() : vectorlist<a>
   Vectorlist( unit/vector(), 0, 0 )
-
-/*pub fun list/vectorlist( xs : list<a> ) : vectorlist<a>
-  var lst := xs
-  val f = fn (_) match lst
-    Cons(y, ys) -> 
-      lst := ys
-      Just(y)
-    Nil -> Nothing
-  VectorList(vector-init( xs.length, f ), xs.length, xs.length )
-*/
 
 // Create a vectorlist from a vector
 pub fun vector/vectorlist( v : vector<a> ) : vectorlist<a>
@@ -110,25 +108,6 @@ pub fun foreach-indexed( v : vectorlist<a>, f : (int, a) -> e () ) : e ()
     Just(x) -> f(i, x)
     Nothing -> ()
 
-/*effect ctl break( x : b ) : b
-
-pub fun foreach-while( v : vectorlist<a>, f : (a) -> e maybe<b> ) : e maybe<b>
-  with ctl break(x : forall<b> maybe<b>) x
-  for( v.size ) fn (i : int) match v.at(i)
-    Just(x) -> match f(i, x)
-      Just(y) -> break(Just(y))
-      Nothing -> ()
-    Nothing -> ()
-  Nothing
-*/
-
-/*pub fun list( v : vectorlist<a> ) : list<a>
-  var list := Nil
-  for( v.size ) fn (i) match v.at(i)
-    Just(x) -> list := Cons(x, list)
-    Nothing -> ()
-  list.reverse
-  */
 
 fun test-push()
   var vec := unit/vectorlist()
