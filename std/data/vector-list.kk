@@ -82,7 +82,7 @@ pub fun set( ^v : vector-list<a>, ^index : int, value : a ) : exn maybe<vector-l
 
 
 fun resizer( current : int ) : int
-  if current <= 1 then 1 else current * 2
+  if current < 1 then 1 else current * 2
 
 // Pushes `value` at the end of the vector-list `v`.
 // Push also takes implicit `resizer` to allow for custom growth factors
@@ -93,7 +93,7 @@ pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : exn ve
     v.resize(new-capacity)
   else 
     v
-  vec( data = vec.data.set( v.size, Just(value) ).unjust, size = vec.size + 1)
+  vec( data = vec.data.set( v.size, Just(value) ).expect-unjust("push"), size = vec.size + 1)
 
 // Removes the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
 pub fun pop( ^v : vector-list<a>) : exn maybe<vector-list<a>>
@@ -156,3 +156,9 @@ fun test-vlist()
     vec := vec.push(11)
     val out = expect(20, { vec.capacity }, details="Expected 20 but got: " ++ vec.capacity.show)
     ()
+
+
+fun main()
+  var vec := unit/vector-list()
+  for(1000000) fn (i)
+    vec := vec.push(i)

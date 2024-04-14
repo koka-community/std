@@ -68,6 +68,11 @@ pub fun flatten( item : maybe<maybe<a>> ) : maybe<a>
     Just(x) -> x
     Nothing -> Nothing
 
+pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
+  match m
+    Just(a) -> a
+    Nothing -> throw("expect-unjust: " ++ msg)
+
 // This function should never be called directly unless you know exactly what you are doing
 pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
   c "kk_vector_unsafe_assign_community"
