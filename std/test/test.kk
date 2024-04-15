@@ -28,7 +28,7 @@ struct expect-value<a>
 // Expects a computation to return a value
 //
 // The expected type must have an `(==)` function as well as a `show` function defined for it
-pub fun expect(expected: a, run: () -> <exn,test|e> a, details: string = "", econtinue=True, ?(==): (a,a) -> pure bool, ?show: (a) -> pure string, ?kk-line: string, ?kk-module: string): <test|e> a
+pub fun expect-result(expected: a, run: () -> <exn,test|e> a, details: string = "", econtinue=True, ?(==): (a,a) -> pure bool, ?show: (a) -> pure string, ?kk-line: string, ?kk-module: string): <test|e> a
   val res = try({run()})
   test-expect(Expect-value(
     res, 
@@ -38,8 +38,8 @@ pub fun expect(expected: a, run: () -> <exn,test|e> a, details: string = "", eco
     ?kk-module ++ ":" ++ ?kk-line, 
     (==), show))
 
-pub fun expect-fail(expected: a, run: () -> <exn,test|e> a, details: string = "", econtinue=False, ?(==): (a,a) -> pure bool, ?show: (a) -> pure string, ?kk-line: string, ?kk-module: string): <test|e> ()
-  expect(expected, run, details, econtinue)
+pub fun expect(expected: a, run: () -> <exn,test|e> a, details: string = "", econtinue=False, ?(==): (a,a) -> pure bool, ?show: (a) -> pure string, ?kk-line: string, ?kk-module: string): <test|e> ()
+  expect-result(expected, run, details, econtinue)
   ()
 
 pub fun basic/test(name: string, f: () -> <test,test-scope,console,pure|e> (), ?kk-module: string, ?kk-line: string): <console,pure|e> ()
@@ -110,11 +110,11 @@ fun test-tests()
   basic/scope("Basics")
     with basic-nested/scope("Another")
     scoped/test("Returns continue tests")
-      val res = expect(1) fn() 2
+      val res = expect-result(1) fn() 2
       println("Continued!")
-      expect-fail(2) fn() 1 + res
-      expect-fail(2) fn() 1
+      expect(2) fn() 1 + res
+      expect(2) fn() 1
   basic/test("Wrong expect")
-    expect-fail(1) fn() 2
+    expect(1) fn() 2
   basic/test("Additional info")
-    expect-fail(1, {throw("Some error somewhere")}, details="Really expected 1 because I proved it!") 
+    expect(1, {throw("Some error somewhere")}, details="Really expected 1 because I proved it!") 

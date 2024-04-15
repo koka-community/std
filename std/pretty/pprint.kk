@@ -520,4 +520,3 @@ hello"#) fn()
       ["test".text, "hello".text].vcat.show
     expect("testhello") fn()
       ["test".text, "hello".text].hcat.show
-    ()

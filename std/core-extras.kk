@@ -58,3 +58,111 @@ fun split-by(s: string, pred: (char) -> bool): list<string>
           then loop(sl'.pretend-decreasing, 0, acc ++ ctx Cons(sl'.advance(0 - numchars).truncate.extend(numchars).string, _))
           else loop(sl'.pretend-decreasing, numchars + 1, acc)
   loop(s.slice, 0, ctx _)
+
+pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
+  match item
+    Just(x) -> x
+    Nothing -> Nothing
+
+pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
+  match m
+    Just(a) -> a
+    Nothing -> throw("expect-unjust: " ++ msg)
+
+
+// Copies a vector
+pub inline extern copy( v : vector<a> ) : vector<a>
+  c "kk_vector_copy"
+  js inline "[...(#1)]"
+
+pub inline extern realloc( v : vector<a>, new_capacity : ssize_t ) : vector<a>
+  c inline "kk_vector_realloc(#1, #2, kk_box_null(), kk_context())"
+  js inline "[...(#1)]"
+
+// Apply a total function `f` to each element in a vector `v`
+// Since the vector consists of boxed values we can ignore type incompatibilities
+// However, we also cannot allow exception effects in f, because then the vector would be left in an inconsistent state which would be observable and unreversable
+// We could allow div, but then this is always div even when f is not div
+pub fun unique/map( v : vector<a>, f : a -> b ) : vector<b>
+  if v.is-vec-unique then
+    // trace("unique/map: vector is unique")
+    v.foreach-indexedz(fn(i,x) v.unsafe-assign(i, f(x).unsafe-ignore-type)) 
+    v.unsafe-ignore-type
+  else
+    // trace("unique/map: vector is not unique")
+    val w = unsafe-vector(v.length.ssize_t)
+    v.foreach-indexedz fn(i,x)
+      unsafe-assign(w,i,f(x))
+    w
+
+// Set the element at position `index` in vector `v` without bounds check!
+pub fun unsafe-set( v : vector<a>, ^index : int, value : a ) : vector<a>
+  if v.is-vec-unique then
+    // trace("unsafe-set: vector is unique")
+    v.unsafe-assign(index.ssize_t, value)
+    v
+  else 
+    // trace("unsafe-set: vector is not unique")
+    val v' = v.copy
+    v'.unsafe-assign(index.ssize_t, value)
+    v'
+
+pub inline extern is-ref-unique(^x: a): bool
+  c inline "!kk_box_is_ptr(#1, kk_context()) || kk_block_is_unique(kk_box_to_ptr(#1, kk_context()))"
+
+pub inline extern is-vec-unique(^v: vector<a>): bool
+  c inline "kk_datatype_is_unique(#1, kk_context())"
+
+pub inline extern unsafe-box-drop(^x: a): total ()
+  c inline "kk_box_drop(#1, kk_context())"
+
+pub inline extern drop-at( ^v : vector<a>, index : ssize_t ) : ()
+  c inline "kk_vector_dup(#1, kk_context()); kk_box_drop(kk_vector_at_borrow(#1, #2, kk_context()), kk_context()); kk_vector_unsafe_assign(#1, #2, kk_box_null(), kk_context())"
+
+// Valid only for boxed values
+pub inline extern unsafe-ignore-type(x: a): b
+  inline "#1"
+
+// Make the following preexisting functions public, or make them public in an unsafe module
+pub inline extern unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
+  c  inline "kk_vector_alloc(#1,kk_box_null(),kk_context())"
+  cs inline "(new ##1[#1])"
+  js inline "Array(#1)"
+
+// This function should never be called directly unless you know exactly what you are doing
+pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
+  c "kk_vector_unsafe_assign"
+  cs inline "(#1)[#2] = #3"
+  js inline "(#1)[#2] = #3"
+
+// Return the element at position `index` in vector `v` without bounds check!
+// This function should never be called directly unless you know exactly what you are doing
+pub inline extern unsafe-idx( ^v : vector<a>, index : ssize_t ) : total a
+  c  "kk_vector_at_borrow"
+  cs inline "(#1)[#2]"
+  js inline "(#1)[#2]"
+
+// Length of a vector.
+pub inline extern lengthz( ^v : vector<a> ) : ssize_t
+  c  "kk_vector_len_borrow"
+  cs inline "((#1).Length)"
+  js inline "((#1).length)"
+
+pub fun foreach-indexedz( v : vector<a>, f : (ssize_t,a) -> e () ) : e ()
+  forz( v.lengthz ) fn(i)
+    f(i,v.unsafe-idx(i))
+
+// Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
+// If `n <= 0`  the function returns without any call to `action` .
+pub fun forz( n : ssize_t, action : (ssize_t) -> e () ) : e ()
+  fun rep( i : ssize_t )
+    if i < n then
+      action(i)
+      rep(pretend-decreasing(i.incr))
+  rep(0.ssize_t)
+
+pub fip extern ssize_t/incr(i : ssize_t ) : ssize_t
+  inline "(#1 + 1)"
+
+pub inline fip extern ssize_t/(<) : (ssize_t,ssize_t) -> bool
+  inline "(#1 < #2)"
