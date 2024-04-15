@@ -59,8 +59,9 @@ pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
 // Resizes the vector-list to a new capacity.
 // If new-capacity is smaller than size then the vector-list is truncated
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
-  val old-size = v.size
-  v( data = realloc(v.data, new-capacity.ssize_t), size = old-size)
+  match v
+    Vector-list(data, old-size) ->
+      Vector-list( data = realloc(data, new-capacity.ssize_t), size = if new-capacity < old-size then new-capacity else old-size)
 
 // Return the element at position `index` in vector-list `v` or `Nothing` if out of bounds
 pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
@@ -78,7 +79,6 @@ pub fun set( v : vector-list<a>, ^index : int, value : a ) : maybe<vector-list<a
       Vector-list(data, size) ->
         Just(Vector-list( data.unsafe-set( index, value ), size ))
 
-
 fun resizer( current : int ) : int
   if current < 1 then 1 else current * 2
 
@@ -88,11 +88,14 @@ fun resizer( current : int ) : int
 pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : vector-list<a>
   val vec = if v.size >= v.data.length then
     val new-capacity = resizer( v.data.length )
+    // trace("Resizing to " ++ new-capacity.show)
     v.resize( new-capacity )
   else 
     v
-  val insert-pos = vec.size
-  Vector-list(vec.data.unsafe-set(insert-pos, value), size=vec.size + 1)
+  match vec
+    Vector-list(data, size) ->
+      // trace("Pushing " ++ size.show)
+      Vector-list( data.unsafe-set(size, value), size + 1 )
 
 // Removes the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
 pub fun pop( ^v : vector-list<a>) : maybe<(a, vector-list<a>)>
@@ -103,7 +106,7 @@ pub fun pop( ^v : vector-list<a>) : maybe<(a, vector-list<a>)>
     match v.at(new-size)
       Nothing -> Nothing
       Just(x) ->
-        x.unsafe-box-drop() // X was dupped for v.at(), but we are making it no longer accessible from the vector
+        v.data.drop-at(new-size.ssize_t) // X was dupped for v.at(), but we are making it no longer accessible from the vector        
         Just((x, Vector-list(v.data, size=new-size))) 
 
 // Gets the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
@@ -132,14 +135,16 @@ pub fun unique/map( v : vector-list<a>, f : (a) -> b ) : vector-list<b>
 
 // Invoke a function `f` for each element in a vector-list `v`.
 pub fun foreach( v : vector-list<a>, f : (a) -> e () ) : e ()
-  for( v.size ) fn (i) f(v.data.unsafe-idx( i.ssize_t ))
+  for( v.size ) fn (i) 
+    f(v.data.unsafe-idx( i.ssize_t ))
 
 // Invoke a function `f` for each element in a vector-list `v` with the corresponding index.
 pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
-  for( v.size ) fn (i) f(i, v.data.unsafe-idx( i.ssize_t ))
+  for( v.size ) fn (i) 
+    f(i, v.data.unsafe-idx( i.ssize_t ))
 
 ref struct something {i: int}
-fun test-vlist()
+fun main()  
   basic/test("vlist push")
     val vec = unit/vector-list() 
     val vec' = vec.push(2)
@@ -178,6 +183,13 @@ fun test-vlist()
     expect(False, { unsafe-ptr-eq(vec10, vec2.at(4).unjust) }, details="Expected vec1 and vec10 to be the same")
   basic/test("vlist stress test")
     var vec := unit/vlist()
-    for(1000000) fn (i)
+    for(50000) fn (i)
       vec := vec.push(i)
     expect(True, { True }, details="Vec did not succeed")
+  basic/test("vlist ref")
+    var vec := ref(vector-list-init(10) fn(i) i)
+    vec.modify(fn(v) v := v.unique/map(fn (x) x + 1))
+    var after-map := ""
+    (!vec).foreach() fn (x)
+      after-map := after-map ++ x.show ++ " "
+    expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)

@@ -71,11 +71,11 @@ pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
 
 
 // Copies a vector
-pub inline extern copy( ^v : vector<a> ) : vector<a>
+pub inline extern copy( v : vector<a> ) : vector<a>
   c "kk_vector_copy"
   js inline "[...(#1)]"
 
-pub inline extern realloc( ^v : vector<a>, new_capacity : ssize_t ) : vector<a>
+pub inline extern realloc( v : vector<a>, new_capacity : ssize_t ) : vector<a>
   c inline "kk_vector_realloc(#1, #2, kk_box_null(), kk_context())"
   js inline "[...(#1)]"
 
@@ -115,6 +115,9 @@ pub inline extern is-vec-unique(^v: vector<a>): bool
 
 pub inline extern unsafe-box-drop(^x: a): total ()
   c inline "kk_box_drop(#1, kk_context())"
+
+pub inline extern drop-at( ^v : vector<a>, index : ssize_t ) : ()
+  c inline "kk_vector_dup(#1, kk_context()); kk_box_drop(kk_vector_at_borrow(#1, #2, kk_context()), kk_context()); kk_vector_unsafe_assign(#1, #2, kk_box_null(), kk_context())"
 
 // Valid only for boxed values
 pub inline extern unsafe-ignore-type(x: a): b
