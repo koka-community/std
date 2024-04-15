@@ -8,7 +8,8 @@
 // This module provides a simple resizable vector implementation
 module std/data/vector-list
 import std/core-extras
-import std/test/test
+import std/test
+import std/core/unsafe
 /*
   todo
   list/vector-list
@@ -36,17 +37,16 @@ pub fun vector/vlist( v : vector<a> ) : vector-list<a>
   vector/vector-list(v)
 
 pub value struct vector-list<a>
-  data : vector<maybe<a>>
+  data : vector<a>
   size : int
 
 // Create a new vector-list of length `n` with initial elements `default`.
 pub inline fun vector-list( n : int, default : a ) : vector-list<a>
-  Vector-list( vector-init( n, fn (_) Just(default)), n )
+  Vector-list( vector-init( n, fn (_) default), n )
 
 // Create a new vector-list of length `n` with initial elements given by function `f` which can have a control effect.
 pub inline fun vector-list-init( ^n : int, f : (int) -> e a ) : e vector-list<a>
-  val g = fn(x : int) Just(f(x))
-  Vector-list( vector-init( n, g), n )
+  Vector-list( vector-init( n, f), n )
 
 // Create an empty vector-list.
 pub inline fun unit/vector-list() : vector-list<a>
@@ -54,26 +54,29 @@ pub inline fun unit/vector-list() : vector-list<a>
 
 // Create a vector-list from a vector
 pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
-  Vector-list( v.vector/map( fn (x) Just( x ) ), v.length )
+  Vector-list( v, v.length )
 
 // Resizes the vector-list to a new capacity.
 // If new-capacity is smaller than size then the vector-list is truncated
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
-  val new-data = vector-init( new-capacity ) fn (x) if x < v.data.length then v.data.unsafe-idx(x.ssize_t) else Nothing
-  val updated-size = if new-capacity > v.size then v.size else new-capacity
-  v( data = new-data, size = updated-size)
+  val old-size = v.size
+  v( data = realloc(v.data, new-capacity.ssize_t), size = old-size)
 
 // Return the element at position `index` in vector-list `v` or `Nothing` if out of bounds
 pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
-  v.data.at(index).flatten
+  if index >= 0 && index < v.size then 
+    v.data.at(index)
+  else Nothing
 
 // Set an element in the vector-list at position `index` in vector-list `v` with `value`
 // Returns `Nothing` if the `index` is out of bounds
-pub fun set( ^v : vector-list<a>, ^index : int, value : a ) : exn maybe<vector-list<a>>
+pub fun set( v : vector-list<a>, ^index : int, value : a ) : maybe<vector-list<a>>
   if index < 0 || index >= v.size then
     Nothing
   else
-    Just( v( data = v.data.set( index, Just( value ) ).unjust ) )
+    match v
+      Vector-list(data, size) ->
+        Just(Vector-list( data.unsafe-set( index, value ), size ))
 
 
 fun resizer( current : int ) : int
@@ -82,20 +85,26 @@ fun resizer( current : int ) : int
 // Pushes `value` at the end of the vector-list `v`.
 // Push also takes implicit `resizer` to allow for custom growth factors
 // It is important that `resizer` must handle the case of where the current capacity is 0
-pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : exn vector-list<a>
+pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : vector-list<a>
   val vec = if v.size >= v.data.length then
     val new-capacity = resizer( v.data.length )
     v.resize( new-capacity )
   else 
     v
-  vec( data = vec.data.set( v.size, Just(value) ).expect-unjust("push"), size = vec.size + 1)
+  val insert-pos = vec.size
+  Vector-list(vec.data.unsafe-set(insert-pos, value), size=vec.size + 1)
 
 // Removes the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
-pub fun pop( ^v : vector-list<a>) : exn maybe<vector-list<a>>
+pub fun pop( ^v : vector-list<a>) : maybe<(a, vector-list<a>)>
   if v.size == 0 then
     Nothing
   else
-    Just( v( data = v.data.set( v.size - 1, Nothing ).unjust, size = v.size - 1 ) )
+    val new-size = v.size - 1
+    match v.at(new-size)
+      Nothing -> Nothing
+      Just(x) ->
+        x.unsafe-box-drop() // X was dupped for v.at(), but we are making it no longer accessible from the vector
+        Just((x, Vector-list(v.data, size=new-size))) 
 
 // Gets the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
 pub fun last( ^v : vector-list<a> ) : maybe<a>
@@ -111,43 +120,59 @@ pub fun capacity( ^v : vector-list<a> ) : int
   v.data.length
 
 // Apply a function `f` to each element in a vector-list `v`.
-pub fun map( ^v : vector-list<a>, f : (a) -> e b ) : e vector-list<b>
-  val new-data = v.data.map() fn (n) match n
-    Just(x) -> Just( f( x ) )
-    Nothing -> Nothing
+pub fun effect/map( ^v : vector-list<a>, f : (a) -> e b ) : e vector-list<b>
+  val new-data = v.data.map(f)
   Vector-list( new-data, v.size )
+
+pub fun unique/map( v : vector-list<a>, f : (a) -> b ) : vector-list<b>
+  match v
+    Vector-list(data, size) -> 
+      val new-data = data.unique/map(f)
+      Vector-list( new-data, size )
 
 // Invoke a function `f` for each element in a vector-list `v`.
 pub fun foreach( v : vector-list<a>, f : (a) -> e () ) : e ()
-  for( v.size ) fn (i) match v.at( i )
-    Just(x) -> f( x )
-    Nothing -> ()
+  for( v.size ) fn (i) f(v.data.unsafe-idx( i.ssize_t ))
 
 // Invoke a function `f` for each element in a vector-list `v` with the corresponding index.
 pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
-  for( v.size ) fn (i) match v.at( i )
-    Just(x) -> f( i, x )
-    Nothing -> ()
+  for( v.size ) fn (i) f(i, v.data.unsafe-idx( i.ssize_t ))
 
+ref struct something {i: int}
 fun test-vlist()
   basic/test("vlist push")
-    var vec := unit/vector-list()
-    vec := vec.push(2)
-    val value = vec.at(0)
-    val out = expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
-    ()
+    val vec = unit/vector-list() 
+    val vec' = vec.push(2)
+    val value = vec'.at(0)
+    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
   basic/test("vlist pop")
-    var vec := vector-list-init(10) fn (i) i
-    match vec.pop()
-      Just(v) -> vec := v
-      Nothing -> ()
+    val vec = vector-list-init(10) fn (i) Something(i)
+    val vec' = match vec.pop()
+      Just((x, v)) -> 
+        expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
+        v
+      Nothing -> vec
     var after-pop := ""
-    vec.foreach() fn (x)
-      after-pop := after-pop ++ x.show ++ " "
-    val out = expect("0 1 2 3 4 5 6 7 8 ", { after-pop }, details="Expected '0 1 2 3 4 5 6 7 8 ' but got: " ++ after-pop)
-    ()
+    vec'.foreach() fn (x)
+      after-pop := after-pop ++ x.i.show ++ " "
+    expect("0 1 2 3 4 5 6 7 8 ", { after-pop }, details="Expected '0 1 2 3 4 5 6 7 8 ' but got: " ++ after-pop)
+  basic/test("vlist unique map")
+    val vec = vector-list-init(10) fn (i) Something(i)
+    val vec2 = vec.unique/map(fn (x) x.i + 1)
+    var after-map := ""
+    vec2.foreach() fn (x)
+      after-map := after-map ++ x.show ++ " "
+    expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)
   basic/test("vlist resize push")
-    var vec := vector-list-init(10) fn (i) i
-    vec := vec.push(11)
-    val out = expect(20, { vec.capacity }, details="Expected 20 but got: " ++ vec.capacity.show)
-    ()
+    val vec = vector-list-init(10) fn (i) i
+    val vec' = vec.push(11)
+    expect(20, { vec'.capacity }, details="Expected 20 but got: " ++ vec'.capacity.show)
+  basic/test("vlist copies on set")
+    val vec1 = vector-list-init(10) fn (i) i
+    val vec2 = vec1.set(0, 100).unjust
+    expect(True, { vec1.at(0).default(0) != vec2.at(0).default(0) }, details="Expected vec1 and vec2 to be different")
+  basic/test("vlist doesn't copy when unique")
+    val vec1 = vector-list-init(10) fn(i) Something(i)
+    val vec10 = vec1.at(0).unjust
+    val vec2 = vec1.set(9, Something(1)).unjust
+    expect(False, { unsafe-ptr-eq(vec10, vec2.at(4).unjust) }, details="Expected vec1 and vec10 to be the same")

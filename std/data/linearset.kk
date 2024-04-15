@@ -66,7 +66,7 @@ fun is-subset-of(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e
   l1.all(fn(x) l2.member(x))
 
 pub fun test-set()
-  test("Basics")
+  basic/test("Basics")
     val s = linear-set([1, 2, 3])
     val s2 = linear-set([2, 3, 4])
     val s3 = s + s2
