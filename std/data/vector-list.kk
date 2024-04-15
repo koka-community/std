@@ -176,3 +176,8 @@ fun test-vlist()
     val vec10 = vec1.at(0).unjust
     val vec2 = vec1.set(9, Something(1)).unjust
     expect(False, { unsafe-ptr-eq(vec10, vec2.at(4).unjust) }, details="Expected vec1 and vec10 to be the same")
+  basic/test("vlist stress test")
+    var vec := unit/vlist()
+    for(1000000) fn (i)
+      vec := vec.push(i)
+    expect(True, { True }, details="Vec did not succeed")
