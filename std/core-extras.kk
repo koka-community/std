@@ -9,10 +9,6 @@
 module std/core-extras
 import std/core/undiv
 
-extern import
-  c file "inline/core-extras"
-
-
 fun (==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
@@ -75,16 +71,16 @@ pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
 
 // This function should never be called directly unless you know exactly what you are doing
 pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
-  c "kk_vector_unsafe_assign_community"
+  c "kk_vector_unsafe_assign"
   cs inline "(#1)[#2] = #3"
-  //js inline "(#1)[#2] = #3"
+  js inline "(#1)[#2] = #3"
 
 // Return the element at position `index`  in vector `v`  without bounds check!
 // This function should never be called directly unless you know exactly what you are doing
 pub inline extern unsafe-idx( ^v : vector<a>, index : ssize_t ) : total a
-  c  "kk_vector_at_borrow_community"
+  c  "kk_vector_at_borrow"
   cs inline "(#1)[#2]"
-  //js inline "(#1)[#2]"
+  js inline "(#1)[#2]"
 
 pub fun set( ^v : vector<a>, ^index : int, value : a ) : maybe<vector<a>>
   if index < 0 || index >= v.length then
