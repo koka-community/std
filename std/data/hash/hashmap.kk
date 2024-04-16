@@ -130,6 +130,7 @@ pub fun effect/map-values( hm : hash-map<k, a>, f : (a) -> e b ) : e hash-map<k,
       (key, f( value ))
   Hash-map( new-data, hm.amount )
 
+// Applies a function `f` to each value of the hash-map.
 pub fun unique/map-values( hm : hash-map<k, a>, f : (a) -> b ) : hash-map<k, b>
   match hm
     Hash-map(data, amount) -> 
@@ -139,6 +140,7 @@ pub fun unique/map-values( hm : hash-map<k, a>, f : (a) -> b ) : hash-map<k, b>
           (key, f( value ))
       Hash-map( new-data, amount )
 
+// Applies a function `f` to each key of the hash-map.
 pub fun effect/map-keys( hm : hash-map<a, v>, f : (a) -> e b ) : e hash-map<b, v>
   val new-data = hm.data.map fn (buckets)
     buckets.list/map fn (entry)
@@ -146,6 +148,7 @@ pub fun effect/map-keys( hm : hash-map<a, v>, f : (a) -> e b ) : e hash-map<b, v
       (f( key ), value)
   Hash-map( new-data, hm.amount )
 
+// Applies a function `f` to each key of the hash-map.
 pub fun unique/map-keys( hm : hash-map<a, v>, f : (a) -> b ) : hash-map<b, v>
   match hm
     Hash-map(data, amount) -> 
@@ -155,11 +158,13 @@ pub fun unique/map-keys( hm : hash-map<a, v>, f : (a) -> b ) : hash-map<b, v>
           (f( key ), value)
       Hash-map( new-data, amount )
 
+// Applies a function `f` to each key-value of the hash-map via a tuple.
 pub fun effect/map( hm : hash-map<a, b>, f : ((a, b)) -> e (c, d) ) : e hash-map<c, d>
   val new-data = hm.data.map fn (buckets)
     buckets.list/map(f)
   Hash-map( new-data, hm.amount )
 
+// Applies a function `f` to each key-value of the hash-map via a tuple.
 pub fun unique/map( hm : hash-map<a, b>, f : ((a, b)) -> (c, d) ) : hash-map<c, d>
   match hm
     Hash-map(data, amount) -> 
@@ -167,19 +172,21 @@ pub fun unique/map( hm : hash-map<a, b>, f : ((a, b)) -> (c, d) ) : hash-map<c, 
         bucket.map(f)
       Hash-map( new-data, amount )
 
-// Invoke a function `f` for each value of the hash-map.
+// Invoke a function `f` for each key-value of the hash-map.
 pub fun foreach( hm : hash-map<k, v>, f : (k, v) -> e () ) : e ()
   for( hm.data.length ) fn (i) 
     hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
       val (key, value) = entry
       f(key, value)
 
+// Invoke a function `f` for each key of the hash-map.
 pub fun foreach-key( hm : hash-map<k, v>, f : (k) -> e () ) : e ()
   for( hm.data.length ) fn (i) 
     hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
       val (key, _) = entry
       f(key)
 
+// Invoke a function `f` for each value of the hash-map.
 pub fun foreach-value( hm : hash-map<k, v>, f : (v) -> e () ) : e ()
   for( hm.data.length ) fn (i) 
     hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
@@ -209,3 +216,10 @@ fun test-hash-map()
     for(50000) fn (i)
       hm := hm.insert(i, i, ?hash = fn (x) x * 2654435761 % (2 ^ 32) )
     expect(True, { True } , details="Expected Resizing to work")
+  basic/test("hash-map clear")
+    var hm := hash-map(1)
+    for(50) fn (i)
+      hm := hm.insert(i, i, ?hash = fn (x) x * 2654435761 % (2 ^ 32) )
+    hm := hm.clear()
+    val value = hm.length()
+    expect(0, { value } , details="Expected 0 but got " ++ value.show)
