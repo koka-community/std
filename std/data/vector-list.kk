@@ -148,7 +148,7 @@ pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
     f(i, v.data.unsafe-idx( i.ssize_t ))
 
 ref struct something {i: int}
-fun main()  
+fun test-vlist()  
   basic/test("vlist push")
     val vec = unit/vector-list() 
     val vec' = vec.push(2)
