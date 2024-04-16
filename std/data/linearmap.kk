@@ -7,7 +7,7 @@
 ----------------------------------------------------------------------------*/
 module std/data/linearmap
 
-alias linearMap<k,v> = list<(k,v)> 
+pub alias linearMap<k,v> = list<(k,v)> 
 
 pub fun show(l: linearMap<k,v>, ?key/show: (k) -> e string, ?value/show: (v) -> e string): e string
   "{" ++ l.map(fn((k,v)) key/show(k) ++ ": " ++ value/show(v)).join(",") ++ "}"
@@ -21,12 +21,12 @@ pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool
 pub fun key/contains(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e bool
   l.any(fn((kk, _)) kk == k)
 
-fun update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
+pub fun update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
   match l
     Cons((kk, vv), rst) -> if k == kk then Cons((kk, f(b, vv)), rst) else Cons((kk, vv), rst.update(k, b, f))
     Nil -> Cons((k, b), Nil) 
 
-fun get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
+pub fun get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
   match l
     Cons((kk, vv), rst) -> if mask<exn>{kk == k} then vv else rst.get(k)
     Nil -> throw("not found")
@@ -34,7 +34,7 @@ fun get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
 pub fun map/lookup(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
   catch({Just(m.get(k))}, fn(x) {Nothing})
 
-fun get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
+pub fun get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
   match l
     Cons((kk, vv), rst) -> if kk == k then vv else rst.get-default(k, v)
     Nil -> v
