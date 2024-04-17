@@ -12,6 +12,9 @@ import std/test
 import std/num/int64
 import std/num/random
 
+extern import 
+  c file "inline/hash"
+
 pub value struct hash-map<k, v>
   data : vector<list<(k,v)>>
   amount : int
@@ -207,6 +210,21 @@ pub fun foreach-value( hm : hash-map<k, v>, f : (v) -> e () ) : e ()
       val (_, value) = entry
       f(value)
 
+inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
+  c "kk_hash_vector_int64"
+
+pub fun hash-map/hash( hm : hash-map<k, v>, seed : int64, ?key-hasher : (k, int64) -> int, ?value-hasher : (v, int64) -> int ) : int
+  val vec = unsafe-vector( (hm.amount * 2).ssize_t )
+  var idx := 0
+  for( hm.data.length ) fn (i)
+    hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
+      val (key, value) = entry
+      vec.unsafe-assign( idx.ssize_t, key-hasher(key, seed).int64 )
+      vec.unsafe-assign( (idx + 1).ssize_t, value-hasher(value, seed).int64 )
+
+      idx := idx + 2
+  hash-vector-int64( vec, seed )
+
 
 fun test-hash-map()
   basic/test("hash-map insert")
@@ -237,3 +255,22 @@ fun test-hash-map()
     hm := hm.clear()
     val value = hm.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
+  basic/test("hash-map clear then fill")
+    var hm := hash-map(1)
+    for(50) fn (i)
+      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    hm := hm.clear()
+    for(50) fn (i)
+      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val value = hm.length()
+    expect(50, { value } , details="Expected 0 but got " ++ value.show)
+  basic/test("hash-maps of different capacities but same contents have the same hash")
+    var hm1 := hash-map(3)
+    hm1 := hm1.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    hm1 := hm1. insert(3, 4, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    var hm2 := hash-map(10)
+    hm2 := hm2.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    hm2 := hm2.insert(3, 4, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    val hash_1 = hash-map/hash(hm1, 0.int64, ?key-hasher = fn (x, _) x * 2654435761 % (2 ^ 32), ?value-hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val hash_2 = hash-map/hash(hm2, 0.int64, ?key-hasher = fn (x, _) x * 2654435761 % (2 ^ 32), ?value-hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    expect(True, { hash_1 == hash_2 }, details="Expected True but got False")

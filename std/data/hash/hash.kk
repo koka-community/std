@@ -87,17 +87,5 @@ pub fun either/hash( e : either<l, r>, ?hasher-l : (l, int64) -> int, ?hasher-r 
 
   hash-vector-int64( vec, seed )
 
-fun test-hash()
-  /*
-  basic/test("vlist push")
-    val vec = unit/vector-list() 
-    val vec' = vec.push(2)
-    val value = vec'.at(0)
-    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
-  */
-  val seed = 0.int64
-  val hashed = list/hash([2, 2], ?hasher = int/hash, ?seed = seed)
-  hashed.show.println
-  hashed.int/hash( ?seed = seed ).show.println
 
 
