@@ -21,8 +21,6 @@ uint32_t xxh64_read_u32(uint8_t* input, size_t cursor);
 
 uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed);
 
-uint64_t rotate_left_u64(uint64_t input, uint8_t amount);
-
 uint64_t xxh64_round(uint64_t acc, uint64_t input);
 
 uint64_t xxh64_merge_round(uint64_t acc, uint64_t value);

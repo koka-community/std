@@ -11,9 +11,8 @@ import std/core-extras
 import std/test
 import std/num/int64
 import std/num/random
+import std/data/hash/hash
 
-extern import 
-  c file "inline/hash"
 
 pub value struct hash-map<k, v>
   data : vector<list<(k,v)>>
@@ -23,29 +22,28 @@ pub value struct hash-map<k, v>
 // Creates a hash-map with a specified inital `capacity`.
 // If zero then the hash-map will set capacity to 1.
 // Random effect is needed to initalize the seed.
-pub fun hash-map( capacity : int ) : random hash-map<k, v>
+pub fun hash-map( capacity : int = 1 ) : random hash-map<k, v>
   Hash-map( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
 
 // Creates a hash-map with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-map will set capacity to 1.
-pub fun hash-map-seeded( capacity : int, seed : int64 ) : hash-map<k, v>
+pub fun hash-map-seeded( seed : int64, capacity : int = 1 ) : hash-map<k, v>
   Hash-map( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-map from a list `xs`. This hash-map has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
 pub fun list/hash-map( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : random hash-map<k, v>
-  from-list-helper( hash-map( xs.length ), xs, ?hash = hash, ?(==) = (==) )
+  from-list-helper( hash-map( xs.length ), xs )
 
 // Creates a hash-map from a list `xs` and with a `seed`. This hash-map has the same capacity as the length of the list `xs`.
 pub fun list/hash-map-seeded( xs : list<(k, v)>, seed : int64, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map<k, v>
-  from-list-helper( hash-map-seeded( xs.length, seed ), xs, ?hash = hash, ?(==) = (==) )
+  from-list-helper( hash-map-seeded( seed, capacity = xs.length ), xs )
 
 fun from-list-helper( hm : hash-map<k, v>, l : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map<k, v>
   match l
     Nil -> hm
-    Cons(x, xs) -> 
-      val (key, value) = x
-      from-list-helper( hm.insert( key, value, ?hash = hash, ?(==) = (==) ), xs, ?hash = hash, ?(==) = (==) )
+    Cons((key, value), xs) -> 
+      from-list-helper( hm.insert( key, value ), xs )
 
 
 // Resizes a hash-map with `new-capacity` being the new capacity of the hashmap. 
@@ -229,48 +227,48 @@ pub fun hash-map/hash( hm : hash-map<k, v>, seed : int64, ?key-hasher : (k, int6
 fun test-hash-map()
   basic/test("hash-map insert")
     val hm = hash-map(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val value = hm'.get(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    val hm' = hm.insert(1, 2, ?hash = int/hash )
+    val value = hm'.get(1, ?hash = int/hash)
     expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
   basic/test("hash-map remove")
     val hm = hash-map(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hm@ = hm'.remove(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val hm' = hm.insert(1, 2, ?hash = int/hash )
+    val hm@ = hm'.remove(1, ?hash = int/hash )
     expect(0, { hm@.length } , details="Expected 0 but got " ++ hm@.length.show)
   basic/test("hash-map overwrite")
     val hm = hash-map(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hm@ = hm'.insert(1, 3, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val value = hm@.get(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    val hm' = hm.insert(1, 2, ?hash = int/hash )
+    val hm@ = hm'.insert(1, 3, ?hash = int/hash )
+    val value = hm@.get(1, ?hash = int/hash)
     expect(Just(3), { value } , details="Expected Just(3) but got " ++ value.show)
   basic/test("hash-map stress test")
     var hm := hash-map(1)
     for(50000) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hm := hm.insert(i, i, ?hash = int/hash )
     expect(True, { True } , details="Expected Resizing to work")
   basic/test("hash-map clear")
     var hm := hash-map(1)
     for(50) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hm := hm.insert(i, i, ?hash = int/hash )
     hm := hm.clear()
     val value = hm.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-map clear then fill")
     var hm := hash-map(1)
     for(50) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hm := hm.insert(i, i, ?hash = int/hash )
     hm := hm.clear()
     for(50) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hm := hm.insert(i, i, ?hash = int/hash )
     val value = hm.length()
     expect(50, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-maps of different capacities but same contents have the same hash")
     var hm1 := hash-map(3)
-    hm1 := hm1.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    hm1 := hm1. insert(3, 4, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    hm1 := hm1.insert(1, 2, ?hash = int/hash)
+    hm1 := hm1. insert(3, 4, ?hash = int/hash)
     var hm2 := hash-map(10)
-    hm2 := hm2.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    hm2 := hm2.insert(3, 4, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    val hash_1 = hash-map/hash(hm1, 0.int64, ?key-hasher = fn (x, _) x * 2654435761 % (2 ^ 32), ?value-hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hash_2 = hash-map/hash(hm2, 0.int64, ?key-hasher = fn (x, _) x * 2654435761 % (2 ^ 32), ?value-hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    expect(True, { hash_1 == hash_2 }, details="Expected True but got False")
+    hm2 := hm2.insert(1, 2, ?hash = int/hash)
+    hm2 := hm2.insert(3, 4, ?hash = int/hash)
+    val hash_1 = hash-map/hash(hm1, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
+    val hash_2 = hash-map/hash(hm2, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
+    expect(True, { hash_1 == hash_2 }, details="Expected True but got False\n" ++ hash_1.show ++ "\n" ++ hash_2.show)

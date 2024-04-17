@@ -19,7 +19,7 @@ kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
     kk_ssize_t length;
     uint8_t* str = (uint8_t*)kk_string_buf_borrow(s, &length, ctx);
     int64_t result = xxh64(str, length, seed);
-    //kk_string_drop(s, ctx);
+    kk_string_drop(s, ctx);
     return kk_integer_from_int64(result, ctx);
 }
 
@@ -56,7 +56,7 @@ kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx)
 
 kk_integer_t hash_big_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
-    fprintf(stderr, "Warning! Hashing big integers may be incorrect.\n");
+    kk_warning_message("Warning! Hashing big integers may be incorrect.\n");
     uint8_t* input_ptr = ((uint8_t*)&i);
     int64_t result = xxh64(input_ptr, sizeof(kk_integer_t), seed);
     return kk_integer_from_int64(result, ctx);
@@ -106,7 +106,7 @@ uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed) {
 
         } while (input_length - cursor >= CHUNK_SIZE);
 
-        result = rotate_left_u64(v1, 1) + rotate_left_u64(v2, 7) + rotate_left_u64(v3, 12) + rotate_left_u64(v4, 18);
+        result = kk_bits_rotl64(v1, 1) + kk_bits_rotl64(v2, 7) + kk_bits_rotl64(v3, 12) + kk_bits_rotl64(v4, 18);
         
         result = xxh64_merge_round(result, v1);
         result = xxh64_merge_round(result, v2);
@@ -121,15 +121,8 @@ uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed) {
     return xxh64_finalize(result, input, input_length, cursor);
 }
 
-uint64_t rotate_left_u64(uint64_t input, uint8_t amount) {
-    if (amount == 0) {
-        return input;
-    }
-    return (input << amount) | (input >> (sizeof(uint64_t) * 8 - amount));
-}  
-
 uint64_t xxh64_round(uint64_t acc, uint64_t input) {
-    return rotate_left_u64(acc + input * PRIME_2, 31) * PRIME_1;
+    return kk_bits_rotl64(acc + input * PRIME_2, 31) * PRIME_1;
 }
 
 uint64_t xxh64_merge_round(uint64_t acc, uint64_t value) {
@@ -144,21 +137,21 @@ uint64_t xxh64_finalize(uint64_t input, uint8_t* data, size_t data_length, uint6
         input ^= xxh64_round(0, xxh64_read_u64(data, cursor));
         cursor += sizeof(uint64_t);
         len -= sizeof(uint64_t);
-        input = rotate_left_u64(input, 27) * PRIME_1 + PRIME_4;
+        input = kk_bits_rotl64(input, 27) * PRIME_1 + PRIME_4;
     }
 
     if (len >= 4) {
         input ^= ((uint64_t) xxh64_read_u32) * PRIME_1;
         cursor += sizeof(uint32_t);
         len -= sizeof(uint32_t);
-        input = rotate_left_u64(input, 23) * PRIME_2 + PRIME_3;
+        input = kk_bits_rotl64(input, 23) * PRIME_2 + PRIME_3;
     }
 
     while (len > 0) {
         input ^= data[cursor] * PRIME_5;
         cursor += sizeof(uint8_t);
         len -= sizeof(uint8_t);
-        input = rotate_left_u64(input, 11) * PRIME_1;
+        input = kk_bits_rotl64(input, 11) * PRIME_1;
     }
 
     return xxh64_avalanche(input);

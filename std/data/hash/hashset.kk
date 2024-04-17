@@ -11,7 +11,7 @@ import std/num/int64
 import std/test
 import std/num/random
 import std/core-extras
-
+import std/data/hash/hash
 /*
   todo:
   union: I am not sure how to do this one without either exposing a div effect or duplicating code from insert
@@ -19,8 +19,6 @@ import std/core-extras
   difference
 */
 
-extern import 
-  c file "inline/hash"
 
 pub struct hash-set<v>
   data : vector<list<v>>
@@ -30,28 +28,28 @@ pub struct hash-set<v>
 // Creates a hash-set with a specified inital `capacity`.
 // If zero then the hash-set will set capacity to 1.
 // Random effect is needed to initalize the seed.
-pub fun hash-set( capacity : int ) : random hash-set<v>
+pub fun hash-set( capacity : int = 1 ) : random hash-set<v>
   Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
 
 // Creates a hash-set with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-set will set capacity to 1.
-pub fun hash-set-seeded( capacity : int, seed : int64 ) : hash-set<v>
+pub fun hash-set-seeded( seed : int64, capacity : int = 1 ) : hash-set<v>
   Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
 pub fun list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set<v>
-  from-list-helper( hash-set( xs.length ), xs, ?hash = hash, ?(==) = (==) )
+  from-list-helper( hash-set( xs.length ), xs )
 
 // Creates a hash-set from a list `xs` and with a `seed`. This hash-set has the same capacity as the length of the list `xs`.
 pub fun list/hash-set-seeded( xs : list<v>, seed : int64, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>
-  from-list-helper( hash-set-seeded( xs.length, seed ), xs, ?hash = hash, ?(==) = (==) )
+  from-list-helper( hash-set-seeded( seed, capacity = xs.length ), xs )
 
 fun from-list-helper( hs : hash-set<v>, l : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>
   match l
     Nil -> hs
     Cons(x, xs) -> 
-      from-list-helper( hs.insert( x, ?hash = hash, ?(==) = (==) ), xs, ?hash = hash, ?(==) = (==) )
+      from-list-helper( hs.insert( x ), xs )
 
 
 // Resizes a hash-set with `new-capacity` being the new capacity of the hashset. 
@@ -177,47 +175,48 @@ pub fun hash-set/hash( hs : hash-set<v>, seed : int64, ?hasher : (v, int64) -> i
       idx := idx + 1
   hash-vector-int64( vec, seed )
 
+
 fun test-hash-set()
   basic/test("hash-set insert")
     val hs = hash-set(1)
-    val hs' = hs.insert( 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val value = hs'.contains(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    val hs' = hs.insert( 2, int/hash )
+    val value = hs'.contains(2, ?hash = int/hash)
     expect(True, { value } , details="Expected True but got " ++ value.show)
   basic/test("hash-set remove")
     val hs = hash-set(1)
-    val hs' = hs.insert(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hs@ = hs'.remove(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val hs' = hs.insert(2, ?hash = int/hash )
+    val hs@ = hs'.remove(2, ?hash = int/hash )
     expect(0, { hs@.length } , details="Expected 0 but got " ++ hs@.length.show)
   basic/test("hash-set stress test")
     var hs := hash-set(1)
     for(50000) fn (i)
-      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hs := hs.insert(i, ?hash = int/hash )
     expect(True, { True } , details="Expected Resizing to work")
   basic/test("hash-set clear")
     var hs := hash-set(1)
     for(50) fn (i)
-      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
     val value = hs.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-set clear then fill")
     var hs := hash-set(1)
     for(50) fn (i)
-      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
     for(50) fn (i)
-      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hs := hs.insert(i, ?hash = int/hash )
     val value = hs.length()
     expect(50, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-sets of different capacities but same contents have the same hash")
     var hs1 := hash-set(3)
-    hs1 := hs1.insert(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    hs1 := hs1. insert(3, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    hs1 := hs1.insert(1, ?hash = int/hash)
+    hs1 := hs1. insert(3, ?hash = int/hash)
     var hs2 := hash-set(10)
-    hs2 := hs2.insert(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    hs2 := hs2.insert(3, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    val hash_1 = hash-set/hash(hs1, 0.int64, ?hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hash_2 = hash-set/hash(hs2, 0.int64,  ?hasher = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    expect(True, { hash_1 == hash_2 }, details="Expected True but got False")
+    hs2 := hs2.insert(1, ?hash = int/hash)
+    hs2 := hs2.insert(3, ?hash = int/hash)
+    val hash_1 = hash-set/hash(hs1, 0.int64, ?hasher = int/hash )
+    val hash_2 = hash-set/hash(hs2, 0.int64,  ?hasher = int/hash )
+    expect(True, { hash_1 == hash_2 }, details="Expected True but got False\n" ++ hash_1.show ++ "\n" ++ hash_2.show )
 
   

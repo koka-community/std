@@ -23,7 +23,7 @@ pub inline extern int/hash( i : int, ?seed : int64 ) : int
 
 // A hashing function for characters. It takes a char `c` and an implicit `seed` which is is an `int64`.
 pub fun char/hash( c : char, ?seed : int64 ) : int
-  c.int().int/hash( ?seed = seed )
+  c.int.int/hash( ?seed = seed )
 
 // A hashing function for booleans. It takes a bool `b` and an implicit `seed` which is is an `int64`.
 pub fun bool/hash( b : bool, ?seed : int64 ) : int
@@ -39,7 +39,7 @@ pub inline extern string/hash( s : string, ?seed : int64 ) : int
 // Note: Currently a vector and list with the same elements will have the same hash.
 pub fun list/hash( l : list<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : int
   val vec = unsafe-vector( l.length.ssize_t )
-  list-hash-helper( l, vec, 0, ?hasher = hasher, ?seed = seed )
+  list-hash-helper( l, vec, 0 )
 
   hash-vector-int64( vec, seed )
 
@@ -48,7 +48,7 @@ inline fun list-hash-helper( l : list<a>, buf : vector<int64>, index : int, ?has
     Nil -> ()
     Cons(x, xs) -> 
       buf.unsafe-assign( index.ssize_t, hasher(x, seed).int64 )
-      list-hash-helper( xs, buf, index + 1, ?hasher = hasher, ?seed = seed )
+      list-hash-helper( xs, buf, index + 1 )
 
 // A hashing function for vectors. It takes a vector `l`, an implicit `hasher` for hashing each element, and an implicit `seed` which is is an `int64`.
 // Note: Currently a vector and list with the same elements will have the same hash.
@@ -76,10 +76,10 @@ pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) :
 
 
 // A hashing function for eithers. It takes an either `e`, 2 implicit `hasher`s for hashing `Left` and `Right`, and an implicit `seed` which is is an `int64`.
-pub fun either/hash( e : either<l, r>, ?hasher-l : (l, int64) -> int, ?hasher-r : (r, int64) -> int, ?seed : int64 ) : int
+pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int, ?seed : int64 ) : int
   val hash-key = match e
-    Left(l) -> (hasher-l( l, seed ), 979671666476914879931210933431)
-    Right(r) -> (hasher-r( r, seed ), 214237100480734178309831475373)
+    Left(l) -> (hasher( l, seed ), 979671666476914879931210933431)
+    Right(r) -> (hasher( r, seed ), 214237100480734178309831475373)
   val (the-hash, prime) = hash-key
   val vec = unsafe-vector( 2.ssize_t )
   vec.unsafe-assign( 0.ssize_t, the-hash.int64 )
