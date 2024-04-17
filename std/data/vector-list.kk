@@ -61,7 +61,7 @@ pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
   match v
     Vector-list(data, old-size) ->
-      Vector-list( data = realloc(data, new-capacity.ssize_t), size = if new-capacity < old-size then new-capacity else old-size)
+      Vector-list( data = realloc(data, new-capacity.ssize_t), size = old-size )
 
 // Return the element at position `index` in vector-list `v` or `Nothing` if out of bounds
 pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
@@ -113,6 +113,15 @@ pub fun pop( ^v : vector-list<a>) : maybe<(a, vector-list<a>)>
 pub fun last( ^v : vector-list<a> ) : maybe<a>
   if v.size == 0 then Nothing
   else v.at(v.size - 1)
+
+pub fun clear( ^v : vector-list<a> ) : vector-list<a>
+  match v
+    Vector-list(data, size) ->
+      if data.is-vec-unique then
+        data.unsafe-vector-clear( size.ssize_t )
+        Vector-list( data, 0 )
+      else
+        Vector-list( unsafe-vector( data.length.ssize_t ), 0 )
 
 // Fetches the current size of the vector-list `v`. This isn't the capacity of the vector-list.
 pub fun length( ^v : vector-list<a> ) : int
@@ -193,3 +202,17 @@ fun test-vlist()
     (!vec).foreach() fn (x)
       after-map := after-map ++ x.show ++ " "
     expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)
+  basic/test("vlist clear test")
+    var vec := unit/vlist()
+    for(20) fn (i)
+      vec := vec.push(i)
+    vec := vec.clear
+    expect(0, { vec.length }, details="Vec should have zero elements but instead had " ++ vec.length.show ++ " elements.")
+  basic/test("vlist insertion after clear test")
+    var vec : vector-list<int> := unit/vlist()
+    for(8) fn (i)
+      vec := vec.push(i)
+    vec := vec.clear
+    for(9) fn (i)
+      vec := vec.push(i)
+    expect(9, { vec.length }, details="Vec should have 9 elements but instead had " ++ vec.length.show ++ " elements.")
