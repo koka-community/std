@@ -14,7 +14,7 @@ import std/core-extras
 
 /*
   todo:
-  union
+  union: I am not sure how to do this one without either exposing a div effect or duplicating code from insert
   intersection
   difference
 */
@@ -162,33 +162,36 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
       f(entry)
 
 
-/*fun test-hash-set()
+fun test-hash-set()
   basic/test("hash-set insert")
-    val hm = hash-set(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val value = hm'.get(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
+    val hs = hash-set(1)
+    val hs' = hs.insert( 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val value = hs'.contains(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
+    expect(True, { value } , details="Expected True but got " ++ value.show)
   basic/test("hash-set remove")
-    val hm = hash-set(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hm@ = hm'.remove(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    expect(0, { hm@.length } , details="Expected 0 but got " ++ hm@.length.show)
-  basic/test("hash-set overwrite")
-    val hm = hash-set(1)
-    val hm' = hm.insert(1, 2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val hm@ = hm'.insert(1, 3, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    val value = hm@.get(1, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32))
-    expect(Just(3), { value } , details="Expected Just(3) but got " ++ value.show)
+    val hs = hash-set(1)
+    val hs' = hs.insert(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val hs@ = hs'.remove(2, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    expect(0, { hs@.length } , details="Expected 0 but got " ++ hs@.length.show)
   basic/test("hash-set stress test")
-    var hm := hash-set(1)
+    var hs := hash-set(1)
     for(50000) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
     expect(True, { True } , details="Expected Resizing to work")
   basic/test("hash-set clear")
-    var hm := hash-set(1)
+    var hs := hash-set(1)
     for(50) fn (i)
-      hm := hm.insert(i, i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
-    hm := hm.clear()
-    val value = hm.length()
+      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    hs := hs.clear()
+    val value = hs.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
-*/
+  basic/test("hash-set clear then fill")
+    var hs := hash-set(1)
+    for(50) fn (i)
+      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    hs := hs.clear()
+    for(50) fn (i)
+      hs := hs.insert(i, ?hash = fn (x, _) x * 2654435761 % (2 ^ 32) )
+    val value = hs.length()
+    expect(50, { value } , details="Expected 0 but got " ++ value.show)
+  
