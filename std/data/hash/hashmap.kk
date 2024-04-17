@@ -147,12 +147,12 @@ pub fun effect/map-values( hm : hash-map<k, a>, f : (a) -> e b ) : e hash-map<k,
 // Applies a function `f` to each value of the hash-map.
 pub fun unique/map-values( hm : hash-map<k, a>, f : (a) -> b ) : hash-map<k, b>
   match hm
-    Hash-map(data, amount) -> 
+    Hash-map(data, amount, seed) -> 
       val new-data = data.unique/map fn (bucket)
         bucket.map fn (entry)
           val (key, value) = entry
           (key, f( value ))
-      Hash-map( new-data, amount, hm.seed )
+      Hash-map( new-data, amount, seed )
 
 // Applies a function `f` to each key of the hash-map.
 pub fun effect/map-keys( hm : hash-map<a, v>, f : (a) -> e b ) : e hash-map<b, v>
