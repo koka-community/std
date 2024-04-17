@@ -115,8 +115,13 @@ pub fun last( ^v : vector-list<a> ) : maybe<a>
   else v.at(v.size - 1)
 
 pub fun clear( ^v : vector-list<a> ) : vector-list<a>
-  v.data.unsafe-vector-clear( v.size.ssize_t )
-  v( size = 0 )
+  match v
+    Vector-list(data, size) ->
+      if data.is-vec-unique then
+        data.unsafe-vector-clear( size.ssize_t )
+        Vector-list( data, 0 )
+      else
+        Vector-list( unsafe-vector( data.length.ssize_t ), 0 )
 
 // Fetches the current size of the vector-list `v`. This isn't the capacity of the vector-list.
 pub fun length( ^v : vector-list<a> ) : int
