@@ -6,19 +6,12 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 // A module to provide hashing functionality
+// The hash function used is xxhash64, while not cryptographically secure, it should be fast and avoid collisions.
 module std/data/hash/hash
 import std/num/int64
 import std/test/test
 import std/core-extras
 
-/*
-  Primes used for noise:
-  2: either left
-  3: either right
-  5: maybe just
-  7: list
-  11: vector
-*/
 
 extern import 
   c file "inline/hash"
@@ -42,7 +35,7 @@ pub fun list/hash( l : list<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : i
   val vec = unsafe-vector( l.length.ssize_t )
   list-hash-helper( l, vec, 0, ?hasher = hasher, ?seed = seed )
 
-  hash-vector( vec, seed ) + 7
+  hash-vector( vec, seed )
 
 inline fun list-hash-helper( l : list<a>, buf : vector<int64>, index : int, ?hasher : (a, int64) -> int, ?seed : int64 ) : ()
   match l
@@ -56,22 +49,30 @@ pub fun vector/hash( v : vector<a>, ?hasher : (a, int64) -> int, ?seed : int64 )
   for( v.length ) fn (i)
     vec.unsafe-assign( i.ssize_t, hasher( v.unsafe-idx( i.ssize_t ), seed ).int64 )
   
-  hash-vector( vec, seed ) + 11
+  hash-vector( vec, seed )
 
 inline extern hash-vector( v : vector<int64>, seed : int64 ) : int
   c "kk_hash_vector"
 
 pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : int
   match m
-    Nothing -> 0
-    Just(x) -> hasher(x, seed) + 5
+    Nothing -> int/hash( 109043358147367465933604847619, ?seed = seed )
+    Just(x) -> 
+      val vec = unsafe-vector( 2.ssize_t )
+      vec.unsafe-assign( 0.ssize_t, hasher(x, seed).int64 )
+      vec.unsafe-assign( 1.ssize_t, 636221073298515699161266525619.int64 )
+      hash-vector( vec, seed )
 
 pub fun either/hash( e : either<l, r>, ?hasher-l : (l, int64) -> int, ?hasher-r : (r, int64) -> int, ?seed : int64 ) : int
-  match e
-    Left(l) -> hasher-l( l, seed ) + 2
-    Right(r) -> hasher-r( r, seed ) + 3
+  val hash-key = match e
+    Left(l) -> (hasher-l( l, seed ), 979671666476914879931210933431)
+    Right(r) -> (hasher-r( r, seed ), 214237100480734178309831475373)
+  val (the-hash, prime) = hash-key
+  val vec = unsafe-vector( 2.ssize_t )
+  vec.unsafe-assign( 0.ssize_t, the-hash.int64 )
+  vec.unsafe-assign( 1.ssize_t, prime.int64 )
 
-
+  hash-vector( vec, seed )
 
 fun test-hash()
   /*
