@@ -41,7 +41,7 @@ pub fun list/hash( l : list<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : i
   val vec = unsafe-vector( l.length.ssize_t )
   list-hash-helper( l, vec, 0, ?hasher = hasher, ?seed = seed )
 
-  hash-vector( vec, seed )
+  hash-vector-int64( vec, seed )
 
 inline fun list-hash-helper( l : list<a>, buf : vector<int64>, index : int, ?hasher : (a, int64) -> int, ?seed : int64 ) : ()
   match l
@@ -57,10 +57,11 @@ pub fun vector/hash( v : vector<a>, ?hasher : (a, int64) -> int, ?seed : int64 )
   for( v.length ) fn (i)
     vec.unsafe-assign( i.ssize_t, hasher( v.unsafe-idx( i.ssize_t ), seed ).int64 )
   
-  hash-vector( vec, seed )
+  hash-vector-int64( vec, seed )
 
-inline extern hash-vector( v : vector<int64>, seed : int64 ) : int
-  c "kk_hash_vector"
+// Helper function for hashing vectors of int64
+inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
+  c "kk_hash_vector_int64"
 
 
 // A hashing function for maybes. It takes a maybe `m`, an implicit `hasher` for `Just(a)`, and an implicit `seed` which is is an `int64`.
@@ -71,7 +72,7 @@ pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) :
       val vec = unsafe-vector( 2.ssize_t )
       vec.unsafe-assign( 0.ssize_t, hasher(x, seed).int64 )
       vec.unsafe-assign( 1.ssize_t, 636221073298515699161266525619.int64 )
-      hash-vector( vec, seed )
+      hash-vector-int64( vec, seed )
 
 
 // A hashing function for eithers. It takes an either `e`, 2 implicit `hasher`s for hashing `Left` and `Right`, and an implicit `seed` which is is an `int64`.
@@ -84,7 +85,7 @@ pub fun either/hash( e : either<l, r>, ?hasher-l : (l, int64) -> int, ?hasher-r 
   vec.unsafe-assign( 0.ssize_t, the-hash.int64 )
   vec.unsafe-assign( 1.ssize_t, prime.int64 )
 
-  hash-vector( vec, seed )
+  hash-vector-int64( vec, seed )
 
 fun test-hash()
   /*

@@ -23,7 +23,7 @@ kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
     return kk_integer_from_int64(result, ctx);
 }
 
-kk_integer_t kk_hash_vector(kk_vector_t v, int64_t seed, kk_context_t* ctx) {
+kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx) {
 
     kk_ssize_t length;
     kk_box_t* buf = kk_vector_buf_borrow(v, &length, ctx);
