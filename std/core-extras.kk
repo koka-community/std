@@ -9,6 +9,9 @@
 module std/core-extras
 import std/core/undiv
 
+extern import 
+  c file "inline/core-extras"
+
 fun (==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
@@ -78,6 +81,12 @@ pub inline extern copy( v : vector<a> ) : vector<a>
 pub inline extern realloc( v : vector<a>, new_capacity : ssize_t ) : vector<a>
   c inline "kk_vector_realloc(#1, #2, kk_box_null(), kk_context())"
   js inline "[...(#1)]"
+
+// This function takes a vector `v` and a position to stop at `stop`
+// If you supply a `stop` larger than the length, then the length of the vector is used instead.
+// This function shouldn't be called directly unless you know exactly what you are doing.
+pub inline extern unsafe-vector-clear( v : vector<a>, stop : ssize_t ) : ()
+  c inline "kk_vector_clear"
 
 // Apply a total function `f` to each element in a vector `v`
 // Since the vector consists of boxed values we can ignore type incompatibilities
