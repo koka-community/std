@@ -14,6 +14,30 @@ const uint64_t PRIME_4 = 0x85EBCA77C2B2AE63;
 const uint64_t PRIME_5 = 0x27D4EB2F165667C5;
 const size_t CHUNK_SIZE = sizeof(uint64_t) * 4;
 
+kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
+
+    kk_ssize_t length;
+    uint8_t* str = (uint8_t*)kk_string_buf_borrow(s, &length, ctx);
+    int64_t result = xxh64(str, length, seed);
+    //kk_string_drop(s, ctx);
+    return kk_integer_from_int64(result, ctx);
+}
+
+kk_integer_t kk_hash_vector(kk_vector_t v, int64_t seed, kk_context_t* ctx) {
+
+    kk_ssize_t length;
+    kk_box_t* buf = kk_vector_buf_borrow(v, &length, ctx);
+    uint8_t* input_ptr = malloc(sizeof(uint64_t) * length);
+    for (kk_ssize_t i = 0; i < length; i++) {
+        ((int64_t*)input_ptr)[i] =  kk_int64_unbox(buf[i], KK_OWNED, ctx);
+    }
+
+    int64_t result = xxh64(input_ptr, sizeof(uint64_t) * length * 8, seed);
+    free(input_ptr);
+    input_ptr = NULL;
+    return kk_integer_from_int64(result, ctx);
+}
+
 kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
     if (kk_is_smallint(i)) {
         return hash_small_integer(i, seed, ctx);
@@ -21,8 +45,6 @@ kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
         return hash_big_integer(i, seed, ctx);
     }
 }
-
-
 
 kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
@@ -39,7 +61,6 @@ kk_integer_t hash_big_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
     int64_t result = xxh64(input_ptr, sizeof(kk_integer_t), seed);
     return kk_integer_from_int64(result, ctx);
 }
-
 
 uint64_t xxh64_read_u64(uint8_t* input, size_t cursor) {
     uint64_t output = 0 | input[0];

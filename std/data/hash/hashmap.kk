@@ -22,9 +22,18 @@ pub value struct hash-map<k, v>
 pub fun hash-map( capacity : int ) : random hash-map<k, v>
   Hash-map( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
 
+// Creates a hash-map with a specified inital `capacity` and a user defined `seed`.
+// If zero then the hash-map will set capacity to 1.
+pub fun hash-map-seeded( capacity : int, seed : int64 ) : hash-map<k, v>
+  Hash-map( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
+
 // Creates a hash-map from a list `xs`. This hash-map has the same capacity as the length of the list `xs`.
 pub fun hash-map-from-list( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : random hash-map<k, v>
   from-list-helper( hash-map( xs.length ), xs, ?hash = hash, ?(==) = (==) )
+
+// Creates a hash-map from a list `xs` and with a `seed`. This hash-map has the same capacity as the length of the list `xs`.
+pub fun hash-map-from-list-seeded( xs : list<(k, v)>, seed : int64, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map<k, v>
+  from-list-helper( hash-map-seeded( xs.length, seed ), xs, ?hash = hash, ?(==) = (==) )
 
 fun from-list-helper( hm : hash-map<k, v>, l : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map<k, v>
   match l
