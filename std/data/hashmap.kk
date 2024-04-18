@@ -241,14 +241,14 @@ pub fun foreach-value( hm : hash-map<k, v>, f : (v) -> e () ) : e ()
 inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
   c "kk_hash_vector_int64"
 
-pub fun hash-map/hash( hm : hash-map<k, v>, seed : int64, ?key-hasher : (k, int64) -> int, ?value-hasher : (v, int64) -> int ) : int
+pub fun hash-map/hash( hm : hash-map<k, v>, seed : int64, ?key/hash : (k, int64) -> int, ?value/hash : (v, int64) -> int ) : int
   val vec = unsafe-vector( (hm.amount * 2).ssize_t )
   var idx := 0
   for( hm.data.length ) fn (i)
     hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
       val (key, value) = entry
-      vec.unsafe-assign( idx.ssize_t, key-hasher(key, seed).int64 )
-      vec.unsafe-assign( (idx + 1).ssize_t, value-hasher(value, seed).int64 )
+      vec.unsafe-assign( idx.ssize_t, hash(key, seed).int64 )
+      vec.unsafe-assign( (idx + 1).ssize_t, hash(value, seed).int64 )
 
       idx := idx + 2
   hash-vector-int64( vec, seed )
