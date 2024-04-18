@@ -6,12 +6,12 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 // This module provides an immutable bucket hashset implementation.
-module std/data/hash/hashset
+module std/data/hashset
 import std/num/int64
 import std/test
 import std/num/random
 import std/core-extras
-import std/data/hash/hash
+import std/data/hash
 
 
 pub struct hash-set<v>
