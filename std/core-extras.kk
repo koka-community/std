@@ -72,6 +72,16 @@ pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
     Just(a) -> a
     Nothing -> throw("expect-unjust: " ++ msg)
 
+pub fun vector-init-list( ^n: int, xs: list<(int, a)>): vector<a>
+  val v = unsafe-vector(n.ssize_t) 
+  fun assigns(xs': some<a> list<(int,a)>) : total ()
+    match xs'
+      Cons((i,x), xss) -> 
+        unsafe-assign(v, i.ssize_t, x)
+        assigns(xss)
+      Nil -> ()
+  assigns(xs)
+  v
 
 // Copies a vector
 pub inline extern copy( v : vector<a> ) : vector<a>
