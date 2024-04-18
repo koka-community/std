@@ -181,18 +181,6 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
     hs.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
       f(entry)
 
-inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
-  c "kk_hash_vector_int64"
-
-pub fun hash-set/hash( hs : hash-set<v>, seed : int64, ?hasher : (v, int64) -> int ) : int
-  val vec = unsafe-vector( (hs.amount).ssize_t )
-  var idx := 0
-  for( hs.data.length ) fn (i)
-    hs.data.unsafe-idx( i.ssize_t ).foreach fn (value)
-      vec.unsafe-assign( idx.ssize_t, hasher(value, seed).int64 )
-
-      idx := idx + 1
-  hash-vector-int64( vec, seed )
 
 
 fun test-hash-set()
@@ -227,15 +215,3 @@ fun test-hash-set()
       hs := hs.insert(i, ?hash = int/hash )
     val value = hs.length()
     expect(50, { value } , details="Expected 0 but got " ++ value.show)
-  basic/test("hash-sets of different capacities but same contents have the same hash")
-    var hs1 := hash-set(3)
-    hs1 := hs1.insert(1, ?hash = int/hash)
-    hs1 := hs1. insert(3, ?hash = int/hash)
-    var hs2 := hash-set(10)
-    hs2 := hs2.insert(1, ?hash = int/hash)
-    hs2 := hs2.insert(3, ?hash = int/hash)
-    val hash_1 = hash-set/hash(hs1, 0.int64, ?hasher = int/hash )
-    val hash_2 = hash-set/hash(hs2, 0.int64,  ?hasher = int/hash )
-    expect(True, { hash_1 == hash_2 }, details="Expected True but got False\n" ++ hash_1.show ++ "\n" ++ hash_2.show )
-
-  

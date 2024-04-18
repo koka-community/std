@@ -208,20 +208,6 @@ pub fun foreach-value( hm : hash-map-mut<k, v>, f : (v) -> e () ) : e ()
       val (_, value) = entry
       f(value)
 
-inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
-  c "kk_hash_vector_int64"
-
-pub fun hash-map-mut/hash( hm : hash-map-mut<k, v>, seed : int64, ?key/hash : (k, int64) -> int, ?value/hash : (v, int64) -> int ) : int
-  val vec = unsafe-vector( (hm.amount * 2).ssize_t )
-  var idx := 0
-  for( hm.data.length ) fn (i)
-    hm.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
-      val (key, value) = entry
-      vec.unsafe-assign( idx.ssize_t, hash(key, seed).int64 )
-      vec.unsafe-assign( (idx + 1).ssize_t, hash(value, seed).int64 )
-
-      idx := idx + 2
-  hash-vector-int64( vec, seed )
 
 
 fun test-hash-map-mut()
@@ -262,13 +248,3 @@ fun test-hash-map-mut()
       hm := hm.insert(i, i, ?hash = int/hash )
     val value = hm.length()
     expect(50, { value } , details="Expected 0 but got " ++ value.show)
-  basic/test("hash-map-muts of different capacities but same contents have the same hash")
-    var hm1 := hash-map-mut(3)
-    hm1 := hm1.insert(1, 2, ?hash = int/hash)
-    hm1 := hm1. insert(3, 4, ?hash = int/hash)
-    var hm2 := hash-map-mut(10)
-    hm2 := hm2.insert(1, 2, ?hash = int/hash)
-    hm2 := hm2.insert(3, 4, ?hash = int/hash)
-    val hash_1 = hash-map-mut/hash(hm1, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
-    val hash_2 = hash-map-mut/hash(hm2, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
-    expect(True, { hash_1 == hash_2 }, details="Expected True but got False\n" ++ hash_1.show ++ "\n" ++ hash_2.show)

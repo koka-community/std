@@ -87,5 +87,3 @@ pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher 
 
   hash-vector-int64( vec, seed )
 
-
-

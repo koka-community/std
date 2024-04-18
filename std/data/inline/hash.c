@@ -48,7 +48,7 @@ kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
 kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
-    int64_t input = 0 | ((i.ibox -1) / 4);
+    int64_t input = 0 | kk_smallint_from_integer(i);
     uint8_t* input_ptr = ((uint8_t*)&input);
     int64_t result = xxh64(input_ptr, sizeof(input), seed);
     return kk_integer_from_int64(result, ctx);
