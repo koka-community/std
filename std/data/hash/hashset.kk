@@ -5,19 +5,13 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-
+// This module provides an immutable bucket hashset implementation.
 module std/data/hash/hashset
 import std/num/int64
 import std/test
 import std/num/random
 import std/core-extras
 import std/data/hash/hash
-/*
-  todo:
-  union: I am not sure how to do this one without either exposing a div effect or duplicating code from insert
-  intersection
-  difference
-*/
 
 
 pub struct hash-set<v>
@@ -65,24 +59,44 @@ pub fun resize( hs : hash-set<v>, new-capacity : int, ?hash : (v, int64) -> int 
             buckets.drop-at( i.ssize_t )
             buckets.unsafe-assign( i.ssize_t, x )
 
-            data.drop-at( i.ssize_t )
+            //data.drop-at( i.ssize_t )
       
       val new-data = realloc(data, new-capacity.ssize_t)
-      for( new-data.length ) fn (i)
-        new-data.unsafe-assign( i.ssize_t, Nil )
-      val new-hs = Hash-set( data = new-data, amount = size, seed = seed)
-      
-      new-hs.rehash( buckets, ?hash = hash )
+      Hash-set( data = helper/resize( new-data ).rehash( buckets, seed ), amount = size, seed = seed )
 
-fun rehash( hs : hash-set<v>, buckets : vector<list<v>>, ?hash : (v, int64) -> int ) : hash-set<v>
+
+// This helper function either clears out a vector if it is unique or creates a new vector if it isn't unique.
+fun helper/resize( v : vector<list<v>> ) : vector<list<v>>
+  if v.is-vec-unique then
+    //trace("helper/resize: vector is unique")
+    for( v.length ) fn (i)
+      v.drop-at( i.ssize_t )
+      v.unsafe-assign( i.ssize_t, Nil )
+    v
+  else
+    //trace("helper/resize: vector isn't unique")
+    vector( v.length, Nil)
+
+fun rehash( v : vector<list<v>>, buckets : vector<list<v>>, seed : int64,  ?hash : (v, int64) -> int ) : vector<list<v>>
   buckets.foreach fn (bucket)
     bucket.foreach fn (entry)
-      val the-hash = hash(entry, hs.seed)
-      val position = the-hash % hs.data.length
-      match hs.data.at( position )
+      val the-hash = hash(entry, seed)
+      val position = the-hash % v.length
+      match v.at( position )
         Nothing -> ()
-        Just(xs) -> hs.data.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
-  hs
+        Just(xs) -> v.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
+  v
+
+// This helper will use `buckets` to allow for a `div`-less use of `unsafe-set` to set values in vector `v`.
+fun helper/rehash( v : vector<list<v>>, buckets : list<v>, seed : int64, ?hash : (v, int64) -> int ) : vector<list<v>>
+  match buckets
+    Nil -> v
+    Cons(value, xs) ->
+      val the-hash = hash(value, seed)
+      val position = the-hash % v.length
+      val new-v = v.unsafe-set( position, Cons( value, v.unsafe-idx( position.ssize_t ) ) )
+      helper/rehash( new-v, xs, seed )
+
 
 // Internal function that dictates when to resize the hash-set. This can be overridden with implicits.
 fun when-resize( table-size : int, item-count : int ) : bool
@@ -103,9 +117,9 @@ pub fun insert( hs : hash-set<v>, value : v, ?hash : (v, int64) -> int, ?(==) : 
     Hash-set(data, amount, seed) ->
       val old-bucket-size = data.unsafe-idx( position.ssize_t ).length
       val bucket = Cons( value, data.unsafe-idx( position.ssize_t ).filter() fn(x) not(x == value) )
-      data.unsafe-assign( position.ssize_t, bucket )
-      val new-amount = if old-bucket-size < data.unsafe-idx( position.ssize_t ).length then amount + 1 else amount
-      Hash-set(data, new-amount, seed)
+      val new-data = data.unsafe-set( position, bucket )
+      val new-amount = if old-bucket-size < new-data.unsafe-idx( position.ssize_t ).length then amount + 1 else amount
+      Hash-set( new-data, new-amount, seed )
   if when-resize( new-hs.data.length, new-hs.amount ) then
     new-hs.resize( resizer( new-hs.data.length, new-hs.amount ), ?hash = hash )
   else
@@ -117,8 +131,10 @@ pub fun remove( hs : hash-set<v>, value : v, ?hash : (v, int64) -> int, ?(==) : 
   val position = the-hash % hs.data.length
   match hs
     Hash-set(data, amount, seed) -> 
+      val old-bucket-size = data.unsafe-idx( position.ssize_t ).length
       val bucket = data.unsafe-idx( position.ssize_t ).filter() fn(x) not(x == value)
-      data.unsafe-assign( position.ssize_t, bucket )
+      val new-data = data.unsafe-set( position, bucket )
+      val new-amount = if old-bucket-size > new-data.unsafe-idx( position.ssize_t ).length then amount - 1 else amount
       Hash-set( data, amount - 1, seed)
 
 // Checks if a value is in the hash-set `hs` and returns `True` if found and `False` if not found.
@@ -137,10 +153,13 @@ pub fun length( hs : hash-set<v> ) : int
 pub fun clear( hs : hash-set<v>) : hash-set<v>
   match hs
     Hash-set(data, _, seed) ->
-      for( data.length ) fn (x) 
-        data.drop-at( x.ssize_t )
-        data.unsafe-assign(x.ssize_t, Nil)
-      Hash-set( data, 0, seed )
+      if data.is-vec-unique then
+        for( data.length ) fn (x) 
+          data.drop-at( x.ssize_t )
+          data.unsafe-assign(x.ssize_t, Nil)
+        Hash-set( data, 0, seed )
+      else
+        Hash-set( vector( data.length, Nil ), 0, seed )
 
 // Applies a function `f` to each key-value of the hash-set via a tuple.
 pub fun effect/map( hs : hash-set<a>, f : (a) -> e b ) : e hash-set<b>

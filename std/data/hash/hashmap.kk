@@ -68,13 +68,13 @@ pub fun resize( hm : hash-map<k, v>, new-capacity : int, ?hash : (k, int64) -> i
 // This helper function either clears out a vector if it is unique or creates a new vector if it isn't unique.
 fun helper/resize( v : vector<list<(k, v)>> ) : vector<list<(k, v)>>
   if v.is-vec-unique then
-    //trace("vector is unique")
+    //trace("helper/resize: vector is unique")
     for( v.length ) fn (i)
       v.drop-at( i.ssize_t )
       v.unsafe-assign( i.ssize_t, Nil )
     v
   else
-    //trace("vector isn't unique")
+    //trace("helper/resize: vector isn't unique")
     vector( v.length, Nil)
 
 // Rehash will overwrite vector `v` with values from `buckets` if it is unique, otherwise it will use `unsafe-set`
@@ -125,7 +125,7 @@ pub fun insert( hm : hash-map<k,v>, key : k, value : v, ?hash : (k, int64) -> in
       val bucket = Cons( (key, value), data.unsafe-idx( position.ssize_t ).filter() fn(x) not(x.fst == key) )
       val new-data = data.unsafe-set( position, bucket )
       val new-amount = if old-bucket-size < new-data.unsafe-idx( position.ssize_t ).length then amount + 1 else amount
-      Hash-map(new-data, new-amount, seed)
+      Hash-map( new-data, new-amount, seed )
   if when-resize( new-hm.data.length, new-hm.amount ) then
     new-hm.resize( resizer( new-hm.data.length, new-hm.amount ) )
   else
@@ -159,10 +159,13 @@ pub fun length( hm : hash-map<k, v> ) : int
 pub fun clear( hm : hash-map<k, v>) : hash-map<k, v>
   match hm
     Hash-map(data, _, seed) ->
-      for( data.length ) fn (x) 
-        data.drop-at( x.ssize_t )
-        data.unsafe-assign(x.ssize_t, Nil)
-      Hash-map( data, 0, seed )
+      if data.is-vec-unique then
+        for( data.length ) fn (x) 
+          data.drop-at( x.ssize_t )
+          data.unsafe-assign(x.ssize_t, Nil)
+        Hash-map( data, 0, seed )
+      else
+        Hash-map( vector( data.length, Nil ), 0, seed )
 
 // Applies a function `f` to each value of the hash-map.
 pub fun effect/map-values( hm : hash-map<k, a>, f : (a) -> e b ) : e hash-map<k, b>
