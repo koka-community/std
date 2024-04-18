@@ -5,6 +5,8 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
+int64_t kk_thread_seed(kk_context_t* ctx);
+
 kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx);
 
 kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx);

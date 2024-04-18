@@ -87,3 +87,32 @@ pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher 
 
   hash-vector-int64( vec, seed )
 
+pub inline extern thread/seed() : int64
+  c "kk_thread_seed"
+
+pub fun thread/int/hash( i : int ) : int
+  int/hash( i, ?seed = thread/seed() )
+
+pub fun thread/char/hash( c : char ) : int
+  char/hash( c, ?seed = thread/seed() )
+
+pub fun thread/bool/hash( b : bool ) : int
+  bool/hash( b, ?seed = thread/seed() )
+
+pub fun thread/string/hash( s : string ) : int
+  string/hash( s, ?seed = thread/seed() )
+
+pub fun thread/list/hash( l : list<a>, ?hasher : (a, int64) -> int ) : int
+  list/hash( l, ?hasher = hasher, ?seed = thread/seed() )
+
+pub fun thread/vector/hash( v : vector<a>, ?hasher : (a, int64) -> int ) : int
+  vector/hash( v, ?hasher = hasher, ?seed = thread/seed() )
+
+pub fun thread/maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int ) : int
+  maybe/hash( m, ?hasher = hasher, ?seed = thread/seed() )
+
+pub fun thread/either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int ) : int
+  either/hash( e, ?l/hasher = l/hasher, ?r/hasher = r/hasher, ?seed = thread/seed() )
+
+fun test-hash()
+  seed().println

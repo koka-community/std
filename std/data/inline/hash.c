@@ -14,6 +14,11 @@ const uint64_t PRIME_4 = 0x85EBCA77C2B2AE63;
 const uint64_t PRIME_5 = 0x27D4EB2F165667C5;
 const size_t CHUNK_SIZE = sizeof(uint64_t) * 4;
 
+int64_t kk_thread_seed(kk_context_t* ctx) {
+    return ctx->thread_id;
+}
+
+
 kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
 
     kk_ssize_t length;

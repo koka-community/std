@@ -22,18 +22,29 @@ pub value struct hash-map-mut<k, v>
 // Creates a hash-map-mut with a specified inital `capacity`.
 // If zero then the hash-map-mut will set capacity to 1.
 // Random effect is needed to initalize the seed.
-pub fun hash-map-mut( capacity : int = 1 ) : random hash-map-mut<k, v>
+pub fun random/hash-map-mut( capacity : int = 1 ) : random hash-map-mut<k, v>
   Hash-map-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
+
+// Creates a hash-map-mut with a specified inital `capacity`.
+// If zero then the hash-map-mut will set capacity to 1.
+// The seed is initalized using the thread's id.
+pub fun thread/hash-map-mut( capacity : int = 1 ) : hash-map<k, v>
+  Hash-map( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed() )
 
 // Creates a hash-map-mut with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-map-mut will set capacity to 1.
-pub fun hash-map-mut-seeded( seed : int64, capacity : int = 1 ) : hash-map-mut<k, v>
+pub fun random/hash-map-mut-seeded( seed : int64, capacity : int = 1 ) : hash-map-mut<k, v>
   Hash-map-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-map-mut from a list `xs`. This hash-map-mut has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
-pub fun list/hash-map-mut( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : random hash-map-mut<k, v>
+pub fun random/list/hash-map-mut( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : random hash-map-mut<k, v>
   from-list-helper( hash-map-mut( xs.length ), xs )
+
+// Creates a hash-map from a list `xs`. This hash-map-mut has the same capacity as the length of the list `xs`.
+// The seed is initalized from the thread's id.
+pub fun thread/list/hash-map-mut( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map<k, v>
+  from-list-helper( thread/hash-map( xs.length ), xs )
 
 // Creates a hash-map-mut from a list `xs` and with a `seed`. This hash-map-mut has the same capacity as the length of the list `xs`.
 pub fun list/hash-map-mut-seeded( xs : list<(k, v)>, seed : int64, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map-mut<k, v>

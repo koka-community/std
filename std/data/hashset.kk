@@ -22,8 +22,14 @@ pub struct hash-set<v>
 // Creates a hash-set with a specified inital `capacity`.
 // If zero then the hash-set will set capacity to 1.
 // Random effect is needed to initalize the seed.
-pub fun hash-set( capacity : int = 1 ) : random hash-set<v>
+pub fun random/hash-set( capacity : int = 1 ) : random hash-set<v>
   Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
+
+// Creates a hash-set with a specified inital `capacity`.
+// If zero then the hash-set will set capacity to 1.
+// The seed is initialized from the thread id.
+pub fun thread/hash-set( capacity : int = 1 ) : hash-set<v>
+  Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed() )
 
 // Creates a hash-set with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-set will set capacity to 1.
@@ -32,8 +38,13 @@ pub fun hash-set-seeded( seed : int64, capacity : int = 1 ) : hash-set<v>
 
 // Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
-pub fun list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set<v>
+pub fun random/list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set<v>
   from-list-helper( hash-set( xs.length ), xs )
+
+// Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
+// The seed is initialized from the thread id.
+pub fun thread/list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>
+  from-list-helper( thread/hash-set( xs.length ), xs )
 
 // Creates a hash-set from a list `xs` and with a `seed`. This hash-set has the same capacity as the length of the list `xs`.
 pub fun list/hash-set-seeded( xs : list<v>, seed : int64, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>

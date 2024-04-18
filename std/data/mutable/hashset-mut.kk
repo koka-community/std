@@ -12,12 +12,7 @@ import std/test
 import std/num/random
 import std/core-extras
 import std/data/hash
-/*
-  todo:
-  union: I am not sure how to do this one without either exposing a div effect or duplicating code from insert
-  intersection
-  difference
-*/
+
 
 
 pub struct hash-set-mut<v>
@@ -28,8 +23,14 @@ pub struct hash-set-mut<v>
 // Creates a hash-set-mut with a specified inital `capacity`.
 // If zero then the hash-set-mut will set capacity to 1.
 // Random effect is needed to initalize the seed.
-pub fun hash-set-mut( capacity : int = 1 ) : random hash-set-mut<v>
+pub fun random/hash-set-mut( capacity : int = 1 ) : random hash-set-mut<v>
   Hash-set-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
+
+// Creates a hash-set-mut with a specified inital `capacity`.
+// If zero then the hash-set-mut will set capacity to 1.
+// The seed is initialized from the thread id.
+pub fun thread/hash-set-mut( capacity : int = 1 ) : hash-set-mut<v>
+  Hash-set-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed() )
 
 // Creates a hash-set-mut with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-set-mut will set capacity to 1.
@@ -40,6 +41,11 @@ pub fun hash-set-mut-seeded( seed : int64, capacity : int = 1 ) : hash-set-mut<v
 // Random effect is needed to initalize the seed.
 pub fun list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set-mut<v>
   from-list-helper( hash-set-mut( xs.length ), xs )
+
+// Creates a hash-set-mut from a list `xs`. This hash-set-mut has the same capacity as the length of the list `xs`.
+// Random effect is needed to initalize the seed.
+pub fun thread/list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set-mut<v>
+  from-list-helper( thread/hash-set-mut( xs.length ), xs )
 
 // Creates a hash-set-mut from a list `xs` and with a `seed`. This hash-set-mut has the same capacity as the length of the list `xs`.
 pub fun list/hash-set-mut-seeded( xs : list<v>, seed : int64, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set-mut<v>
