@@ -59,25 +59,50 @@ pub fun resize( hm : hash-map<k, v>, new-capacity : int, ?hash : (k, int64) -> i
             buckets.drop-at( i.ssize_t )
             buckets.unsafe-assign( i.ssize_t, x )
 
-            data.drop-at( i.ssize_t )
-      
+            //data.drop-at( i.ssize_t )
       val new-data = realloc(data, new-capacity.ssize_t)
-      for( new-data.length ) fn (i)
-        new-data.unsafe-assign( i.ssize_t, Nil )
-      val new-hm = Hash-map( data = new-data, amount = size, seed = seed)
-      
-      new-hm.rehash( buckets, ?hash = hash )
+      //val new-hm = Hash-map( data = helper/resize( new-data ), amount = size, seed = seed)
 
-fun rehash( hm : hash-map<k, v>, buckets : vector<list<(k,v)>>, ?hash : (k, int64) -> int ) : hash-map<k, v>
-  buckets.foreach fn (bucket)
-    bucket.foreach fn (entry)
-      val (key, _) = entry
-      val the-hash = hash(key, hm.seed)
-      val position = the-hash % hm.data.length
-      match hm.data.at( position )
-        Nothing -> ()
-        Just(xs) -> hm.data.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
-  hm
+      Hash-map( data = helper/resize( new-data ).rehash( buckets, seed ), amount = size, seed = seed )
+
+// This helper function either clears out a vector if it is unique or creates a new vector if it isn't unique.
+fun helper/resize( v : vector<list<(k, v)>> ) : vector<list<(k, v)>>
+  if v.is-vec-unique then
+    //trace("vector is unique")
+    for( v.length ) fn (i)
+      v.drop-at( i.ssize_t )
+      v.unsafe-assign( i.ssize_t, Nil )
+    v
+  else
+    //trace("vector isn't unique")
+    vector( v.length, Nil)
+
+// Rehash will overwrite vector `v` with values from `buckets` if it is unique, otherwise it will use `unsafe-set`
+fun rehash( v : vector<list<(k,v)>>, buckets : vector<list<(k,v)>>, seed : int64, ?hash : (k, int64) -> int ) : vector<list<(k,v)>>
+  if v.is-vec-unique then
+    buckets.foreach fn (bucket)
+      bucket.foreach fn (entry)
+        val (key, _) = entry
+        val the-hash = hash(key, seed)
+        val position = the-hash % v.length
+        match v.at( position )
+          Nothing -> ()
+          Just(xs) -> v.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
+    v
+  else
+    //trace("unlikely")
+    val bkts = buckets.vector/list.flatmap fn (x) x
+    helper/rehash( v, bkts, seed )
+
+// This helper will use `buckets` to allow for a `div`-less use of `unsafe-set` to set values in vector `v`.
+fun helper/rehash( v : vector<list<(k, v)>>, buckets : list<(k, v)>, seed : int64, ?hash : (k, int64) -> int ) : vector<list<(k, v)>>
+  match buckets
+    Nil -> v
+    Cons((key, value), xs) ->
+      val the-hash = hash(key, seed)
+      val position = the-hash % v.length
+      val new-v = v.unsafe-set( position, Cons( (key, value), v.unsafe-idx( position.ssize_t ) ) )
+      helper/rehash( new-v, xs, seed )
 
 // Internal function that dictates when to resize the hash-map. This can be overridden with implicits.
 fun when-resize( table-size : int, item-count : int ) : bool
@@ -98,11 +123,11 @@ pub fun insert( hm : hash-map<k,v>, key : k, value : v, ?hash : (k, int64) -> in
     Hash-map(data, amount, seed) ->
       val old-bucket-size = data.unsafe-idx( position.ssize_t ).length
       val bucket = Cons( (key, value), data.unsafe-idx( position.ssize_t ).filter() fn(x) not(x.fst == key) )
-      data.unsafe-assign( position.ssize_t, bucket )
-      val new-amount = if old-bucket-size < data.unsafe-idx( position.ssize_t ).length then amount + 1 else amount
-      Hash-map(data, new-amount, seed)
+      val new-data = data.unsafe-set( position, bucket )
+      val new-amount = if old-bucket-size < new-data.unsafe-idx( position.ssize_t ).length then amount + 1 else amount
+      Hash-map(new-data, new-amount, seed)
   if when-resize( new-hm.data.length, new-hm.amount ) then
-    new-hm.resize( resizer( new-hm.data.length, new-hm.amount ), ?hash = hash )
+    new-hm.resize( resizer( new-hm.data.length, new-hm.amount ) )
   else
     new-hm
 
@@ -112,9 +137,11 @@ pub fun remove( hm : hash-map<k,v>, key : k, ?hash : (k, int64) -> int, ?(==) : 
   val position = the-hash % hm.data.length
   match hm
     Hash-map(data, amount, seed) -> 
+      val old-bucket-size = data.unsafe-idx( position.ssize_t ).length
       val bucket = data.unsafe-idx( position.ssize_t ).filter() fn(x) not(x.fst == key)
-      data.unsafe-assign( position.ssize_t, bucket )
-      Hash-map( data, amount - 1, seed)
+      val new-data = data.unsafe-set( position, bucket )
+      val new-amount = if old-bucket-size > new-data.unsafe-idx( position.ssize_t ).length then amount - 1 else amount
+      Hash-map( new-data, new-amount, seed)
 
 // Attempts to retreve a value from the hash-map with a given `key`. Returns `Nothing` if the key is invalid.
 pub fun get( hm : hash-map<k, v>, key : k, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : maybe<v>
@@ -272,3 +299,6 @@ fun test-hash-map()
     val hash_1 = hash-map/hash(hm1, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
     val hash_2 = hash-map/hash(hm2, 0.int64, ?key-hasher = int/hash, ?value-hasher = int/hash )
     expect(True, { hash_1 == hash_2 }, details="Expected True but got False\n" ++ hash_1.show ++ "\n" ++ hash_2.show)
+
+fun main()
+  test-hash-map()
