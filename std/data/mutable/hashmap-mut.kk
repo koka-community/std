@@ -11,7 +11,7 @@ import std/core-extras
 import std/test
 import std/num/int64
 import std/num/random
-import std/data/hash/hash
+import std/data/hash
 
 
 pub value struct hash-map-mut<k, v>

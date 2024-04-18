@@ -11,7 +11,7 @@ import std/num/int64
 import std/test
 import std/num/random
 import std/core-extras
-import std/data/hash/hash
+import std/data/hash
 /*
   todo:
   union: I am not sure how to do this one without either exposing a div effect or duplicating code from insert
