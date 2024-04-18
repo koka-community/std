@@ -13,6 +13,10 @@ import std/num/random
 import std/core-extras
 import std/data/hash
 
+val int-hash : (int, int64) -> int = int/hash
+val char-hash : (char, int64) -> int = char/hash
+val bool-hash : (bool, int64) -> int = bool/hash
+val string-hash : (string, int64) -> int = string/hash
 
 pub struct hash-set<v>
   data : vector<list<v>>
@@ -21,15 +25,15 @@ pub struct hash-set<v>
 
 // Creates a hash-set with a specified inital `capacity`.
 // If zero then the hash-set will set capacity to 1.
-// Random effect is needed to initalize the seed.
-pub fun random/hash-set( capacity : int = 1 ) : random hash-set<v>
-  Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
-
-// Creates a hash-set with a specified inital `capacity`.
-// If zero then the hash-set will set capacity to 1.
 // The seed is initialized from the thread id.
 pub fun thread/hash-set( capacity : int = 1 ) : hash-set<v>
   Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed() )
+
+// Creates a hash-set with a specified inital `capacity`.
+// If zero then the hash-set will set capacity to 1.
+// Random effect is needed to initalize the seed.
+pub fun random/hash-set( capacity : int = 1 ) : random hash-set<v>
+  Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
 
 // Creates a hash-set with a specified inital `capacity` and a user defined `seed`.
 // If zero then the hash-set will set capacity to 1.
@@ -37,14 +41,14 @@ pub fun hash-set-seeded( seed : int64, capacity : int = 1 ) : hash-set<v>
   Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
-// Random effect is needed to initalize the seed.
-pub fun random/list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set<v>
-  from-list-helper( hash-set( xs.length ), xs )
-
-// Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
 // The seed is initialized from the thread id.
 pub fun thread/list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>
   from-list-helper( thread/hash-set( xs.length ), xs )
+
+// Creates a hash-set from a list `xs`. This hash-set has the same capacity as the length of the list `xs`.
+// Random effect is needed to initalize the seed.
+pub fun random/list/hash-set( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set<v>
+  from-list-helper( random/hash-set( xs.length ), xs )
 
 // Creates a hash-set from a list `xs` and with a `seed`. This hash-set has the same capacity as the length of the list `xs`.
 pub fun list/hash-set-seeded( xs : list<v>, seed : int64, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set<v>
@@ -88,15 +92,18 @@ fun helper/resize( v : vector<list<v>> ) : vector<list<v>>
     //trace("helper/resize: vector isn't unique")
     vector( v.length, Nil)
 
-fun rehash( v : vector<list<v>>, buckets : vector<list<v>>, seed : int64,  ?hash : (v, int64) -> int ) : vector<list<v>>
-  buckets.foreach fn (bucket)
-    bucket.foreach fn (entry)
-      val the-hash = hash(entry, seed)
-      val position = the-hash % v.length
-      match v.at( position )
-        Nothing -> ()
-        Just(xs) -> v.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
-  v
+fun rehash( v : vector<list<v>>, buckets : vector<list<v>>, seed : int64, ?hash : (v, int64) -> int ) : vector<list<v>>
+  if v.is-vec-unique then
+    buckets.foreach fn (bucket)
+      bucket.foreach fn (entry)
+        val the-hash = hash(entry, seed)
+        val position = the-hash % v.length
+        match v.at( position )
+          Nothing -> ()
+          Just(xs) -> v.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
+    v
+  else
+    helper/rehash( v, buckets.vector/list.flatmap(fn (x) x), seed, ?hash = hash )
 
 // This helper will use `buckets` to allow for a `div`-less use of `unsafe-set` to set values in vector `v`.
 fun helper/rehash( v : vector<list<v>>, buckets : list<v>, seed : int64, ?hash : (v, int64) -> int ) : vector<list<v>>
@@ -196,29 +203,29 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
 
 fun test-hash-set()
   basic/test("hash-set insert")
-    val hs = hash-set(1)
-    val hs' = hs.insert( 2, int/hash )
+    val hs = thread/hash-set(1)
+    val hs' = hs.insert( 2, ?hash = int-hash )
     val value = hs'.contains(2, ?hash = int/hash)
     expect(True, { value } , details="Expected True but got " ++ value.show)
   basic/test("hash-set remove")
-    val hs = hash-set(1)
+    val hs = thread/hash-set(1)
     val hs' = hs.insert(2, ?hash = int/hash )
     val hs@ = hs'.remove(2, ?hash = int/hash )
     expect(0, { hs@.length } , details="Expected 0 but got " ++ hs@.length.show)
   basic/test("hash-set stress test")
-    var hs := hash-set(1)
+    var hs := thread/hash-set(1)
     for(50000) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     expect(True, { True } , details="Expected Resizing to work")
   basic/test("hash-set clear")
-    var hs := hash-set(1)
+    var hs := thread/hash-set(1)
     for(50) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
     val value = hs.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-set clear then fill")
-    var hs := hash-set(1)
+    var hs := thread/hash-set(1)
     for(50) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
