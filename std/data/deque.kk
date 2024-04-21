@@ -201,3 +201,40 @@ fun test-deque()
     deq'.foreach() fn (x)
       after-pop := after-pop ++ x.i.show ++ " "
     expect("0 1 2 3 4 5 6 7 8 ", { after-pop }, details="Expected '0 1 2 3 4 5 6 7 8 ' but got: " ++ after-pop)
+  basic/test("deque unique map")
+    val deq = deque-init(10) fn (i) Something(i)
+    val deq2 = deq.unique/map(fn (x) x.i + 1)
+    var after-map := ""
+    deq2.foreach() fn (x)
+      after-map := after-map ++ x.show ++ " "
+    expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)
+  basic/test("deque resize push")
+    val deq = deque-init(10) fn (i) i
+    val deq' = deq.push-back(11)
+    expect(20, { deq'.capacity }, details="Expected 20 but got: " ++ deq'.capacity.show)
+  basic/test("deque copies on set")
+    val deq1 = deque-init(10) fn (i) i
+    val deq2 = deq1.set(0, 100).unjust
+    expect(True, { deq1.at(0).default(0) != deq2.at(0).default(0) }, details="Expected deq1 and deq2 to be different")
+  basic/test("vlist doesn't copy when unique")
+    val deq1 = deque-init(10) fn(i) Something(i)
+    val deq10 = deq1.at(0).unjust
+    val deq2 = deq1.set(9, Something(1)).unjust
+    expect(False, { unsafe-ptr-eq(deq10, deq2.at(4).unjust) }, details="Expected deq1 and deq10 to be the same")
+  basic/test("deque stress test")
+    var deq := unit/deque()
+    for(50000) fn (i)
+      deq := (if i % 2 == 0 then deq.push-front(i) else deq.push-back(i))
+    expect(True, { True }, details="Deque did not succeed")
+  basic/test("deque clear test")
+    var deq := deque(2, 2)
+    deq := deq.clear
+    expect(0, { deq.length }, details="Deque should have zero elements but instead has " ++ deq.length.show)
+  basic/test("deque insertion after clear test")
+    var deq := deque(2, 2)
+    deq := deq.clear
+    for(10) fn (i)
+      deq := (if i % 2 == 0 then deq.push-front(i) else deq.push-back(i))
+    expect(10, { deq.length }, details="Deque should have 10 elements but instead has " ++ deq.length.show)
+  
+  
