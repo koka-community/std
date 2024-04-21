@@ -140,9 +140,34 @@ pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool
       Heap( vec', size + 1 ).push-up( size )
 
 pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
-  val min = h.data.unsafe-idx( 1.ssize_t )
-  match h
-    Heap( data, size ) ->
-      val last = data.unsafe-idx( size.ssize_t )
-      val data' = data.unsafe-set( 1, last )
-      
+  if h.size == 0 then
+    Nothing
+  else 
+    val min = h.data.unsafe-idx( 1.ssize_t )
+    match h
+      Heap( data, size ) ->
+        val last = data.unsafe-idx( size.ssize_t )
+        val data' = data.unsafe-set( 1, last )
+        data'.unsafe-clear-at( size.ssize_t )
+        Just(min, Heap( data', size - 1 ).push-down( 1 ))
+
+pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
+  if h.size == 0 then
+    Nothing
+  else 
+    val index = if h.size == 1 then
+      1
+    elif h.size == 2 then
+      2
+    else
+      if h.data.unsafe-idx( 2.ssize_t ) > h.data.unsafe-idx( 3.ssize_t ) then
+        2
+      else
+        3
+    val max = h.data.unsafe-idx( index.ssize_t )
+    match h
+      Heap( data, size ) ->
+        val last = data.unsafe-idx( size.ssize_t )
+        val data' = data.unsafe-set( 1, last )
+        data'.unsafe-clear-at( size.ssize_t )
+        Just(max, Heap( data', size - 1 ).push-down( 1 ))
