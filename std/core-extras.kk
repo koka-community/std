@@ -132,6 +132,25 @@ pub fun unsafe-set( v : vector<a>, ^index : int, value : a ) : vector<a>
     v'.unsafe-assign(index.ssize_t, value)
     v'
 
+pub fun a/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : vector<a>
+  if v.is-vec-unique then
+    val item1 = v.unsafe-idx( idx1.ssize_t )
+    v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
+    v.unsafe-assign( idx2.ssize_t, item1 )
+    v
+  else 
+    val v' = v.copy
+    val item1 = v'.unsafe-idx( idx1.ssize_t )
+    v'.unsafe-assign( idx1.ssize_t, v'.unsafe-idx( idx2.ssize_t ))
+    v'.unsafe-assign( idx2.ssize_t, item1 )
+    v'
+
+// This variant mutates inplace
+pub fun unit/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : ()
+  val item1 = v.unsafe-idx( idx1.ssize_t )
+  v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
+  v.unsafe-assign( idx2.ssize_t, item1 )
+
 pub inline extern is-ref-unique(^x: a): bool
   c inline "!kk_box_is_ptr(#1, kk_context()) || kk_block_is_unique(kk_box_to_ptr(#1, kk_context()))"
 
