@@ -15,20 +15,59 @@ pub value struct heap<a>
   data : vector<a>
   size : int
 
+pub fun heap( capacity : int = 1 ) : heap<a>
+  // We add `1` to capacity since we ignore the 0th element to make our math easier
+  Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
 
+pub fun list/heap( l : list<a> ) : heap<a>
+  // We add `1` to capacity since we ignore the 0th element to make our math easier
+  val vec = unsafe-vector( (l.length + 1).ssize_t )
+  list/heap-helper( vec, l , 1)
+  Heap( vec, l.length )
+
+fun list/heap-helper( v : vector<a>, l : list<a>, index : int ) : ()
+  match l
+    Nil -> ()
+    Cons(x, xs) -> 
+      v.unsafe-assign( index.ssize_t, x )
+      list/heap-helper( v, xs, index + 1)
+
+fun on-min-level( h : heap<a>, i : int ) : bool
+  unsafe-total fn ()
+    helper/on-min-level( i, 1, 1 )
+
+fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
+  if i >= left-bound && i <= right-bound then
+    True
+  elif i >= 2 * left-bound && i <= 2 * right-bound + 1 then
+    False
+  else 
+    val new-left-bound = 2 * (2 * left-bound)
+    val new-right-bound = 2 * (2 * right-bound + 1) + 1
+    helper/on-min-level( i, new-left-bound, new-right-bound ) 
+
+fun parent( i : int ) : int
+  i / 2
+
+fun is-root( i : int ) : bool
+  i == 1
 
 fun push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
-  if h.on-min-level( i ) then
-    h.min/push-down( i )
-  else
-    h.max/push-down( i )
+  unsafe-total fn ()
+    push-down-helper( h, i )
 
-inline fip fun min/push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+fun push-down-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+  if h.on-min-level( i ) then
+    h.push-down-min( i )
+  else
+    h.push-down-max( i )
+
+inline fun push-down-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
   match h
     Heap( data, size) ->
-      if data.has-children( i ) then
-        val (m, grandchild?) = data.get-next-min( i )
-        if grandchild? then
+      if has-children( i, size ) then
+        val (m, grandchild) = data.wrapper/get-next-min( i, size )
+        if grandchild then
           if data.unsafe-idx( m.ssize_t ) < data.unsafe-idx( i.ssize_t ) then
             val m-item = data.unsafe-idx( m.ssize_t )
             val data' = data.unsafe-set( m, data.unsafe-idx( i.ssize_t ))
@@ -37,21 +76,25 @@ inline fip fun min/push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) 
               val m-parent-item = data'.unsafe-idx( m.parent.ssize_t )
               data'.unsafe-assign( m.parent.ssize_t, m-item )
               data'.unsafe-assign( m.ssize_t, m-parent-item )
-            Heap( data', size ).push-down( m )
+            Heap( data', size ).push-down-helper( m )
+          else
+            Heap( data, size )
         elif data.unsafe-idx( m.ssize_t ) < data.unsafe-idx( i.ssize_t ) then
           val m-item = data.unsafe-idx( m.ssize_t )
           val data' = data.unsafe-set( m, data.unsafe-idx( i.ssize_t ))
           data.unsafe-assign( i.ssize_t, m-item )
           Heap( data', size )
+        else
+          Heap( data, size )
       else
         Heap( data, size )
 
-inline fip fun max/push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+inline fun push-down-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
   match h
     Heap( data, size) ->
-      if data.has-children( i ) then
-        val (m, grandchild?) = data.get-next-max( i )
-        if grandchild? then
+      if has-children( i, size ) then
+        val (m, grandchild) = data.wrapper/get-next-max( i, size )
+        if grandchild then
           if data.unsafe-idx( m.ssize_t ) > data.unsafe-idx( i.ssize_t ) then
             val m-item = data.unsafe-idx( m.ssize_t )
             val data' = data.unsafe-set( m, data.unsafe-idx( i.ssize_t ))
@@ -60,16 +103,94 @@ inline fip fun max/push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) 
               val m-parent-item = data'.unsafe-idx( m.parent.ssize_t )
               data'.unsafe-assign( m.parent.ssize_t, m-item )
               data'.unsafe-assign( m.ssize_t, m-parent-item )
-            Heap( data', size ).push-down( m )
+            Heap( data', size ).push-down-helper( m )
+          else
+            Heap( data, size )
         elif data.unsafe-idx( m.ssize_t ) > data.unsafe-idx( i.ssize_t ) then
           val m-item = data.unsafe-idx( m.ssize_t )
           val data' = data.unsafe-set( m, data.unsafe-idx( i.ssize_t ))
           data.unsafe-assign( i.ssize_t, m-item )
           Heap( data', size )
+        else 
+          Heap( data, size )
       else
         Heap( data, size )
 
+fun has-children( i : int, size : int ) : bool
+  2 * i < size || 2 * i + 1 < size
+
+fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
+  unsafe-total() fn () 
+    real/get-next-min( data, i, size )
+
+inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
+  var min := data.unsafe-idx( (2 * i).ssize_t )
+  var min-idx := 2 * i
+  if min > data.unsafe-idx( (i + 1).ssize_t ) then
+    min := data.unsafe-idx( (i + 1).ssize_t )
+    min-idx := 2 * i + 1
+  var grandchild := False
+  if 2 * (2 * i) < size then
+    if min > data.unsafe-idx( (2 * (2 * i)).ssize_t ) then
+      min := data.unsafe-idx( (2 * (2 * i)).ssize_t )
+      min-idx := 2 * (2 * i)
+      grandchild := True
+  if 2 * (2 * i) + 1 < size then
+    if min > data.unsafe-idx( (2 * (2 * i) + 1).ssize_t ) then
+      min := data.unsafe-idx( (2 * (2 * i) + 1).ssize_t )
+      min-idx := 2 * (2 * i) + 1
+      grandchild := True
+  if 2 * (2 * i + 1) < size then
+    if min > data.unsafe-idx( (2 * (2 * i)).ssize_t ) then
+      min := data.unsafe-idx( (2 * (2 * i)).ssize_t )
+      min-idx := 2 * (2 * i + 1)
+      grandchild := True
+  if 2 * (2 * i + 1) + 1 < size then
+    if min > data.unsafe-idx( (2 * (2 * i + 1) + 1).ssize_t ) then
+      min := data.unsafe-idx( (2 * (2 * i + 1) + 1).ssize_t )
+      min-idx := 2 * (2 * i + 1) + 1
+      grandchild := True 
+  (min-idx, grandchild)
+
+fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
+  unsafe-total() fn () 
+    real/get-next-max( data, i, size )
+
+inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
+  var max := data.unsafe-idx( (2 * i).ssize_t )
+  var max-idx := 2 * i
+  if max < data.unsafe-idx( (i + 1).ssize_t ) then
+    max := data.unsafe-idx( (i + 1).ssize_t )
+    max-idx := 2 * i + 1
+  var grandchild := False
+  if 2 * (2 * i) < size then
+    if max < data.unsafe-idx( (2 * (2 * i)).ssize_t ) then
+      max := data.unsafe-idx( (2 * (2 * i)).ssize_t )
+      max-idx := 2 * (2 * i)
+      grandchild := True
+  if 2 * (2 * i) + 1 < size then
+    if max < data.unsafe-idx( (2 * (2 * i) + 1).ssize_t ) then
+      max := data.unsafe-idx( (2 * (2 * i) + 1).ssize_t )
+      max-idx := 2 * (2 * i) + 1
+      grandchild := True
+  if 2 * (2 * i + 1) < size then
+    if max < data.unsafe-idx( (2 * (2 * i)).ssize_t ) then
+      max := data.unsafe-idx( (2 * (2 * i)).ssize_t )
+      max-idx := 2 * (2 * i + 1)
+      grandchild := True
+  if 2 * (2 * i + 1) + 1 < size then
+    if max < data.unsafe-idx( (2 * (2 * i + 1) + 1).ssize_t ) then
+      max := data.unsafe-idx( (2 * (2 * i + 1) + 1).ssize_t )
+      max-idx := 2 * (2 * i + 1) + 1
+      grandchild := True 
+  (max-idx, grandchild)
+
+
 fun push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+  unsafe-total fn ()
+    push-up-helper( h, i )
+
+fun push-up-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
   match h
     Heap(data, size) -> 
       if i.is-root.not then
@@ -78,22 +199,22 @@ fun push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool,
             val parent-item = data.unsafe-idx( i.parent.ssize_t )
             val data' = data.unsafe-set( i.parent, data.unsafe-idx( i.ssize_t ))
             data.unsafe-assign( i.ssize_t, parent-item )
-            Heap( data', size ).max/push-up( i.parent )
+            Heap( data', size ).push-up-max( i.parent )
           else
-            Heap( data, size ).min/push-up( i )
+            Heap( data, size ).push-up-min( i )
         else
           if data.unsafe-idx( i.ssize_t ) > data.unsafe-idx( i.parent.ssize_t ) then
             val parent-item = data.unsafe-idx( i.parent.ssize_t )
             val data' = data.unsafe-set( i.parent, data.unsafe-idx( i.ssize_t ))
             data.unsafe-assign( i.ssize_t, parent-item )
-            Heap( data', size ).min/push-up( i.parent )
+            Heap( data', size ).push-up-min( i.parent )
           else
-            Heap( data, size ).max/push-up( i )
+            Heap( data, size ).push-up-max( i )
       else
         Heap( data, size )
 
-fun min/push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
-  val grandparent = h.data.get-grandparent( i )
+fun push-up-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+  val grandparent = get-grandparent( i )
   match grandparent
     Nothing -> h
     Just( g ) ->
@@ -103,12 +224,12 @@ fun min/push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
             val i-item = data.unsafe-idx( i.ssize_t )
             val data' = data.unsafe-set( i, data.unsafe-idx( g.ssize_t ))
             data.unsafe-assign( i.ssize_t, i-item )
-            Heap( data', size ).min/push-up( g )
+            Heap( data', size ).push-up-min( g )
           else
             Heap( data, size )
 
-fun max/push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
-  val grandparent = h.data.get-grandparent( i )
+fun push-up-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+  val grandparent = get-grandparent( i )
   match grandparent
     Nothing -> h
     Just( g ) ->
@@ -118,10 +239,15 @@ fun max/push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
             val i-item = data.unsafe-idx( i.ssize_t )
             val data' = data.unsafe-set( i, data.unsafe-idx( g.ssize_t ))
             data.unsafe-assign( i.ssize_t, i-item )
-            Heap( data', size ).max/push-up( g )
+            Heap( data', size ).push-up-max( g )
           else
             Heap( data, size )
 
+fun get-grandparent( i : int ) : maybe<int>
+  if i <= 3 then
+    Nothing
+  else 
+    Just( i / 4 )
 
 fun resizer( size : int ) : int
   if size == 0 then
@@ -132,8 +258,9 @@ fun resizer( size : int ) : int
 pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?resizer : (int) -> int ) : heap<a>
   match h
     Heap( data, size ) ->
-      val vec = if size == data.length - 2 then
-        data.realloc( resizer( size.ssize_t ) )
+      // subtracting `1` here since we ignore the first value in the list
+      val vec = if size == data.length - 1 then
+        data.realloc( resizer( size ).ssize_t )
       else
         data
       val vec' = vec.unsafe-set( size, x)
@@ -148,8 +275,8 @@ pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
       Heap( data, size ) ->
         val last = data.unsafe-idx( size.ssize_t )
         val data' = data.unsafe-set( 1, last )
-        data'.unsafe-clear-at( size.ssize_t )
-        Just(min, Heap( data', size - 1 ).push-down( 1 ))
+        data'.unsafe-vector-clear-at( size.ssize_t )
+        Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
 
 pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
   if h.size == 0 then
@@ -169,5 +296,5 @@ pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
       Heap( data, size ) ->
         val last = data.unsafe-idx( size.ssize_t )
         val data' = data.unsafe-set( 1, last )
-        data'.unsafe-clear-at( size.ssize_t )
-        Just(max, Heap( data', size - 1 ).push-down( 1 ))
+        data'.unsafe-vector-clear-at( size.ssize_t )
+        Just( (max, Heap( data', size - 1 ).push-down( 1 )) )
