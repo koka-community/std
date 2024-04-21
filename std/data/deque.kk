@@ -166,6 +166,22 @@ pub fun foreach-indexed( d : deque<a>, f : (int, a) -> e () ) : e ()
       Nothing -> ()
       Just(x) -> f( i, x )
 
+pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
+  if xs.length != ys.length then
+    False
+  else
+    val result = for-while(xs.length) fn(i) 
+      match (xs.at(i), ys.at(i))
+        (Just(x), Just(y)) -> if x == y then 
+            Nothing
+          else
+            Just(False)
+        _ -> Nothing
+    match result
+      Nothing -> True
+      Just(x) -> x
+      
+
 
 ref struct something {i: int}
 fun test-deque()
