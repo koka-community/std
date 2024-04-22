@@ -109,11 +109,9 @@ pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
     match d
       Deque(data, front, back, size) -> 
         val index = (front + 1) % data.length
-        match data.at( index )
-          Nothing -> Nothing
-          Just(x) -> 
-            data.drop-at( index.ssize_t )
-            Just( (x, Deque( data, index, back, size - 1 ) ) )
+        val item = data.unsafe-idx( index.ssize_t )
+        data.drop-at( index.ssize_t )
+        Just( (item, Deque( data, index, back, size - 1 ) ) )
 
 // Pops a value from the back of a deque `d`.
 pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
@@ -123,11 +121,9 @@ pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
     match d
       Deque(data, front, back, size) -> 
         val index = (back - 1) % data.length
-        match data.at( index )
-          Nothing -> Nothing
-          Just(x) -> 
-            data.drop-at( index.ssize_t )
-            Just( (x, Deque( data, front, index, size - 1 ) ) )
+        val item = data.unsafe-idx( index.ssize_t )
+        data.drop-at( index.ssize_t )
+        Just( (item, Deque( data, front, index, size - 1 ) ) )
 
 // Fetches a value from the front of a deque `d`.
 pub fun front( ^d : deque<a> ) : maybe<a>
@@ -144,9 +140,9 @@ pub fun clear( ^d : deque<a> ) : deque<a>
   match d
     Deque(data, _, _, size) ->
       if data.is-vec-unique then
-        for(size) fn (i) 
-          data.unsafe-vector-clear-at( i.ssize_t )
-          ()// This is needed to prevent a compiler error
+        forz(size.ssize_t) fn (i) 
+          data.unsafe-vector-clear-at( i )
+          ()// Needed to prevent a compiler bug
         Deque( data, 0, 0, 0)
       else
         Deque( unsafe-vector( data.length.ssize_t ), 0, 0, 0 )
@@ -161,27 +157,19 @@ pub fun capacity( ^d : deque<a> ) : int
 
 // Apply an effectful function `f` to each element in a deque `d`.
 pub fun effect/map( ^d : deque<a>, f : (a) -> e b ) : e deque<b>
-  val new-data = unsafe-vector( d.data.length.ssize_t )
-  for( d.size ) fn (i)
-    match d.at( i )
-      Nothing -> ()
-      Just(x) -> new-data.unsafe-assign( i.ssize_t, f(x) )
-  val front = -1 % new-data.length
-  Deque( new-data, front, d.size, d.size )
+  val new-data = d.data.map( f )
+  Deque( new-data, d.front-idx, d.back-idx, d.size )
 
 // Apply a function `f` to each element in a deque `d`.
 pub fun unique/map( d : deque<a>, f : (a) -> b ) : deque<b>
-  val new-data = unsafe-vector( d.data.length.ssize_t )
-  for( d.size ) fn (i)
-    match d.at( i )
-      Nothing -> ()
-      Just(x) -> new-data.unsafe-assign( i.ssize_t, f(x) )
-  val front = -1 % new-data.length
-  Deque( new-data, front, d.size, d.size )
+  val new-data = d.data.unique/map( f )
+  Deque( new-data, d.front-idx, d.back-idx, d.size )
 
 // Invoke a function `f` for each element in a deque `d`.
 pub fun foreach( d : deque<a>, f : (a) -> e () ) : e ()
   for( d.size ) fn (i)
+    val offset : int = d.front-idx + 1
+    val real-index = (i + offset) % d.data.length
     match d.at( i )
       Nothing -> ()
       Just(x) -> f( x )
@@ -189,6 +177,8 @@ pub fun foreach( d : deque<a>, f : (a) -> e () ) : e ()
 // Invoke a function `f` for each element in a deque `d` with its index.
 pub fun foreach-indexed( d : deque<a>, f : (int, a) -> e () ) : e ()
   for( d.size ) fn (i)
+    val offset : int = d.front-idx + 1
+    val real-index = (i + offset) % d.data.length
     match d.at( i )
       Nothing -> ()
       Just(x) -> f( i, x )
