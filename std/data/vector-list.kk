@@ -61,7 +61,8 @@ pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
   match v
     Vector-list(data, old-size) ->
-      Vector-list( data = realloc(data, new-capacity.ssize_t), size = old-size )
+      val new-size = if old-size < new-capacity then old-size else new-capacity
+      Vector-list( data = realloc(data, new-capacity.ssize_t), size = new-size )
 
 // Return the element at position `index` in vector-list `v` or `Nothing` if out of bounds
 pub fun at( ^v : vector-list<a>, ^index : int ) : maybe<a>
