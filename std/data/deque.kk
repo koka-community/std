@@ -50,7 +50,7 @@ pub fun resize( d : deque<a>, new-capacity : int ) : deque<a>
 // Fetches an element from deque `d` with `index`.
 // This function handles ring buffer logic
 pub fun at( ^d : deque<a>, ^index : int ) : maybe<a>
-  if index < 0 || index > d.size then
+  if index < 0 || index >= d.size then
     Nothing
   else
     val offset : int = d.front-idx + 1
