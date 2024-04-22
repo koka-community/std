@@ -17,28 +17,41 @@ pub value struct deque<a>
   back-idx : int
   size : int
 
-pub inline fun deque( n : int, default : a) : deque<a>
+// Creates a Deque that is of size `n` with values specified by `default`.
+pub inline fun deque( n : int, default : a) : deque<a>  
+  // `-1` is used for `front-idx` since `-1 % n == n - 1` regardless of size.
   Deque( vector-init( n, fn (_) default ), -1, n, n)
 
+// Creates a Deque that is of size `n` with values defined by the function `f`.
 pub inline fun deque-init( ^n : int, f : (int) -> e a ) : e deque<a>
+  // `-1` is used for `front-idx` since `-1 % n == n - 1` regardless of size.
   Deque( vector-init( n, f ), -1, n, n )
 
+// Creates a Deque that is of size `n` with no values.
 pub inline fun deque-capacity( ^n : int ) : deque<a>
+  // `-1` is not used here since the front and back are at the same point.
   Deque( unsafe-vector( n.ssize_t ), 0, 0, 0)
 
+// Creates a Deque that is empty and with size of `0`.
 pub inline fun unit/deque() : deque<a>
   Deque( unit/vector(), 0, 0, 0 )
 
+// Resizes the deque `d` with the `new-capacity`.
+// If `new-capacity` is smaller than the current size then `d` is truncated.
 pub fun resize( d : deque<a>, new-capacity : int ) : deque<a>
   match d
     Deque(data, _, _, size) -> 
       val new-data = unsafe-vector( new-capacity.ssize_t )
-      for( data.length ) fn (i)
+      val limit = if data.length < new-data.length then data.length else new-data.length
+      for( limit ) fn (i)
         match d.at( i )
           Nothing -> ()
           Just(element) -> new-data.unsafe-assign( i.ssize_t, element)
-      Deque( new-data, front-idx = -1 % new-data.length, back-idx = size, size = size )
+      val new-size = if size > new-capacity then new-capacity else size
+      Deque( new-data, front-idx = -1 % new-data.length, back-idx = new-size, size = new-size )
 
+// Fetches an element from deque `d` with `index`.
+// This function handles ring buffer logic
 pub fun at( ^d : deque<a>, ^index : int ) : maybe<a>
   if index < 0 || index > d.size then
     Nothing
@@ -47,6 +60,7 @@ pub fun at( ^d : deque<a>, ^index : int ) : maybe<a>
     val real-index = (index + offset) % d.data.length
     d.data.at(real-index)
 
+// Sets the deque `d` at the specified `index` with a `value`.
 pub fun set( ^d : deque<a>, ^index : int, value : a ) : maybe<deque<a>>
   if index < 0 || index >= d.size then
     Nothing
@@ -56,9 +70,12 @@ pub fun set( ^d : deque<a>, ^index : int, value : a ) : maybe<deque<a>>
         val real-index = (index + front) % size
         Just( Deque( data.unsafe-set( index, value ), front, back, size ) )
 
+// Internal function for dictating how big the new size should be.
 fun resizer( current : int ) : int
   if current < 1 then 1 else current * 2
 
+// Pushes a `value` onto the front of a deque `d`.
+// `?resizer` controls how big a deque should be when it needs to be resized.
 pub fun push-front( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<a>
   val vec = if d.size >= d.data.length then
     val new-capacity = resizer( d.data.length )
@@ -72,6 +89,8 @@ pub fun push-front( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<
       val new-front = (front - 1) % data.length
       Deque( data.unsafe-set( front, value ), new-front, new-back, size + 1)
 
+// Pushes a `value` onto the back of a deque `d`.
+// `?resizer` controls how big a deque should be when it needs to be resized.
 pub fun push-back( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<a>
   val vec = if d.size >= d.data.length then
     val new-capacity = resizer( d.data.length )
@@ -85,6 +104,7 @@ pub fun push-back( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<a
       val new-back = (front + 1) % data.length
       Deque( data.unsafe-set( back, value ), new-front, new-back, size + 1)
 
+// Pops a value from the front of a deque `d`.
 pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
   if d.size == 0 then
     Nothing
@@ -98,6 +118,7 @@ pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
             data.drop-at( index.ssize_t )
             Just( (x, Deque( data, index, back, size - 1 ) ) )
 
+// Pops a value from the back of a deque `d`.
 pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
   if d.size == 0 then
     Nothing
@@ -111,14 +132,17 @@ pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
             data.drop-at( index.ssize_t )
             Just( (x, Deque( data, front, index, size - 1 ) ) )
 
+// Fetches a value from the front of a deque `d`.
 pub fun front( ^d : deque<a> ) : maybe<a>
   if d.size == 0 then Nothing
   else d.at( 0 )
 
+// Fetches a value from the back of a deque `d`.
 pub fun back( ^d : deque<a> ) : maybe<a>
   if d.size == 0 then Nothing
   else d.at( d.size )
 
+// Clears a deque `d`, while retaining the capacity.
 pub fun clear( ^d : deque<a> ) : deque<a>
   match d
     Deque(data, _, _, size) ->
@@ -130,12 +154,15 @@ pub fun clear( ^d : deque<a> ) : deque<a>
       else
         Deque( unsafe-vector( data.length.ssize_t ), 0, 0, 0 )
 
+// Fetches the length of a deque `d`.
 pub fun length( ^d : deque<a> ) : int
   d.size
 
+// Fetches the capacity of a deque `d`.
 pub fun capacity( ^d : deque<a> ) : int
   d.data.length
 
+// Apply an effectful function `f` to each element in a deque `d`.
 pub fun effect/map( ^d : deque<a>, f : (a) -> e b ) : e deque<b>
   val new-data = unsafe-vector( d.data.length.ssize_t )
   for( d.size ) fn (i)
@@ -145,6 +172,7 @@ pub fun effect/map( ^d : deque<a>, f : (a) -> e b ) : e deque<b>
   val front = -1 % new-data.length
   Deque( new-data, front, d.size, d.size )
 
+// Apply a function `f` to each element in a deque `d`.
 pub fun unique/map( d : deque<a>, f : (a) -> b ) : deque<b>
   val new-data = unsafe-vector( d.data.length.ssize_t )
   for( d.size ) fn (i)
@@ -154,18 +182,21 @@ pub fun unique/map( d : deque<a>, f : (a) -> b ) : deque<b>
   val front = -1 % new-data.length
   Deque( new-data, front, d.size, d.size )
 
+// Invoke a function `f` for each element in a deque `d`.
 pub fun foreach( d : deque<a>, f : (a) -> e () ) : e ()
   for( d.size ) fn (i)
     match d.at( i )
       Nothing -> ()
       Just(x) -> f( x )
 
+// Invoke a function `f` for each element in a deque `d` with its index.
 pub fun foreach-indexed( d : deque<a>, f : (int, a) -> e () ) : e ()
   for( d.size ) fn (i)
     match d.at( i )
       Nothing -> ()
       Just(x) -> f( i, x )
 
+// Equality checking for deque.
 pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
   if xs.length != ys.length then
     False
@@ -232,7 +263,7 @@ fun test-deque()
     val deq1 = deque-init(10) fn (i) i
     val deq2 = deq1.set(0, 100).unjust
     expect(True, { deq1.at(0).default(0) != deq2.at(0).default(0) }, details="Expected deq1 and deq2 to be different")
-  basic/test("vlist doesn't copy when unique")
+  basic/test("deque doesn't copy when unique")
     val deq1 = deque-init(10) fn(i) Something(i)
     val deq10 = deq1.at(0).unjust
     val deq2 = deq1.set(9, Something(1)).unjust
@@ -252,5 +283,12 @@ fun test-deque()
     for(10) fn (i)
       deq := (if i % 2 == 0 then deq.push-front(i) else deq.push-back(i))
     expect(10, { deq.length }, details="Deque should have 10 elements but instead has " ++ deq.length.show)
-  
+  basic/test("deque truncation")
+    val deq = deque(2, 2)
+    val deq' = deq.resize(1)
+    var truncated := ""
+    deq'.foreach() fn (x)
+      truncated := truncated ++ x.show ++ " "
+    expect("2 ", { truncated }, details="Expected '2 ' but instead got " ++ truncated)
+
   
