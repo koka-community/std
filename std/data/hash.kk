@@ -12,24 +12,31 @@ import std/num/int64
 import std/test/test
 import std/core-extras
 
-
 extern import 
   c file "inline/hash"
 
+pub inline extern thread/get-seed() : int64
+  c "kk_thread_seed"
+
 // A hashing function for integers. It takes an int `i` and an implicit `seed` which is is an `int64`.
 // Note: Big Ints may not work as expected.
-pub inline extern int/hash( i : int, ?seed : int64 ) : int
+pub inline extern extern-int-hash( i : int, seed : int64 ) : int
   c "kk_integer_hash"
+
+pub val thread/seed: int64 = thread/get-seed()
+
+pub fun int/hash(i: int, ?seed: int64): int
+  extern-int-hash(i, ?seed)
 
 // A hashing function for characters. It takes a char `c` and an implicit `seed` which is is an `int64`.
 pub fun char/hash( c : char, ?seed : int64 ) : int
-  c.int.int/hash( ?seed = seed )
+  c.int.hash()
 
 // A hashing function for booleans. It takes a bool `b` and an implicit `seed` which is is an `int64`.
 pub fun bool/hash( b : bool, ?seed : int64 ) : int
   match b
-    True -> int/hash(1)
-    False -> int/hash(0)
+    True -> hash(1)
+    False -> hash(0)
 
 // A hashing function for strings. It takes a string `s` and an implicit `seed` which is is an `int64`.
 pub inline extern string/hash( s : string, ?seed : int64 ) : int
@@ -41,13 +48,13 @@ pub fun list/hash( l : list<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : i
   val vec = unsafe-vector( l.length.ssize_t )
   list-hash-helper( l, vec, 0 )
 
-  hash-vector-int64( vec, seed )
+  hash-vector-int64( vec, ?seed )
 
 inline fun list-hash-helper( l : list<a>, buf : vector<int64>, index : int, ?hasher : (a, int64) -> int, ?seed : int64 ) : ()
   match l
     Nil -> ()
     Cons(x, xs) -> 
-      buf.unsafe-assign( index.ssize_t, hasher(x, seed).int64 )
+      buf.unsafe-assign( index.ssize_t, hasher(x, ?seed).int64 )
       list-hash-helper( xs, buf, index + 1 )
 
 // A hashing function for vectors. It takes a vector `l`, an implicit `hasher` for hashing each element, and an implicit `seed` which is is an `int64`.
@@ -55,9 +62,9 @@ inline fun list-hash-helper( l : list<a>, buf : vector<int64>, index : int, ?has
 pub fun vector/hash( v : vector<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : int
   val vec = unsafe-vector( v.length.ssize_t )
   for( v.length ) fn (i)
-    vec.unsafe-assign( i.ssize_t, hasher( v.unsafe-idx( i.ssize_t ), seed ).int64 )
+    vec.unsafe-assign( i.ssize_t, hasher( v.unsafe-idx( i.ssize_t ), ?seed ).int64 )
   
-  hash-vector-int64( vec, seed )
+  hash-vector-int64( vec, ?seed )
 
 // Helper function for hashing vectors of int64
 inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
@@ -67,52 +74,25 @@ inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
 // A hashing function for maybes. It takes a maybe `m`, an implicit `hasher` for `Just(a)`, and an implicit `seed` which is is an `int64`.
 pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : int
   match m
-    Nothing -> int/hash( 109043358147367465933604847619, ?seed = seed )
+    Nothing -> int/hash( 109043358147367465933604847619)
     Just(x) -> 
       val vec = unsafe-vector( 2.ssize_t )
-      vec.unsafe-assign( 0.ssize_t, hasher(x, seed).int64 )
+      vec.unsafe-assign( 0.ssize_t, hasher(x, ?seed).int64 )
       vec.unsafe-assign( 1.ssize_t, 636221073298515699161266525619.int64 )
-      hash-vector-int64( vec, seed )
+      hash-vector-int64( vec, ?seed )
 
 
 // A hashing function for eithers. It takes an either `e`, 2 implicit `hasher`s for hashing `Left` and `Right`, and an implicit `seed` which is is an `int64`.
 pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int, ?seed : int64 ) : int
   val hash-key = match e
-    Left(l) -> (hasher( l, seed ), 979671666476914879931210933431)
-    Right(r) -> (hasher( r, seed ), 214237100480734178309831475373)
+    Left(l) -> (hasher( l, ?seed ), 979671666476914879931210933431)
+    Right(r) -> (hasher( r, ?seed ), 214237100480734178309831475373)
   val (the-hash, prime) = hash-key
   val vec = unsafe-vector( 2.ssize_t )
   vec.unsafe-assign( 0.ssize_t, the-hash.int64 )
   vec.unsafe-assign( 1.ssize_t, prime.int64 )
+  hash-vector-int64( vec, ?seed )
 
-  hash-vector-int64( vec, seed )
-
-pub inline extern thread/seed() : int64
-  c "kk_thread_seed"
-
-pub fun thread/int/hash( i : int ) : int
-  int/hash( i, ?seed = thread/seed() )
-
-pub fun thread/char/hash( c : char ) : int
-  char/hash( c, ?seed = thread/seed() )
-
-pub fun thread/bool/hash( b : bool ) : int
-  bool/hash( b, ?seed = thread/seed() )
-
-pub fun thread/string/hash( s : string ) : int
-  string/hash( s, ?seed = thread/seed() )
-
-pub fun thread/list/hash( l : list<a>, ?hasher : (a, int64) -> int ) : int
-  list/hash( l, ?hasher = hasher, ?seed = thread/seed() )
-
-pub fun thread/vector/hash( v : vector<a>, ?hasher : (a, int64) -> int ) : int
-  vector/hash( v, ?hasher = hasher, ?seed = thread/seed() )
-
-pub fun thread/maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int ) : int
-  maybe/hash( m, ?hasher = hasher, ?seed = thread/seed() )
-
-pub fun thread/either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int ) : int
-  either/hash( e, ?l/hasher = l/hasher, ?r/hasher = r/hasher, ?seed = thread/seed() )
 
 fun test-hash()
-  seed().println
+  seed.println

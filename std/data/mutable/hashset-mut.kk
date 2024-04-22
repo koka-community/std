@@ -39,8 +39,8 @@ pub fun hash-set-mut-seeded( seed : int64, capacity : int = 1 ) : hash-set-mut<v
 
 // Creates a hash-set-mut from a list `xs`. This hash-set-mut has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
-pub fun list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set-mut<v>
-  from-list-helper( hash-set-mut( xs.length ), xs )
+pub fun random/list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set-mut<v>
+  from-list-helper( random/hash-set-mut( xs.length ), xs )
 
 // Creates a hash-set-mut from a list `xs`. This hash-set-mut has the same capacity as the length of the list `xs`.
 // Random effect is needed to initalize the seed.
@@ -171,29 +171,29 @@ pub fun foreach( hs : hash-set-mut<v>, f : (v) -> e () ) : e ()
 
 fun test-hash-set-mut()
   basic/test("hash-set-mut insert")
-    val hs = hash-set-mut(1)
-    val hs' = hs.insert( 2, int/hash )
+    val hs = random/hash-set-mut(1)
+    val hs' = hs.insert( 2, ?hash=int/hash)
     val value = hs'.contains(2, ?hash = int/hash)
     expect(True, { value } , details="Expected True but got " ++ value.show)
   basic/test("hash-set-mut remove")
-    val hs = hash-set-mut(1)
+    val hs = random/hash-set-mut(1)
     val hs' = hs.insert(2, ?hash = int/hash )
     val hs@ = hs'.remove(2, ?hash = int/hash )
     expect(0, { hs@.length } , details="Expected 0 but got " ++ hs@.length.show)
   basic/test("hash-set-mut stress test")
-    var hs := hash-set-mut(1)
+    var hs := random/hash-set-mut(1)
     for(50000) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     expect(True, { True } , details="Expected Resizing to work")
   basic/test("hash-set-mut clear")
-    var hs := hash-set-mut(1)
+    var hs := random/hash-set-mut(1)
     for(50) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
     val value = hs.length()
     expect(0, { value } , details="Expected 0 but got " ++ value.show)
   basic/test("hash-set-mut clear then fill")
-    var hs := hash-set-mut(1)
+    var hs := random/hash-set-mut(1)
     for(50) fn (i)
       hs := hs.insert(i, ?hash = int/hash )
     hs := hs.clear()
