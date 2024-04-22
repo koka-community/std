@@ -19,13 +19,11 @@ pub value struct deque<a>
 
 // Creates a Deque that is of size `n` with values specified by `default`.
 pub inline fun deque( n : int, default : a) : deque<a>  
-  // `-1` is used for `front-idx` since `-1 % n == n - 1` regardless of size.
-  Deque( vector-init( n, fn (_) default ), -1, n, n)
+  Deque( vector-init( n, fn (_) default ), n - 1, n, n)
 
 // Creates a Deque that is of size `n` with values defined by the function `f`.
 pub inline fun deque-init( ^n : int, f : (int) -> e a ) : e deque<a>
-  // `-1` is used for `front-idx` since `-1 % n == n - 1` regardless of size.
-  Deque( vector-init( n, f ), -1, n, n )
+  Deque( vector-init( n, f ), n - 1, n, n )
 
 // Creates a Deque that is of size `n` with no values.
 pub inline fun deque-capacity( ^n : int ) : deque<a>
