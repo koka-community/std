@@ -5,28 +5,38 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-// This module provides a simple resizable vector implementation
+// This module provides a min-max heap implementation
 module std/data/heap
 import std/core-extras
 import std/test
 import std/core/unsafe
 import std/num/random
 
+// Time Complexity:
+// Operation    Average   Worst Case
+// Insert       O(log n)  O(log n)
+// Update-key             O(n) 
+// Delete-min   O(log n)  O(log n)
+// Delete-max   O(log n)  O(log n)
+// Space Complexity:
+// O(n + 1)
 pub value struct heap<a>
   data : vector<a>
   size : int
 
+// Create an empty heap with a given starting `capacity`.
 pub fun heap( capacity : int = 1 ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
 
+// Create a heap from a list `l` where the initial capacity is the length of `l`.
 pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   val vec = unsafe-vector( (l.length + 1).ssize_t )
   list/heap-helper1( vec, l , 1)
   list/heap-helper2( Heap( vec, l.length ), stride/list( 1, l.length, 1).reverse )
 
-
+// This helper function puts in the elements from the list into the vector buffer
 fun list/heap-helper1( v : vector<a>, l : list<a>, index : int ) : ()
   match l
     Nil -> ()
@@ -34,17 +44,19 @@ fun list/heap-helper1( v : vector<a>, l : list<a>, index : int ) : ()
       v.unsafe-assign( index.ssize_t, x )
       list/heap-helper1( v, xs, index + 1)
 
+// This helper function is used to rebalance the heap after all elements in the list have been added.
 fun list/heap-helper2( h : heap<a>, index-list : list<int>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   match index-list
     Nil -> h
     Cons(x, xs) -> 
       list/heap-helper2( h.push-down( x ), xs )
 
+// This helper is a recursive algorithm tells us if an `i` is on a min or max level
 fun on-min-level( h : heap<a>, i : int ) : bool
   unsafe-total fn ()
     helper/on-min-level( i, 1, 1 )
 
-fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
+fip fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
   /*trace("index " ++ i.show)
   trace("left-bound " ++ left-bound.show)
   trace("right-bound " ++ right-bound.show)*/
@@ -57,12 +69,15 @@ fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bo
     val new-right-bound = 2 * (2 * right-bound + 1) + 1
     helper/on-min-level( i, new-left-bound, new-right-bound ) 
 
+// Helper for getting the parent index
 fun parent( i : int ) : int
   i / 2
 
+// Helper for checking if an index is on root.
 fun is-root( i : int ) : bool
   i == 1
 
+// Also known as sift-down. This function will move data down the heap.
 fun push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   unsafe-total fn ()
     push-down-helper( h, i )
@@ -117,14 +132,17 @@ inline fun push-down-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a
       else
         Heap( data, size )
 
+// Helper for checking if an index has any children.
 fun has-children( i : int, size : int ) : bool
   if i < 1 then False
   else 2 * i < size || 2 * i + 1 < size
 
+// Helper for getting the next minimum value from either children or grandchildren.
 fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
   unsafe-total() fn () 
     real/get-next-min( data, i, size )
 
+// This function is an unrolled loop that checks for the minimum value from either children or grandchildren.
 inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
   var min := data.unsafe-idx( (2 * i).ssize_t )
   var min-idx := 2 * i
@@ -156,10 +174,12 @@ inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, 
       grandchild := True 
   (min-idx, grandchild)
 
+// Helper for getting the next maximum value from either children or grandchildren.
 fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
   unsafe-total() fn () 
     real/get-next-max( data, i, size )
 
+// This function is an unrolled loop that checks for the maximum value from either children or grandchildren.
 inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
   var max := data.unsafe-idx( (2 * i).ssize_t )
   var max-idx := 2 * i
@@ -191,7 +211,7 @@ inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, 
       grandchild := True 
   (max-idx, grandchild)
 
-
+// Also known as bubble-up. This function will move data up the heap.
 fun push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   unsafe-total fn ()
     push-up-helper( h, i )
@@ -241,18 +261,22 @@ fun push-up-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
           else
             Heap( data, size )
 
+// Helper for getting the grandparent of an index `i`.
 fun get-grandparent( i : int ) : maybe<int>
   if i <= 3 then
     Nothing
   else 
     Just( i / 4 )
 
+// Internal base function for dictating how to resize the vector buffer.
 fun resizer( size : int ) : int
   if size == 0 then
     1
   else
     size * 2
 
+// Inserts an item `x` into the end of the heap `h`, resizing first if necessary.
+// After insertion, then value will be pushed up if needed.
 pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?resizer : (int) -> int ) : heap<a>
   match h
     Heap( data, size ) ->
@@ -264,12 +288,14 @@ pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool
       val vec' = vec.unsafe-set( size + 1, x)
       Heap( vec', size + 1 ).push-up( size + 1 )
 
+// Fetches the minimum element from heap `h`.
 pub fun min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
   if h.size == 0 then
     Nothing
   else
     h.data.at( 1 )
 
+// Removes the minimum element from heap `h`.
 pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
@@ -282,6 +308,7 @@ pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
         data'.unsafe-vector-clear-at( (size + 1).ssize_t )
         Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
 
+// Fetches the maximum element from heap `h`.
 pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
   if h.size == 0 then
     Nothing
@@ -297,6 +324,7 @@ pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : 
         3
     h.data.at( index )
 
+// Removes the maximum element from heap `h`.
 pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
@@ -318,7 +346,7 @@ pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
         data'.unsafe-vector-clear-at( (size + 1).ssize_t )
         Just( (max, Heap( data', size - 1 ).push-down( index )) )
 
-
+// This function will update a `key` with a `new-key` in a heap `h`.
 pub fun update-key( h : heap<a>, key : a, new-key : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : heap<a>
   unsafe-total 
     update-key-real( h, key, new-key )
