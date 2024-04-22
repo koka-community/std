@@ -27,7 +27,6 @@ pub inline fun deque-init( ^n : int, f : (int) -> e a ) : e deque<a>
 
 // Creates a Deque that is of size `n` with no values.
 pub inline fun deque-capacity( ^n : int ) : deque<a>
-  // `-1` is not used here since the front and back are at the same point.
   Deque( unsafe-vector( n.ssize_t ), 0, 0, 0)
 
 // Creates a Deque that is empty and with size of `0`.
