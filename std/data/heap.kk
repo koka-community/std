@@ -12,18 +12,29 @@ import std/test
 import std/core/unsafe
 
 pub value struct heap<a>
-  pub data : vector<a>
+  data : vector<a>
   size : int
 
 pub fun heap( capacity : int = 1 ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
 
+// This is slow. It should be replaced with the below commented code which doesn't work for some reason
+/*pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+  // We add `1` to capacity since we ignore the 0th element to make our math easier
+  unsafe-total
+    var h := heap( capacity = l.length )
+    l.foreach fn (x)
+      h := h.insert(x)
+    h
+*/
+
 pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   val vec = unsafe-vector( (l.length + 1).ssize_t )
   list/heap-helper1( vec, l , 1)
   list/heap-helper2( Heap( vec, l.length ), stride/list( 1, l.length, 1).reverse )
+
 
 fun list/heap-helper1( v : vector<a>, l : list<a>, index : int ) : ()
   match l
@@ -40,9 +51,7 @@ fun list/heap-helper2( h : heap<a>, index-list : list<int>, ?(<) : (a, a) -> boo
 
 fun on-min-level( h : heap<a>, i : int ) : bool
   unsafe-total fn ()
-    val x = helper/on-min-level( i, 1, 1 )
-    trace(x.show)
-    x
+    helper/on-min-level( i, 1, 1 )
 
 fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
   /*trace("index " ++ i.show)
@@ -69,10 +78,10 @@ fun push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> boo
 
 fun push-down-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
   if h.on-min-level( i ) then
-    trace("on min")
+    //trace("on min")
     h.push-down-min( i )
   else
-    trace("on max")
+    //trace("on max")
     h.push-down-max( i )
 
 inline fun push-down-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
@@ -118,7 +127,7 @@ inline fun push-down-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a
         Heap( data, size )
 
 fun has-children( i : int, size : int ) : bool
-  if i > 1 then False
+  if i < 1 then False
   else 2 * i < size || 2 * i + 1 < size
 
 fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
@@ -137,12 +146,12 @@ inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, 
   if 2 * child1-idx < size then
     if min > data.unsafe-idx( (2 * child1-idx).ssize_t ) then
       min := data.unsafe-idx( (2 * child1-idx).ssize_t )
-      min-idx := 2 * child2-idx
+      min-idx := 2 * child1-idx
       grandchild := True
   if 2 * child1-idx + 1 < size then
     if min > data.unsafe-idx( (2 * child1-idx + 1).ssize_t ) then
       min := data.unsafe-idx( (2 * child1-idx + 1).ssize_t )
-      min-idx := 2 * child2-idx + 1
+      min-idx := 2 * child1-idx + 1
       grandchild := True
   if 2 * child2-idx < size then
     if min > data.unsafe-idx( (2 * child2-idx).ssize_t ) then
@@ -223,9 +232,7 @@ fun push-up-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
       match h 
         Heap( data, size ) ->
           if data.unsafe-idx( i.ssize_t ) < data.unsafe-idx( g.ssize_t ) then
-            val i-item = data.unsafe-idx( i.ssize_t )
-            val data' = data.unsafe-set( i, data.unsafe-idx( g.ssize_t ))
-            data.unsafe-assign( i.ssize_t, i-item )
+            val data' = data.a/unsafe-swap( i, g )
             Heap( data', size ).push-up-min( g )
           else
             Heap( data, size )
@@ -238,9 +245,7 @@ fun push-up-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
       match h 
         Heap( data, size ) ->
           if data.unsafe-idx( i.ssize_t ) > data.unsafe-idx( g.ssize_t ) then
-            val i-item = data.unsafe-idx( i.ssize_t )
-            val data' = data.unsafe-set( i, data.unsafe-idx( g.ssize_t ))
-            data.unsafe-assign( i.ssize_t, i-item )
+            val data' = data.a/unsafe-swap( i, g )
             Heap( data', size ).push-up-max( g )
           else
             Heap( data, size )
@@ -265,8 +270,8 @@ pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool
         data.realloc( resizer( size ).ssize_t )
       else
         data
-      val vec' = vec.unsafe-set( size, x)
-      Heap( vec', size + 1 ).push-up( size )
+      val vec' = vec.unsafe-set( size + 1, x)
+      Heap( vec', size + 1 ).push-up( size + 1 )
 
 pub fun min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
   if h.size == 0 then
@@ -274,7 +279,7 @@ pub fun min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : 
   else
     h.data.at( 1 )
 
-pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
+pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?show : (a) -> string ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -282,8 +287,9 @@ pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
     match h
       Heap( data, size ) ->
         val last = data.unsafe-idx( size.ssize_t )
+        trace( "last " ++ last.show)
         val data' = data.unsafe-set( 1, last )
-        data'.unsafe-vector-clear-at( size.ssize_t )
+        data'.unsafe-vector-clear-at( (size + 1).ssize_t )
         Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
 
 pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
@@ -301,7 +307,7 @@ pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : 
         3
     h.data.at( index )
 
-pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
+pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -318,9 +324,9 @@ pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
     match h
       Heap( data, size ) ->
         val last = data.unsafe-idx( size.ssize_t )
-        val data' = data.unsafe-set( 1, last )
-        data'.unsafe-vector-clear-at( size.ssize_t )
-        Just( (max, Heap( data', size - 1 ).push-down( 1 )) )
+        val data' = data.unsafe-set( index, last )
+        data'.unsafe-vector-clear-at( (size + 1).ssize_t )
+        Just( (max, Heap( data', size - 1 ).push-down( index )) )
 
 
 fun test-heap()  
@@ -347,7 +353,27 @@ fun test-heap()
   basic/test("heap max unordered")
     val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
     val min = heap.max()
-    heap.data.foreach fn (x)
-      trace(x.show)
     expect(Just(12), { min }, details = "Expected Just(12) but found " ++ min.show )
+  basic/test("heap insertion min")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).insert( -1 )
+    val min = heap.min()
+    expect(Just(-1), { min }, details = "Expected Just(-1) but found " ++ min.show )
+  basic/test("heap insertion max")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).insert( 17 )
+    val min = heap.max()
+    expect(Just(17), { min }, details = "Expected Just(17) but found " ++ min.show )
+  basic/test("heap delete-min unordered")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+    val heap' = match heap.delete-min()
+      Nothing -> heap
+      Just((_, h)) -> h
+    val min = heap'.min()
+    expect(Just(2), { min }, details = "Expected Just(2) but found " ++ min.show )
+  basic/test("heap delete-max unordered")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+    val heap' = match heap.delete-max()
+      Nothing -> heap
+      Just((_, h)) -> h
+    val max = heap'.max()
+    expect(Just(7), { max }, details = "Expected Just(7) but found " ++ max.show )
   
