@@ -45,7 +45,7 @@ pub fun resize( d : deque<a>, new-capacity : int ) : deque<a>
           Nothing -> ()
           Just(element) -> new-data.unsafe-assign( i.ssize_t, element)
       val new-size = if size > new-capacity then new-capacity else size
-      Deque( new-data, front-idx = -1 % new-data.length, back-idx = new-size, size = new-size )
+      Deque( new-data, front-idx = new-data.length - 1, back-idx = new-size, size = new-size )
 
 // Fetches an element from deque `d` with `index`.
 // This function handles ring buffer logic
