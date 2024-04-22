@@ -10,6 +10,7 @@ module std/data/heap
 import std/core-extras
 import std/test
 import std/core/unsafe
+import std/num/random
 
 pub value struct heap<a>
   data : vector<a>
@@ -18,16 +19,6 @@ pub value struct heap<a>
 pub fun heap( capacity : int = 1 ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
-
-// This is slow. It should be replaced with the below commented code which doesn't work for some reason
-/*pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
-  // We add `1` to capacity since we ignore the 0th element to make our math easier
-  unsafe-total
-    var h := heap( capacity = l.length )
-    l.foreach fn (x)
-      h := h.insert(x)
-    h
-*/
 
 pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
@@ -265,9 +256,9 @@ fun resizer( size : int ) : int
 pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?resizer : (int) -> int ) : heap<a>
   match h
     Heap( data, size ) ->
-      // subtracting `1` here since we ignore the first value in the list
-      val vec = if size == data.length - 1 then
-        data.realloc( resizer( size ).ssize_t )
+      // adding `1` here since we ignore the first value in the list
+      val vec = if size + 1 == data.length  then
+        data.realloc( resizer( size + 1 ).ssize_t )
       else
         data
       val vec' = vec.unsafe-set( size + 1, x)
@@ -279,7 +270,7 @@ pub fun min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : 
   else
     h.data.at( 1 )
 
-pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?show : (a) -> string ) : maybe<(a, heap<a>)>
+pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -287,7 +278,6 @@ pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
     match h
       Heap( data, size ) ->
         val last = data.unsafe-idx( size.ssize_t )
-        trace( "last " ++ last.show)
         val data' = data.unsafe-set( 1, last )
         data'.unsafe-vector-clear-at( (size + 1).ssize_t )
         Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
@@ -327,6 +317,24 @@ pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
         val data' = data.unsafe-set( index, last )
         data'.unsafe-vector-clear-at( (size + 1).ssize_t )
         Just( (max, Heap( data', size - 1 ).push-down( index )) )
+
+
+pub fun update-key( h : heap<a>, key : a, new-key : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : heap<a>
+  unsafe-total 
+    update-key-real( h, key, new-key )
+
+// This function needs to be optimized. We need to figure out the exact situations of when to call `push-down` or `push-up` so that we don't have a worse case O(n) time.
+inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : div heap<a>
+  var i := 1
+  while { h.size > i && h.data.unsafe-idx( i.ssize_t ) != key }
+    i := i + 1
+  if i == h.size then
+    h
+  else
+    match h
+      Heap( data, size ) -> 
+        val data' = data.unsafe-set( i, new-key ).a/unsafe-swap( 1, i )
+        Heap( data', size ).push-down( 1 )
 
 
 fun test-heap()  
@@ -376,4 +384,26 @@ fun test-heap()
       Just((_, h)) -> h
     val max = heap'.max()
     expect(Just(7), { max }, details = "Expected Just(7) but found " ++ max.show )
+  basic/test("heap update-key min")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 12, 0 )
+    val min = heap.min()
+    expect(Just(0), { min }, details = "Expected Just(0) but found " ++ min.show )
+  basic/test("heap update-key max")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 2, 17 )
+    val max = heap.max()
+    expect(Just(17), { max }, details = "Expected Just(17) but found " ++ max.show )
+  basic/test("heap update-key min no-change")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 13, 0 )
+    val min = heap.min()
+    expect(Just(1), { min }, details = "Expected Just(0) but found " ++ min.show )
+  basic/test("heap update-key max no-change")
+    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 5, 17 )
+    val max = heap.max()
+    expect(Just(12), { max }, details = "Expected Just(17) but found " ++ max.show )
+  basic/test("heap stress test")
+    var heap := heap()
+    for(50000) fn (i)
+      heap := heap.insert( i * random-int() )
+    expect(True, { True }, details = "Heap did not succeed." )
+  
   
