@@ -33,30 +33,30 @@ pub fun heap( capacity : int = 1 ) : heap<a>
 pub fun list/heap( l : list<a>, ?cmp : (a, a) -> order) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   val vec = unsafe-vector( (l.length + 1).ssize_t )
-  list/heap-helper1( vec, l , 1)
-  list/heap-helper2( Heap( vec, l.length ), stride/list( 1, l.length, 1).reverse )
+  list-to-heap( vec, l , 1)
+  balance( Heap( vec, l.length ), list( 1, l.length).reverse )
 
 // This helper function puts in the elements from the list into the vector buffer
-fun list/heap-helper1( v : vector<a>, l : list<a>, index : int ) : ()
+tail fun heap/list-to-heap( v : vector<a>, l : list<a>, index : int ) : ()
   match l
     Nil -> ()
     Cons(x, xs) -> 
       v.unsafe-assign( index.ssize_t, x )
-      list/heap-helper1( v, xs, index + 1)
+      list-to-heap( v, xs, index + 1)
 
 // This helper function is used to rebalance the heap after all elements in the list have been added.
-fun list/heap-helper2( h : heap<a>, index-list : list<int>, ?cmp : (a, a) -> order ) : heap<a>
+tail fun heap/balance( h : heap<a>, index-list : list<int>, ?cmp : (a, a) -> order ) : heap<a>
   match index-list
     Nil -> h
     Cons(x, xs) -> 
-      list/heap-helper2( h.push-down( x ), xs )
+      balance( h.push-down( x ), xs )
 
 // This helper is a recursive algorithm tells us if an `i` is on a min or max level
-fun on-min-level( h : heap<a>, i : int ) : bool
+tail fun on-min-level( h : heap<a>, i : int ) : bool
   unsafe-total fn ()
     helper/on-min-level( i, 1, 1 )
 
-fip fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
+tail fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : div bool
   /*trace("index " ++ i.show)
   trace("left-bound " ++ left-bound.show)
   trace("right-bound " ++ right-bound.show)*/
@@ -67,7 +67,7 @@ fip fun helper/on-min-level( i : int, left-bound : int, right-bound : int ) : di
   else 
     val new-left-bound = 2 * (2 * left-bound)
     val new-right-bound = 2 * (2 * right-bound + 1) + 1
-    helper/on-min-level( i, new-left-bound, new-right-bound ) 
+    on-min-level( i, new-left-bound, new-right-bound ) 
 
 // Helper for getting the parent index
 fun parent( i : int ) : int
