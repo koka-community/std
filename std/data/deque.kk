@@ -142,7 +142,6 @@ pub fun clear( ^d : deque<a> ) : deque<a>
       if data.is-vec-unique then
         forz(size.ssize_t) fn (i) 
           data.unsafe-vector-clear-at( i )
-          ()// Needed to prevent a compiler bug
         Deque( data, 0, 0, 0)
       else
         Deque( unsafe-vector( data.length.ssize_t ), 0, 0, 0 )
@@ -157,31 +156,31 @@ pub fun capacity( ^d : deque<a> ) : int
 
 // Apply an effectful function `f` to each element in a deque `d`.
 pub fun effect/map( ^d : deque<a>, f : (a) -> e b ) : e deque<b>
-  val new-data = d.data.map( f )
-  Deque( new-data, d.front-idx, d.back-idx, d.size )
+  match d
+    Deque( data, front, back, size ) -> 
+      val new-data = data.map( f )
+      Deque( new-data, front, back, size )
 
 // Apply a function `f` to each element in a deque `d`.
 pub fun unique/map( d : deque<a>, f : (a) -> b ) : deque<b>
-  val new-data = d.data.unique/map( f )
-  Deque( new-data, d.front-idx, d.back-idx, d.size )
+  match d
+    Deque( data, front, back, size ) -> 
+      val new-data = data.unique/map( f )
+      Deque( new-data, front, back, size )
 
 // Invoke a function `f` for each element in a deque `d`.
 pub fun foreach( d : deque<a>, f : (a) -> e () ) : e ()
   for( d.size ) fn (i)
     val offset : int = d.front-idx + 1
     val real-index = (i + offset) % d.data.length
-    match d.at( i )
-      Nothing -> ()
-      Just(x) -> f( x )
+    f( d.data.unsafe-idx( real-index.ssize_t ) )
 
 // Invoke a function `f` for each element in a deque `d` with its index.
 pub fun foreach-indexed( d : deque<a>, f : (int, a) -> e () ) : e ()
   for( d.size ) fn (i)
     val offset : int = d.front-idx + 1
     val real-index = (i + offset) % d.data.length
-    match d.at( i )
-      Nothing -> ()
-      Just(x) -> f( i, x )
+    f( i, d.data.unsafe-idx( real-index.ssize_t ))
 
 // Equality checking for deque.
 pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
@@ -198,8 +197,6 @@ pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
     match result
       Nothing -> True
       Just(x) -> x
-      
-
 
 ref struct something {i: int}
 fun test-deque()
