@@ -9,9 +9,9 @@ extern import
 pub alias extern-owned<t> = forall<a> a
 pub alias extern-borrowed<t> = forall<a> a
 
-pub struct owned-c<t>
+pub value struct owned-c<t>
   owned: extern-owned<t>
-pub struct borrowed-c<s::S,t>
+pub value struct borrowed-c<s::S,t>
   borrowed: extern-borrowed<t>
 pub type c-array<t>
 pub alias c-null<t> = intptr_t
