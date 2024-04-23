@@ -15,7 +15,7 @@ import std/num/random
 // Time Complexity:
 // Operation    Average   Worst Case
 // Insert       O(log n)  O(log n)
-// Update-key             O(n) 
+// Update-key             O(n)
 // Delete-min   O(log n)  O(log n)
 // Delete-max   O(log n)  O(log n)
 // Space Complexity:
@@ -30,7 +30,7 @@ pub fun heap( capacity : int = 1 ) : heap<a>
   Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
 
 // Create a heap from a list `l` where the initial capacity is the length of `l`.
-pub fun list/heap( l : list<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+pub fun list/heap( l : list<a>, ?cmp : (a, a) -> order) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   val vec = unsafe-vector( (l.length + 1).ssize_t )
   list/heap-helper1( vec, l , 1)
@@ -45,7 +45,7 @@ fun list/heap-helper1( v : vector<a>, l : list<a>, index : int ) : ()
       list/heap-helper1( v, xs, index + 1)
 
 // This helper function is used to rebalance the heap after all elements in the list have been added.
-fun list/heap-helper2( h : heap<a>, index-list : list<int>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+fun list/heap-helper2( h : heap<a>, index-list : list<int>, ?cmp : (a, a) -> order ) : heap<a>
   match index-list
     Nil -> h
     Cons(x, xs) -> 
@@ -78,11 +78,11 @@ fun is-root( i : int ) : bool
   i == 1
 
 // Also known as sift-down. This function will move data down the heap.
-fun push-down( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+fun push-down( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : heap<a>
   unsafe-total fn ()
     push-down-helper( h, i )
 
-fun push-down-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+fun push-down-helper( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   if h.on-min-level( i ) then
     //trace("on min")
     h.push-down-min( i )
@@ -90,7 +90,7 @@ fun push-down-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a)
     //trace("on max")
     h.push-down-max( i )
 
-inline fun push-down-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+inline fun push-down-min( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   match h
     Heap( data, size) ->
       if has-children( i, size ) then
@@ -111,7 +111,7 @@ inline fun push-down-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a
       else
         Heap( data, size )
 
-inline fun push-down-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+inline fun push-down-max( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   match h
     Heap( data, size) ->
       if has-children( i, size ) then
@@ -138,12 +138,12 @@ fun has-children( i : int, size : int ) : bool
   else 2 * i < size || 2 * i + 1 < size
 
 // Helper for getting the next minimum value from either children or grandchildren.
-fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
+fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -> order ) : (int, bool)
   unsafe-total() fn () 
     real/get-next-min( data, i, size )
 
 // This function is an unrolled loop that checks for the minimum value from either children or grandchildren.
-inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
+inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -> order ) : div (int, bool)
   var min := data.unsafe-idx( (2 * i).ssize_t )
   var min-idx := 2 * i
   if min > data.unsafe-idx( (2 * i + 1).ssize_t ) then
@@ -175,12 +175,12 @@ inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?(<) : (a, 
   (min-idx, grandchild)
 
 // Helper for getting the next maximum value from either children or grandchildren.
-fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : (int, bool)
+fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) -> order ) : (int, bool)
   unsafe-total() fn () 
     real/get-next-max( data, i, size )
 
 // This function is an unrolled loop that checks for the maximum value from either children or grandchildren.
-inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div (int, bool)
+inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) -> order ) : div (int, bool)
   var max := data.unsafe-idx( (2 * i).ssize_t )
   var max-idx := 2 * i
   if max < data.unsafe-idx( (i + 1).ssize_t ) then
@@ -212,11 +212,11 @@ inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?(<) : (a, 
   (max-idx, grandchild)
 
 // Also known as bubble-up. This function will move data up the heap.
-fun push-up( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : heap<a>
+fun push-up( h : heap<a>, i : int, ?cmp: (a, a) -> order ) : heap<a>
   unsafe-total fn ()
     push-up-helper( h, i )
 
-fun push-up-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+fun push-up-helper( h : heap<a>, i : int, ?cmp: (a, a) -> order ) : div heap<a>
   match h
     Heap(data, size) -> 
       if i.is-root.not then
@@ -235,7 +235,7 @@ fun push-up-helper( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -
       else
         Heap( data, size )
 
-fun push-up-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+fun push-up-min( h : heap<a>, i : int, ?cmp: (a, a) -> order ) : div heap<a>
   val grandparent = get-grandparent( i )
   match grandparent
     Nothing -> h
@@ -248,7 +248,7 @@ fun push-up-min( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> b
           else
             Heap( data, size )
 
-fun push-up-max( h : heap<a>, i : int, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : div heap<a>
+fun push-up-max( h : heap<a>, i : int, ?cmp: (a, a) -> order ) : div heap<a>
   val grandparent = get-grandparent( i )
   match grandparent
     Nothing -> h
@@ -277,7 +277,7 @@ fun resizer( size : int ) : int
 
 // Inserts an item `x` into the end of the heap `h`, resizing first if necessary.
 // After insertion, then value will be pushed up if needed.
-pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool, ?resizer : (int) -> int ) : heap<a>
+pub fun insert( h : heap<a>, x : a, ?cmp: (a, a) -> order, ?resizer : (int) -> int ) : heap<a>
   match h
     Heap( data, size ) ->
       // adding `1` here since we ignore the first value in the list
@@ -289,14 +289,14 @@ pub fun insert( h : heap<a>, x : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool
       Heap( vec', size + 1 ).push-up( size + 1 )
 
 // Fetches the minimum element from heap `h`.
-pub fun min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
+pub fun min( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<a>
   if h.size == 0 then
     Nothing
   else
     h.data.at( 1 )
 
 // Removes the minimum element from heap `h`.
-pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<(a, heap<a>)>
+pub fun delete-min( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -309,7 +309,7 @@ pub fun delete-min( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
         Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
 
 // Fetches the maximum element from heap `h`.
-pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool ) : maybe<a>
+pub fun max( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<a>
   if h.size == 0 then
     Nothing
   else 
@@ -325,7 +325,7 @@ pub fun max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : 
     h.data.at( index )
 
 // Removes the maximum element from heap `h`.
-pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : maybe<(a, heap<a>)>
+pub fun delete-max( h : heap<a>, ?cmp: (a, a) -> order, ?show : (a) -> string ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -347,12 +347,12 @@ pub fun delete-max( h : heap<a>, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?
         Just( (max, Heap( data', size - 1 ).push-down( index )) )
 
 // This function will update a `key` with a `new-key` in a heap `h`.
-pub fun update-key( h : heap<a>, key : a, new-key : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : heap<a>
+pub fun update-key( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order, ?show : (a) -> string ) : heap<a>
   unsafe-total 
     update-key-real( h, key, new-key )
 
 // This function needs to be optimized. We need to figure out the exact situations of when to call `push-down` or `push-up` so that we don't have a worse case O(n) time.
-inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?(<) : (a, a) -> bool, ?(>) : (a, a) -> bool, ?(==) : (a, a) -> bool,?show : (a) -> string ) : div heap<a>
+inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order, ?show : (a) -> string ) : div heap<a>
   var i := 1
   while { h.size > i && h.data.unsafe-idx( i.ssize_t ) != key }
     i := i + 1

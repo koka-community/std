@@ -12,13 +12,13 @@ import std/core/undiv
 extern import 
   c file "inline/core-extras"
 
-fun (==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
+fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
     (Nothing, Nothing) -> True
     _ -> False
 
-fun and(l: list<bool>): bool
+fun list/and(l: list<bool>): bool
   match l
     Nil -> True
     Cons(True, l') -> l'.and
