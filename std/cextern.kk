@@ -6,13 +6,10 @@ import std/core/types
 extern import
   c file "inline/cextern.h"
 
-pub alias extern-owned<t> = forall<a> a
-pub alias extern-borrowed<t> = forall<a> a
-
 pub value struct owned-c<t>
-  owned: extern-owned<t>
+  owned: forall<a> a
 pub value struct borrowed-c<s::S,t>
-  borrowed: extern-borrowed<t>
+  borrowed: forall<a> a
 pub type c-array<t>
 pub alias c-null<t> = intptr_t
 
@@ -64,20 +61,23 @@ pub fun c-borrow<t>(c: intptr_t, f: forall<s> borrowed-c<s,t> -> e a): e a
 
 // Transform a koka owned c value into a c ptr (keeping the koka reference alive during the scope of the function)
 extern owned/with-ptr-extern(^t: b, f: intptr_t -> e a): e a
-  c "kk_owned_with_ptr"
+  c inline "kk_owned_with_ptr(kk_std_cextern__owned_c_unbox(#1, KK_BORROWED, kk_context()).owned, #2, kk_context())"
 
 pub fun owned/with-ptr(t: owned-c<t>, f: intptr_t -> e a): e a
-  owned/with-ptr-extern(t.owned, f)
+  owned/with-ptr-extern(t, f)
 
 // Transform a koka owned value into a c ptr (keeping the koka reference alive during the scope of the function)
 extern borrowed/with-ptr-extern(^t: b, f: intptr_t -> e a): e a
-  c "kk_borrowed_with_ptr"
+  c inline "kk_borrowed_with_ptr(kk_std_cextern__borrowed_c_unbox(#1, KK_BORROWED, kk_context()).borrowed, #2, kk_context())"
 
 pub fun borrowed/with-ptr(t: borrowed-c<s,t>, f: intptr_t -> e a): e a
-  borrowed/with-ptr-extern(t.borrowed, f)
+  borrowed/with-ptr-extern(t, f)
 
 pub fun c-array/with-ptr(^t: owned-c<c-array<t>>, idx: ssize_t, f: forall<s> borrowed-c<s,t> -> e a, ?size-of: (c-null<t>) -> int32): e a
-  offset/with-ptr(t.owned, idx, fn(p) c-borrow(p, f), size-of(cnull()))
+  offset/with-ptr(t, idx, fn(p) c-borrow(p, f), size-of(cnull()))
 
 extern offset/with-ptr(^t: b, idx: ssize_t, f: intptr_t -> e a, size-of: int32): e a
-  c "kk_owned_with_ptr_idx"
+  c inline "kk_owned_with_ptr_idx(kk_std_cextern__owned_c_unbox(#1, KK_BORROWED, kk_context()).owned, #2, #3, #4, kk_context())"
+
+pub extern ptr/to-string(c: intptr_t): string
+  c inline "kk_string_alloc_raw((const char *)#1, false, kk_context())"
