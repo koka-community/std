@@ -81,3 +81,9 @@ extern offset/with-ptr(^t: b, idx: ssize_t, f: intptr_t -> e a, size-of: int32):
 
 pub extern ptr/to-string(c: intptr_t): string
   c inline "kk_string_alloc_raw((const char *)#1, false, kk_context())"
+
+pub extern strlen-ptr/to-string(c: intptr_t, i: int64): string
+  c inline "kk_string_alloc_raw_buff(#2, (const char *)#1, false, kk_context())"
+
+pub extern ptr/c-string(s: string): intptr_t
+  c inline "(intptr_t)kk_string_cbuf_borrow(#1, NULL, kk_context())"

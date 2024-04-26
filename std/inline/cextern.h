@@ -25,3 +25,8 @@ kk_box_t kk_owned_with_ptr_idx(kk_box_t owned, kk_ssize_t idx, kk_function_t f, 
   kk_addr_t cptr_idx = (kk_addr_t)(cptr + (idx*size));
   return kk_function_call(kk_box_t,(kk_function_t,kk_addr_t,kk_context_t*), f, (f, cptr_idx, kk_context()), kk_context());
 }
+
+kk_string_t kk_string_alloc_raw_buff(kk_ssize_t len, char* s, bool free, kk_context_t* ctx){
+  s[len] = 0;
+  return kk_string_alloc_raw_len(len, s, free, ctx);
+}
