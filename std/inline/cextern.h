@@ -30,3 +30,8 @@ kk_string_t kk_string_alloc_raw_buff(kk_ssize_t len, char* s, bool free, kk_cont
   s[len] = 0;
   return kk_string_alloc_raw_len(len, s, free, ctx);
 }
+
+kk_box_t kk_with_c_string(kk_string_t s, kk_function_t f, kk_context_t* _ctx){
+  kk_addr_t cptr = (kk_addr_t)kk_string_cbuf_borrow(s, NULL, kk_context());
+  return kk_function_call(kk_box_t,(kk_function_t,kk_addr_t,kk_context_t*), f, (f, cptr, kk_context()), kk_context());
+}
