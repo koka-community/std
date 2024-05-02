@@ -115,7 +115,7 @@ pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
           data
         else
           val new-data = data.copy
-          new-data..drop-at( index.ssize_t )
+          new-data.drop-at( index.ssize_t )
           new-data
         Just( (item, Deque( data', index, back, size - 1 ) ) )
 
@@ -133,7 +133,7 @@ pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
           data
         else
           val new-data = data.copy
-          new-data..drop-at( index.ssize_t )
+          new-data.drop-at( index.ssize_t )
           new-data
         Just( (item, Deque( data', front, index, size - 1 ) ) )
 
