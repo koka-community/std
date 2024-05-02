@@ -289,9 +289,9 @@ pub fun insert( h : heap<a>, x : a, ?cmp: (a, a) -> order, ?resizer : (int) -> i
     Heap( data, size ) ->
       // adding `1` here since we ignore the first value in the list
       val vec = if size + 1 == data.length  then
-        data.realloc( resizer( size + 1 ).ssize_t )
-      else
-        data
+          data.realloc( resizer( size + 1 ).ssize_t )
+        else
+          data
       val vec' = vec.unsafe-set( size + 1, x)
       Heap( vec', size + 1 ).push-up( size + 1 )
 
@@ -321,13 +321,13 @@ pub fun max( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<a>
     Nothing
   else 
     val index = if h.size == 1 then
-      1
-    elif h.size == 2 then
-      2
-    elif h.data.unsafe-idx( 2.ssize_t ) > h.data.unsafe-idx( 3.ssize_t ) then
-      2
-    else
-      3
+        1
+      elif h.size == 2 then
+        2
+      elif h.data.unsafe-idx( 2.ssize_t ) > h.data.unsafe-idx( 3.ssize_t ) then
+        2
+      else
+        3
     h.data.at( index )
 
 // Removes the maximum element from heap `h`.
@@ -336,13 +336,13 @@ pub fun delete-max( h : heap<a>, ?cmp: (a, a) -> order, ?show : (a) -> string ) 
     Nothing
   else 
     val index = if h.size == 1 then
-      1
-    elif h.size == 2 then
-      2
-    elif h.data.unsafe-idx( 2.ssize_t ) > h.data.unsafe-idx( 3.ssize_t ) then
-      2
-    else
-      3
+        1
+      elif h.size == 2 then
+        2
+      elif h.data.unsafe-idx( 2.ssize_t ) > h.data.unsafe-idx( 3.ssize_t ) then
+        2
+      else
+        3
     val max = h.data.unsafe-idx( index.ssize_t )
     match h
       Heap( data, size ) ->

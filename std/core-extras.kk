@@ -104,12 +104,6 @@ pub extern unsafe-vector-clear( v : vector<a>, stop : ssize_t ) : ()
 pub extern unsafe-vector-clear-at( v : vector<a>, position : ssize_t ) : ()
   c "kk_vector_clear_at"
 
-// This function takes a vector `v` and a `position` to clear at.
-// This is all done without a bounds check, so make sure to get it right.
-// This function shouldn't be called directly unless you know exactly what you are doing.
-pub extern unsafe-vector-clear-at( v : vector<a>, position : ssize_t ) : ()
-  c inline "kk_vector_clear_at"
-
 // Apply a total function `f` to each element in a vector `v`
 // Since the vector consists of boxed values we can ignore type incompatibilities
 // However, we also cannot allow exception effects in f, because then the vector would be left in an inconsistent state which would be observable and unreversable
