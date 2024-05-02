@@ -141,29 +141,33 @@ inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, 
   var grandchild := False
   val child1-idx = 2 * i
   val child2-idx = 2 * i + 1
-  if 2 * child1-idx <= size then
-    val grandchild1 = data.unsafe-idx( (2 * child1-idx).ssize_t )
+  val grandchild1-idx = 2 * child1-idx
+  val grandchild2-idx = 2 * child1-idx + 1
+  val grandchild3-idx = 2 * child2-idx
+  val grandchild4-idx = 2 * child2-idx + 1
+  if grandchild1-idx <= size then
+    val grandchild1 = data.unsafe-idx( grandchild1-idx.ssize_t )
     if min > grandchild1 then
       min := grandchild1
-      min-idx := 2 * child1-idx
+      min-idx := grandchild1-idx
       grandchild := True
-  if 2 * child1-idx + 1 <= size then
-    val grandchild2 = data.unsafe-idx( (2 * child1-idx + 1).ssize_t )
+  if grandchild2-idx <= size then
+    val grandchild2 = data.unsafe-idx( grandchild2-idx.ssize_t )
     if min > grandchild2 then
       min := grandchild2
-      min-idx := 2 * child1-idx + 1
+      min-idx := grandchild2-idx
       grandchild := True
-  if 2 * child2-idx <= size then
-    val grandchild3 = data.unsafe-idx( (2 * child2-idx).ssize_t )
+  if grandchild3-idx <= size then
+    val grandchild3 = data.unsafe-idx( grandchild3-idx.ssize_t )
     if min > grandchild3 then
       min := grandchild3
-      min-idx := 2 * child2-idx
+      min-idx := grandchild3-idx
       grandchild := True
-  if 2 * child2-idx + 1 <= size then
-    val grandchild4 = data.unsafe-idx( (2 * child2-idx + 1).ssize_t )
+  if grandchild4-idx <= size then
+    val grandchild4 = data.unsafe-idx( grandchild4-idx.ssize_t )
     if min > grandchild4 then
       min := grandchild4
-      min-idx := 2 * child2-idx + 1
+      min-idx := grandchild4-idx
       grandchild := True 
   (min-idx, grandchild)
 
@@ -184,29 +188,33 @@ inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a
   var grandchild := False
   val child1-idx = 2 * i
   val child2-idx = 2 * i + 1
-  if 2 * child1-idx <= size then
-    val grandchild1 = data.unsafe-idx( (2 * child1-idx).ssize_t )
+  val grandchild1-idx = 2 * child1-idx
+  val grandchild2-idx = 2 * child1-idx + 1
+  val grandchild3-idx = 2 * child2-idx
+  val grandchild4-idx = 2 * child2-idx + 1
+  if grandchild1-idx <= size then
+    val grandchild1 = data.unsafe-idx( grandchild1-idx.ssize_t )
     if max < grandchild1 then
       max := grandchild1
-      max-idx := 2 * child1-idx
+      max-idx := grandchild1-idx
       grandchild := True
-  if 2 * child1-idx + 1 <= size then
-    val grandchild2 = data.unsafe-idx( (2 * child1-idx + 1).ssize_t )
+  if grandchild2-idx <= size then
+    val grandchild2 = data.unsafe-idx( grandchild2-idx.ssize_t )
     if max < grandchild2 then
       max := grandchild2
-      max-idx := 2 * child1-idx + 1
+      max-idx := grandchild2-idx
       grandchild := True
-  if 2 * child2-idx <= size then
-    val grandchild3 = data.unsafe-idx( (2 * child2-idx).ssize_t )
+  if grandchild3-idx <= size then
+    val grandchild3 = data.unsafe-idx( grandchild3-idx.ssize_t )
     if max < grandchild3 then
       max := grandchild3
-      max-idx := 2 * child2-idx
+      max-idx := grandchild3-idx
       grandchild := True
-  if 2 * child2-idx + 1 <= size then
-    val grandchild4 = data.unsafe-idx( (2 * child2-idx + 1).ssize_t )
+  if grandchild4-idx <= size then
+    val grandchild4 = data.unsafe-idx( grandchild4-idx.ssize_t )
     if max < grandchild4 then
       max := grandchild4
-      max-idx := 2 * child2-idx + 1
+      max-idx := grandchild4-idx
       grandchild := True 
   (max-idx, grandchild)
 
