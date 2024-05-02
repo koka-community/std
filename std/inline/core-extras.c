@@ -13,6 +13,7 @@ kk_unit_t kk_vector_clear(kk_vector_t v, kk_ssize_t stop, kk_context_t* ctx) {
 }
 
 kk_unit_t kk_vector_clear_at(kk_vector_t v, kk_ssize_t pos, kk_context_t* ctx) {
+    printf("clearing\n");
     kk_ssize_t length;
     kk_box_t* vec = kk_vector_buf_borrow(v, &length, ctx);
     kk_box_drop(vec[pos], ctx);
