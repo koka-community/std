@@ -110,8 +110,14 @@ pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
       Deque(data, front, back, size) -> 
         val index = (front + 1) % data.length
         val item = data.unsafe-idx( index.ssize_t )
-        data.drop-at( index.ssize_t )
-        Just( (item, Deque( data, index, back, size - 1 ) ) )
+        val data' = if data.is-vec-unique then
+          data.drop-at( index.ssize_t )
+          data
+        else
+          val new-data = data.copy
+          new-data..drop-at( index.ssize_t )
+          new-data
+        Just( (item, Deque( data', index, back, size - 1 ) ) )
 
 // Pops a value from the back of a deque `d`.
 pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
@@ -122,8 +128,14 @@ pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
       Deque(data, front, back, size) -> 
         val index = (back - 1) % data.length
         val item = data.unsafe-idx( index.ssize_t )
-        data.drop-at( index.ssize_t )
-        Just( (item, Deque( data, front, index, size - 1 ) ) )
+        val data' = if data.is-vec-unique then
+          data.drop-at( index.ssize_t )
+          data
+        else
+          val new-data = data.copy
+          new-data..drop-at( index.ssize_t )
+          new-data
+        Just( (item, Deque( data', front, index, size - 1 ) ) )
 
 // Fetches a value from the front of a deque `d`.
 pub fun front( ^d : deque<a> ) : maybe<a>

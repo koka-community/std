@@ -468,6 +468,3 @@ fun test-heap()
           Just((_, heap@)) ->
             val max3 = heap@.max()
             expect(Just(1), { max3 }, details = "Expected Just(1) but found " ++ max3.show )
-
-fun main()
-  test-heap()
