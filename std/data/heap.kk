@@ -31,7 +31,7 @@ pub fun heap( capacity : int = 1 ) : heap<a>
   Heap( unsafe-vector( (capacity + 1).ssize_t ), 0 )
 
 // Create a heap from a list `l` where the initial capacity is the length of `l`.
-pub fun list/heap( l : list<a>, ?cmp : (a, a) -> order, ?show : (a) -> string) : heap<a>
+pub fun list/heap( l : list<a>, ?cmp : (a, a) -> order ) : heap<a>
   // We add `1` to capacity since we ignore the 0th element to make our math easier
   val vec = unsafe-vector( (l.length + 1).ssize_t )
   list-to-heap( vec, l , 1)
@@ -46,7 +46,7 @@ tail fun heap/list-to-heap( v : vector<a>, l : list<a>, index : int ) : ()
       list-to-heap( v, xs, index + 1)
 
 // This helper function is used to rebalance the heap after all elements in the list have been added.
-tail fun heap/balance( h : heap<a>, index-list : list<int>, ?cmp : (a, a) -> order, ?show : (a) -> string ) : heap<a>
+tail fun heap/balance( h : heap<a>, index-list : list<int>, ?cmp : (a, a) -> order ) : heap<a>
   match index-list
     Nil -> h
     Cons(x, xs) -> 
@@ -65,11 +65,11 @@ fun is-root( i : int ) : bool
   i == 1
 
 // Also known as sift-down. This function will move data down the heap.
-fun push-down( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : (a) -> string ) : heap<a>
+fun push-down( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : heap<a>
   unsafe-total fn ()
     push-down-helper( h, i )
 
-fun push-down-helper( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : (a) -> string ) : div heap<a>
+fun push-down-helper( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   if h.on-min-level( i ) then
     //trace("on min")
     h.push-down-min( i )
@@ -77,16 +77,11 @@ fun push-down-helper( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : (a) 
     //trace("on max")
     h.push-down-max( i )
 
-inline fun push-down-min( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : (a) -> string ) : div heap<a>
+inline fun push-down-min( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   match h
     Heap( data, size) ->
       if has-children( i, size ) then
-        trace("i has children")
         val (m, grandchild) = data.wrapper/get-next-min( i, size )
-        trace("i " ++ i.show ++ " value: " ++ data.unsafe-idx( i.ssize_t ).show )
-        trace("m " ++ m.show ++ " value: " ++ data.unsafe-idx( m.ssize_t ).show )
-        data.foreach fn (x)
-          x.show.trace
         if grandchild then
           if data.unsafe-idx( m.ssize_t ) < data.unsafe-idx( i.ssize_t ) then
             val data' = data.a/unsafe-swap( m, i )
@@ -96,21 +91,17 @@ inline fun push-down-min( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : 
           else
             Heap( data, size )
         elif data.unsafe-idx( m.ssize_t ) < data.unsafe-idx( i.ssize_t ) then
-          trace("swapping child and parent")
           val data' = data.a/unsafe-swap( m, i )
           Heap( data', size )
         else
           Heap( data, size )
       else
-        trace("i doesn't have children")
-        trace("size: " ++ size.show)
         Heap( data, size )
 
-inline fun push-down-max( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : (a) -> string ) : div heap<a>
+inline fun push-down-max( h : heap<a>, i : int, ?cmp : (a, a) -> order ) : div heap<a>
   match h
     Heap( data, size) ->
       if has-children( i, size ) then
-        trace("max has children")
         val (m, grandchild) = data.wrapper/get-next-max( i, size )
         if grandchild then
           if data.unsafe-idx( m.ssize_t ) > data.unsafe-idx( i.ssize_t ) then
@@ -130,12 +121,8 @@ inline fun push-down-max( h : heap<a>, i : int, ?cmp : (a, a) -> order, ?show : 
 
 // Helper for checking if an index has any children.
 fun has-children( i : int, size : int ) : bool
-  trace("i: " ++ i.show)
-  trace("size " ++ size.show)
-  val g = if i < 1 then False
+  if i < 1 then False
   else 2 * i <= size || 2 * i + 1 <= size
-  trace("result: " ++ g.show)
-  g
 
 // Helper for getting the next minimum value from either children or grandchildren.
 fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -> order ) : (int, bool)
@@ -146,13 +133,11 @@ fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -
 inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -> order ) : div (int, bool)
   var min := data.unsafe-idx( (2 * i).ssize_t )
   var min-idx := 2 * i
-  trace("getting index as min " ++ min-idx.show)
   if 2 * i + 1 < size then
     val check1 = data.unsafe-idx( (2 * i + 1).ssize_t )
     if min > check1 then
       min := check1
       min-idx := 2 * i + 1
-      trace("getting index as min " ++ min-idx.show)
   var grandchild := False
   val child1-idx = 2 * i
   val child2-idx = 2 * i + 1
@@ -189,10 +174,8 @@ fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) ->
 
 // This function is an unrolled loop that checks for the maximum value from either children or grandchildren.
 inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) -> order ) : div (int, bool)
-  trace("getting first max")
   var max := data.unsafe-idx( (2 * i).ssize_t )
   var max-idx := 2 * i
-  trace("checking for second max")
   if 2 * i + 1 < size then
     val check1 = data.unsafe-idx( (2 * i + 1).ssize_t )
     if max < check1 then
@@ -312,7 +295,7 @@ pub fun min( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<a>
     h.data.at( 1 )
 
 // Removes the minimum element from heap `h`.
-pub fun delete-min( h : heap<a>, ?cmp: (a, a) -> order, ?show : (a) -> string ) : maybe<(a, heap<a>)>
+pub fun delete-min( h : heap<a>, ?cmp: (a, a) -> order ) : maybe<(a, heap<a>)>
   if h.size == 0 then
     Nothing
   else 
@@ -322,8 +305,6 @@ pub fun delete-min( h : heap<a>, ?cmp: (a, a) -> order, ?show : (a) -> string ) 
         val last = data.unsafe-idx( size.ssize_t )
         val data' = data.unsafe-set( 1, last )
         data'.unsafe-vector-clear-at( (size).ssize_t )
-        data'.foreach fn (x)
-          x.show.trace
         Just( (min, Heap( data', size - 1 ).push-down( 1 )) )
 
 // Fetches the maximum element from heap `h`.
@@ -363,12 +344,12 @@ pub fun delete-max( h : heap<a>, ?cmp: (a, a) -> order, ?show : (a) -> string ) 
         Just( (max, Heap( data', size - 1 ).push-down( index )) )
 
 // This function will update a `key` with a `new-key` in a heap `h`.
-pub fun update-key( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order, ?show : (a) -> string ) : heap<a>
+pub fun update-key( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order ) : heap<a>
   unsafe-total 
     update-key-real( h, key, new-key )
 
 // This function needs to be optimized. We need to figure out the exact situations of when to call `push-down` or `push-up` so that we don't have a worse case O(n) time.
-inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order, ?show : (a) -> string ) : div heap<a>
+inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> order ) : div heap<a>
   var i := 1
   while { h.size > i && h.data.unsafe-idx( i.ssize_t ) != key }
     i := i + 1
@@ -460,7 +441,6 @@ fun test-heap()
     heap.delete-max()
     expect(True, { True }, details = "Heap did not succeed." )
   basic/test("heap clear each element min ordered")
-    trace("\n")
     val heap = list/heap( [1, 2, 3] )
     val min1 = heap.min()
     expect(Just(1), { min1 }, details = "Expected Just(1) but found " ++ min1.show )
