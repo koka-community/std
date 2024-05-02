@@ -75,10 +75,10 @@ fun resizer( current : int ) : int
 // `?resizer` controls how big a deque should be when it needs to be resized.
 pub fun push-front( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<a>
   val vec = if d.size >= d.data.length then
-    val new-capacity = resizer( d.data.length )
-    d.resize( new-capacity )
-  else
-    d
+      val new-capacity = resizer( d.data.length )
+      d.resize( new-capacity )
+    else
+      d
   match vec
     Deque(data, front, back, size) -> 
       // We have to adjust the back on the first insertion so we don't overwrite the first element
@@ -90,10 +90,10 @@ pub fun push-front( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<
 // `?resizer` controls how big a deque should be when it needs to be resized.
 pub fun push-back( ^d : deque<a>, value : a, ?resizer : (int) -> int ) : deque<a>
   val vec = if d.size >= d.data.length then
-    val new-capacity = resizer( d.data.length )
-    d.resize( new-capacity )
-  else
-    d
+      val new-capacity = resizer( d.data.length )
+      d.resize( new-capacity )
+    else
+      d
   match vec
     Deque(data, front, back, size) -> 
       // We have to adjust the front on the first insertion so we don't overwrite the first element
@@ -110,8 +110,14 @@ pub fun pop-front( ^d : deque<a> ) : maybe<(a, deque<a>)>
       Deque(data, front, back, size) -> 
         val index = (front + 1) % data.length
         val item = data.unsafe-idx( index.ssize_t )
-        data.drop-at( index.ssize_t )
-        Just( (item, Deque( data, index, back, size - 1 ) ) )
+        val data' = if data.is-vec-unique then
+            data.drop-at( index.ssize_t )
+            data
+          else
+            val new-data = data.copy
+            new-data.drop-at( index.ssize_t )
+            new-data
+        Just( (item, Deque( data', index, back, size - 1 ) ) )
 
 // Pops a value from the back of a deque `d`.
 pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
@@ -122,8 +128,14 @@ pub fun pop-back( ^d : deque<a> ) : maybe<(a, deque<a>)>
       Deque(data, front, back, size) -> 
         val index = (back - 1) % data.length
         val item = data.unsafe-idx( index.ssize_t )
-        data.drop-at( index.ssize_t )
-        Just( (item, Deque( data, front, index, size - 1 ) ) )
+        val data' = if data.is-vec-unique then
+            data.drop-at( index.ssize_t )
+            data
+          else
+            val new-data = data.copy
+            new-data.drop-at( index.ssize_t )
+            new-data
+        Just( (item, Deque( data', front, index, size - 1 ) ) )
 
 // Fetches a value from the front of a deque `d`.
 pub fun front( ^d : deque<a> ) : maybe<a>
@@ -189,7 +201,8 @@ pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
   else
     val result = for-while(xs.length) fn(i) 
       match (xs.at(i), ys.at(i))
-        (Just(x), Just(y)) -> if x == y then 
+        (Just(x), Just(y)) -> 
+          if x == y then 
             Nothing
           else
             Just(False)

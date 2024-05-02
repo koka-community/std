@@ -12,13 +12,13 @@ import std/core/undiv
 extern import 
   c file "inline/core-extras"
 
-fun (==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
+fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
     (Nothing, Nothing) -> True
     _ -> False
 
-fun and(l: list<bool>): bool
+fun list/and(l: list<bool>): bool
   match l
     Nil -> True
     Cons(True, l') -> l'.and
@@ -96,13 +96,13 @@ pub inline extern realloc( v : vector<a>, new_capacity : ssize_t ) : vector<a>
 // If you supply a `stop` larger than the length, then the length of the vector is used instead.
 // This function shouldn't be called directly unless you know exactly what you are doing.
 pub extern unsafe-vector-clear( v : vector<a>, stop : ssize_t ) : ()
-  c inline "kk_vector_clear"
+  c "kk_vector_clear"
 
 // This function takes a vector `v` and a `position` to clear at.
 // This is all done without a bounds check, so make sure to get it right.
 // This function shouldn't be called directly unless you know exactly what you are doing.
 pub extern unsafe-vector-clear-at( v : vector<a>, position : ssize_t ) : ()
-  c inline "kk_vector_clear_at"
+  c "kk_vector_clear_at"
 
 // Apply a total function `f` to each element in a vector `v`
 // Since the vector consists of boxed values we can ignore type incompatibilities
@@ -131,6 +131,25 @@ pub fun unsafe-set( v : vector<a>, ^index : int, value : a ) : vector<a>
     val v' = v.copy
     v'.unsafe-assign(index.ssize_t, value)
     v'
+
+pub fun a/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : vector<a>
+  if v.is-vec-unique then
+    val item1 = v.unsafe-idx( idx1.ssize_t )
+    v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
+    v.unsafe-assign( idx2.ssize_t, item1 )
+    v
+  else 
+    val v' = v.copy
+    val item1 = v'.unsafe-idx( idx1.ssize_t )
+    v'.unsafe-assign( idx1.ssize_t, v'.unsafe-idx( idx2.ssize_t ))
+    v'.unsafe-assign( idx2.ssize_t, item1 )
+    v'
+
+// This variant mutates inplace
+pub fun unit/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : ()
+  val item1 = v.unsafe-idx( idx1.ssize_t )
+  v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
+  v.unsafe-assign( idx2.ssize_t, item1 )
 
 pub inline extern is-ref-unique(^x: a): bool
   c inline "!kk_box_is_ptr(#1, kk_context()) || kk_block_is_unique(kk_box_to_ptr(#1, kk_context()))"
