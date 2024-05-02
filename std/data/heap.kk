@@ -133,7 +133,7 @@ fun wrapper/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -
 inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, a) -> order ) : div (int, bool)
   var min := data.unsafe-idx( (2 * i).ssize_t )
   var min-idx := 2 * i
-  if 2 * i + 1 < size then
+  if 2 * i + 1 <= size then
     val check1 = data.unsafe-idx( (2 * i + 1).ssize_t )
     if min > check1 then
       min := check1
@@ -141,25 +141,25 @@ inline fun real/get-next-min( data : vector<a>, i : int, size : int, ?cmp : (a, 
   var grandchild := False
   val child1-idx = 2 * i
   val child2-idx = 2 * i + 1
-  if 2 * child1-idx < size then
+  if 2 * child1-idx <= size then
     val check2 = data.unsafe-idx( (2 * child1-idx).ssize_t )
     if min > check2 then
       min := check2
       min-idx := 2 * child1-idx
       grandchild := True
-  if 2 * child1-idx + 1 < size then
+  if 2 * child1-idx + 1 <= size then
     val check3 = data.unsafe-idx( (2 * child1-idx + 1).ssize_t )
     if min > check3 then
       min := check3
       min-idx := 2 * child1-idx + 1
       grandchild := True
-  if 2 * child2-idx < size then
+  if 2 * child2-idx <= size then
     val check4 = data.unsafe-idx( (2 * child2-idx).ssize_t )
     if min > check4 then
       min := check4
       min-idx := 2 * child2-idx
       grandchild := True
-  if 2 * child2-idx + 1 < size then
+  if 2 * child2-idx + 1 <= size then
     val check5 = data.unsafe-idx( (2 * child2-idx + 1).ssize_t )
     if min > check5 then
       min := check5
@@ -176,7 +176,7 @@ fun wrapper/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) ->
 inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a) -> order ) : div (int, bool)
   var max := data.unsafe-idx( (2 * i).ssize_t )
   var max-idx := 2 * i
-  if 2 * i + 1 < size then
+  if 2 * i + 1 <= size then
     val check1 = data.unsafe-idx( (2 * i + 1).ssize_t )
     if max < check1 then
       max := check1
@@ -184,25 +184,25 @@ inline fun real/get-next-max( data : vector<a>, i : int, size : int, ?cmp: (a, a
   var grandchild := False
   val child1-idx = 2 * i
   val child2-idx = 2 * i + 1
-  if 2 * child1-idx < size then
+  if 2 * child1-idx <= size then
     val check2 = data.unsafe-idx( (2 * child1-idx).ssize_t )
     if max < check2 then
       max := check2
       max-idx := 2 * child1-idx
       grandchild := True
-  if 2 * child1-idx + 1 < size then
+  if 2 * child1-idx + 1 <= size then
     val check3 = data.unsafe-idx( (2 * child1-idx + 1).ssize_t )
     if max < check3 then
       max := check3
       max-idx := 2 * child1-idx + 1
       grandchild := True
-  if 2 * child2-idx < size then
+  if 2 * child2-idx <= size then
     val check4 = data.unsafe-idx( (2 * child2-idx).ssize_t )
     if max < check4 then
       max := check4
       max-idx := 2 * child2-idx
       grandchild := True
-  if 2 * child2-idx + 1 < size then
+  if 2 * child2-idx + 1 <= size then
     val check5 = data.unsafe-idx( (2 * child2-idx + 1).ssize_t )
     if max < check5 then
       max := check5
