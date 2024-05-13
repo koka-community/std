@@ -6,6 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/data/linearmap
+import std/test
 
 pub alias linearMap<k,v> = list<(k,v)> 
 
@@ -23,7 +24,7 @@ pub fun key/contains(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e bool
 
 pub fun update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
   match l
-    Cons((kk, vv), rst) -> if k == kk then Cons((kk, f(b, vv)), rst) else Cons((kk, vv), rst.update(k, b, f))
+    Cons((kk, vv), rst) -> if k == kk then Cons((kk, f(vv, b)), rst) else Cons((kk, vv), rst.update(k, b, f))
     Nil -> Cons((k, b), Nil) 
 
 pub fun get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
@@ -79,3 +80,19 @@ pub fun remove-all(m: linearMap<k,v>, l: list<k>, ?(==): (k, k) -> e bool): e li
 
 pub fun union-with(m1: linearMap<k,v>, m2: linearMap<k,v>, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e linearMap<k,v>
   m2.foldl(m1, fn(x, (k, y)) x.update(k, y, f))
+  
+fun test-map()
+  basic/scope("add")
+    scoped/test("add already present")
+      expect([(1, "a"), (2, "b")])
+        ([(1, "a"), (2, "b")]).add(1, "x") 
+    scoped/test("add not present")
+      expect([(2, "b"), (1, "x")])
+        ([(2, "b")]).add(1, "x")
+  basic/scope("set")
+    scoped/test("set already present")
+      expect([(1, "x"), (2, "b")])
+        ([(1, "a"), (2, "b")]).set(1, "x") 
+    scoped/test("set not present")
+      expect([(2, "b"), (1, "x")])
+        ([(2, "b")]).set(1, "x")
