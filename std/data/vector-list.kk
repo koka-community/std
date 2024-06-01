@@ -59,6 +59,7 @@ pub inline fun vector/vector-list( v : vector<a> ) : vector-list<a>
 // Resizes the vector-list to a new capacity.
 // If new-capacity is smaller than size then the vector-list is truncated
 pub fun resize( v : vector-list<a>, new-capacity : int ) : vector-list<a>
+  // trace("Resizing to " ++ new-capacity.show)
   match v
     Vector-list(data, old-size) ->
       val new-size = if old-size < new-capacity then old-size else new-capacity
@@ -86,7 +87,7 @@ fun resizer( current : int ) : int
 // Pushes `value` at the end of the vector-list `v`.
 // Push also takes implicit `resizer` to allow for custom growth factors
 // It is important that `resizer` must handle the case of where the current capacity is 0
-pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : vector-list<a>
+pub fun push( v : vector-list<a>, value : a, ?resizer : (int) -> int ) : vector-list<a>
   val vec = if v.size >= v.data.length then
     val new-capacity = resizer( v.data.length )
     // trace("Resizing to " ++ new-capacity.show)
@@ -99,7 +100,7 @@ pub fun push( ^v : vector-list<a>, value : a, ?resizer : (int) -> int ) : vector
       Vector-list( data.unsafe-set(size, value), size + 1 )
 
 // Removes the ending element from the vector-list `v`. Returns `Nothing` if size is 0.
-pub fun pop( ^v : vector-list<a>) : maybe<(a, vector-list<a>)>
+pub fun pop( v : vector-list<a>) : maybe<(a, vector-list<a>)>
   if v.size == 0 then
     Nothing
   else
@@ -115,7 +116,7 @@ pub fun last( ^v : vector-list<a> ) : maybe<a>
   if v.size == 0 then Nothing
   else v.at(v.size - 1)
 
-pub fun clear( ^v : vector-list<a> ) : vector-list<a>
+pub fun clear( v : vector-list<a> ) : vector-list<a>
   match v
     Vector-list(data, size) ->
       if data.is-vec-unique then
@@ -133,7 +134,7 @@ pub fun capacity( ^v : vector-list<a> ) : int
   v.data.length
 
 // Apply a function `f` to each element in a vector-list `v`.
-pub fun effect/map( ^v : vector-list<a>, f : (a) -> e b ) : e vector-list<b>
+pub fun effect/map( v : vector-list<a>, f : (a) -> e b ) : e vector-list<b>
   val new-data = v.data.map(f)
   Vector-list( new-data, v.size )
 
