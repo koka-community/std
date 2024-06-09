@@ -26,7 +26,7 @@ pub fun spaces(n : int)
 pub fun half(i : int)
   if i.is-odd then i/2 + 1 else i/2
 
-pub fun beside(l : render, head : string, r : render, ?show: (k) -> string ) : render
+pub fun beside(l : render, head : string, r : render ) : render
   val (l1,r1) = pad-height(l,r)
   val wl  = l1.width
   val wr  = r1.width
