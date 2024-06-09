@@ -51,11 +51,11 @@ pub fip fun balance( z : zipper<k,v>, t : root<k,v> ) : rbtree<k,v>
       Done -> Node(Black, t.to-node, k1, v1, r1)
     z -> rebuild(z, t.to-node)
 
-pub fip(1) fun find(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
+pub fip(1) fun set(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   match t
     Node(c, l, kx, vx, r) ->
       match order2(key, kx)
-        Lt2(ki, kj) -> find(l, ki, v, NodeL(c, z, kj, vx, r))
-        Gt2(ki, kj) -> find(r, ki, v, NodeR(c, l, kj, vx, z))
-        Eq2(ki) -> rebuild(z, Node(c, l, ki, v, r))
-    Leaf -> balance(z, Root(Red, Leaf, key, v, Leaf))
+        Lt2(ki, kj) -> set(l, ki, v, NodeL(c, z, kj, vx, r))
+        Gt2(ki, kj) -> set(r, ki, v, NodeR(c, l, kj, vx, z))
+        Eq2(ki) -> rebuild(z, Node(c, l, ki, v, r)) // Actually override the value
+    Leaf -> balance(z, Root(Red, Leaf, key, v, Leaf)) // Insert a new node and balance
