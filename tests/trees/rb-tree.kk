@@ -3,6 +3,7 @@ import std/data/tree-common
 import std/os/env
 
 import bu = std/data/rbtree-bu
+import td = std/data/rbtree-td
 
 import std/num/random
 import std/num/int32
@@ -74,20 +75,19 @@ fun rnd-step( r : rndstate ) : rndres
 fun rnd-init( s0 : int, s1 : int ) : rndstate
   (sfc-init32(s0.int32,s1.int32))
 
-fun bench-iter( i : int, n : int, access : (rbtree<int,v>,int) -> div rbtree<int,v>, rs : rndstate, tree : rbtree<int,v> ) : div (int,rbtree<int,v>)
+fun bench-iter( i : int, n : int, access : (rbtree<int,int>,int) -> div rbtree<int,int>, rs : rndstate, tree : rbtree<int,int> ) : div (int,rbtree<int,int>)
   if (i > 0) then
     val step = rnd-step(rs)
-    tree.show.println
     val t = tree.access((step.rnd.int % n))
     bench-iter( i - 1, n, access, step.rstate, t)
   else
     (rnd-step(rs).rnd.int, tree)
 
 
-pub fun bench( n : int, iter : int, access : (rbtree<int,v>,int) -> div rbtree<int,v> ) : div (int,rbtree<int,v>)
+pub fun bench( n : int, iter : int, access : (rbtree<int,int>,int) -> div rbtree<int,int> ) : div (int,rbtree<int,int>)
   bench-iter( n*iter, n, access, rnd-init(42,43), Leaf)
 
-pub inline fun benchmain( access : (rbtree<int,v>,int) -> div rbtree<int,v>, scaledown : int = 1) : io ()
+pub inline fun benchmain( access : (rbtree<int,int>,int) -> div rbtree<int,int>, scaledown : int = 1) : io ()
   val n = get-args().head("").parse-int.default(100000)
   //val n = 50000
   val (i,t) = bench(n / scaledown, 100 / scaledown, access)
@@ -96,8 +96,26 @@ pub inline fun benchmain( access : (rbtree<int,v>,int) -> div rbtree<int,v>, sca
   val minh = min-height(t)
   println("sum: " ++ sum(t).show ++ ", height: " ++ maxh.show ++ "/" ++ minh.show ++ ", top: " ++ tp.show ++ ", final access: " ++ i.show) // ++ ", size: " ++ size(t).show)
 
-fun main()  
-  benchmain(access)
+// pub fun bu/access(t : rbtree<int,int>, k : int) : rbtree<int,int>
+//   rbtree-bu/set(t, k, k, Done) // .set-black
 
-pub fun access(t : rbtree<int,v>, k : int) : rbtree<int,v>
-  rbtree-bu/find(t, k, k, Done) // .set-black
+// pub fun td/access(t : rbtree<int,int>, k : int) : div rbtree<int,int>
+//   rbtree-td/set(t, k, k, NodeNone, NodeNone, ctx _)
+
+// fun make-tree-aux(n : int32, t : rbtree<int,int>) : div rbtree<int,int>
+//   if n <= zero then t else
+//     val n1 = n.dec
+//     make-tree-aux(n1, rbtree-td/set(t, n1, n1 % 10.int32 == zero))
+
+// pub fun make-tree(n : int32) : div rbtree<int,int>
+//   make-tree-aux(n, E)
+
+// pub fun test-main()
+//   val n = get-args().head("").parse-int.default(4200000).int32
+//   val t = make-tree(n)
+//   val v = t.fold(zero) fn(k,v,r:int32){ if (v) then r.inc else r }
+//   v.show.println
+
+// fun test-benchmark()  
+//   benchmain(access)
+
