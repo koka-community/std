@@ -8,13 +8,14 @@
 module std/data/linearmap
 import std/test
 
-pub alias linearMap<k,v> = list<(k,v)> 
+pub value struct linearMap<k,v>
+  internal: list<(k,v)> 
 
 pub fun show(l: linearMap<k,v>, ?key/show: (k) -> e string, ?value/show: (v) -> e string): e string
-  "{" ++ l.map(fn((k,v)) key/show(k) ++ ": " ++ value/show(v)).join(",") ++ "}"
+  "{" ++ l.internal.map(fn((k,v)) key/show(k) ++ ": " ++ value/show(v)).join(",") ++ "}"
 
 pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool, ?value/(==): (v, v) -> e bool): e bool
-  l1.length == l2.length && l1.all fn(x) 
+  l1.internal.length == l2.internal.length && l1.internal.all fn(x) 
     match l2.lookup(x.fst)
       Just(v') -> v' == x.snd
       Nothing -> False
@@ -22,18 +23,23 @@ pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool
 pub fun key/contains(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e bool
   l.any(fn((kk, _)) kk == k)
 
-pub fun update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
+pub fun map/update(l: linearMap<k,v>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e linearMap<k,v>
+  val LinearMap(l') = l
+  LinearMap(l'.update(k, b, f))
+
+pub fun assoclist/update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
   match l
     Cons((kk, vv), rst) -> if k == kk then Cons((kk, f(vv, b)), rst) else Cons((kk, vv), rst.update(k, b, f))
     Nil -> Cons((k, b), Nil) 
 
-pub fun get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
+pub fun assoclist/get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
   match l
     Cons((kk, vv), rst) -> if mask<exn>{kk == k} then vv else rst.get(k)
     Nil -> throw("not found")
 
 pub fun map/lookup(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
-  catch({Just(m.get(k))}, fn(x) {Nothing})
+  val LinearMap(l) = m
+  catch({Just(l.get(k))}, fn(x) {Nothing})
 
 pub fun get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
   match l
@@ -54,45 +60,47 @@ pub fun add-all(m: linearMap<k,v>, l: list<(k,v)>, ?(==): (k, k) -> e bool): e l
     Cons((k, v), rst) -> add-all(m.add(k, v), rst)
 
 pub fun foldr(m: linearMap<k,v>, acc: a, f: (k, v, a) -> e a): e a
-  m.foldr(acc, fn((k, v), x) f(k, v, x))
+  m.internal.foldr(acc, fn((k, v), x) f(k, v, x))
 
-pub fun map(m: linearMap<k,v>, f: (k, v) -> e (k, v)): e linearMap<k,v>
-  m.map(fn((k,v)) f(k,v))
+pub fun map/map(m: linearMap<k,v>, f: (k, v) -> e (k, v)): e linearMap<k,v>
+  val LinearMap(l) = m
+  LinearMap(l.map(fn((k,v)) f(k,v)))
 
 pub fun unions(l: list<linearMap<k,v>>, ?(==): (k, k) -> <exn|e> bool): <exn|e> linearMap<k,v>
-  val fst = l.head.default([])
-  l.foldl(fst, fn(x, y) x.add-all(y))
+  val fst = l.head.default(LinearMap([]))
+  l.foldl(fst, fn(x, y) x.add-all(y.internal))
 
 pub fun list-add/(+)(l1: linearMap<k,v>, l2: list<(k,v)>, ?(==): (k, k) -> e bool): e linearMap<k,v>
   l1.add-all(l2)
 
 pub fun union(l1: linearMap<k,v>, l2: linearMap<k,v>, ?(==): (k, k) -> e bool): e linearMap<k,v>
-  l1.add-all(l2)
+  l1.add-all(l2.internal)
 
 pub fun filter(m: linearMap<k,v>, f: (k, v) -> e bool): e linearMap<k,v>
-  m.filter(fn((k,v)) f(k,v))
+  val LinearMap(l) = m
+  LinearMap(l.filter(fn((k,v)) f(k,v)))
 
 pub fun remove(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e linearMap<k,v>
-  m.filter(fn((k1,_)) !(k == k1))
+  m.filter(fn(k1,_) !(k == k1))
 
 pub fun remove-all(m: linearMap<k,v>, l: list<k>, ?(==): (k, k) -> e bool): e linearMap<k,v>
-  m.filter(fn((k1,_)) !l.any(fn(k2) k1 == k2))
+  m.filter(fn(k1,_) !l.any(fn(k2) k1 == k2))
 
 pub fun union-with(m1: linearMap<k,v>, m2: linearMap<k,v>, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e linearMap<k,v>
-  m2.foldl(m1, fn(x, (k, y)) x.update(k, y, f))
+  m2.internal.foldl(m1, fn(x, (k, y)) x.update(k, y, f))
   
 fun test-map()
   basic/scope("add")
     scoped/test("add already present")
-      expect([(1, "a"), (2, "b")])
-        ([(1, "a"), (2, "b")]).add(1, "x") 
+      expect(LinearMap([(1, "a"), (2, "b")]))
+        LinearMap([(1, "a"), (2, "b")]).add(1, "x") 
     scoped/test("add not present")
-      expect([(2, "b"), (1, "x")])
-        ([(2, "b")]).add(1, "x")
+      expect(LinearMap([(2, "b"), (1, "x")]))
+        LinearMap([(2, "b")]).add(1, "x")
   basic/scope("set")
     scoped/test("set already present")
-      expect([(1, "x"), (2, "b")])
-        ([(1, "a"), (2, "b")]).set(1, "x") 
+      expect(LinearMap([(1, "x"), (2, "b")]))
+        LinearMap([(1, "a"), (2, "b")]).set(1, "x") 
     scoped/test("set not present")
-      expect([(2, "b"), (1, "x")])
-        ([(2, "b")]).set(1, "x")
+      expect(LinearMap([(2, "b"), (1, "x")]))
+        LinearMap([(2, "b")]).set(1, "x")
