@@ -2,7 +2,8 @@ module rbtree-td
 
 import std/num/random
 import std/num/int32
-import rbtree
+pub import std/data/rbtree
+pub import std/core/undiv
 
 pub fip fun is-red(^t : rbtree<k,v>) : bool
   match t
@@ -84,6 +85,11 @@ fip fun done( t : rbtree<k,v>, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<
 
 fip fun (!=)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
   match order2(x, y)
+    Eq2 -> False
+    _ -> True
+
+fip fun (==)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
+  match order2(x, y)
     Eq2 -> True
     _ -> False
 
@@ -98,7 +104,7 @@ fip fun (>)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
     _ -> False
 
 // find and possibly insert `k`,`w` into a tree `t` with parent `p` and grandparent `g` under `acc`.
-pub fip(1) fun set(t : rbtree<k,v>, k : k, w : v, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<k,v>>, ^?order2: (k, k) -> order2<k>) : div rbtree<k,v>
+pub fip(1) fun dtree/set(t : rbtree<k,v>, k : k, w : v, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<k,v>>, ^?order2: (k, k) -> order2<k>) : div rbtree<k,v>
   match flip-color(t)
     Node(Red, l, x, v, r) | is-redd(p) && x != k ->  // rotate to fix red-red between t and p ?
       if x < k then val (p',g') = rotate( NodeR(Red,l,x,v,Hole), p, g ) in set(r, k, w, p', g', acc)
@@ -108,6 +114,26 @@ pub fip(1) fun set(t : rbtree<k,v>, k : k, w : v, p : dtree<k,v>, g : dtree<k,v>
       elif x > k then set(l, k, w, NodeL(c,Hole,x,v,r), p, acc ++ g)
                  else done( Node(c,l,k,w,r), p, g, acc )
     Leaf -> done( Node(Red,Leaf,k,w,Leaf), p, g, acc )
+
+pub fip(1) fun td/set(t : rbtree<k,v>, k : k, w : v, ^?order2: (k, k) -> order2<k>) : rbtree<k,v>
+  pretend-no-div
+    dtree/set(t, k, w, NodeNone, NodeNone, ctx _)
+
+
+// type rbbtree<k, v>
+//   BNode(color : color, lchild : rbtree<k,v>, key : k, value : v, rchild : rbtree<k,v>)
+//   BLeaf
+//   BBlack
+
+// pub fip(1) fun dtree/remove(t: rbtree<k,v>, k0: k, ^?order2: (k, k) -> order2<k>)
+//   match t
+//     Leaf -> Leaf
+//     Node(Red, Leaf, k1, v, Leaf) | k0 == k1 -> BLeaf
+//     Node(Black, Node(Red, l, k1, v1, r), k2, v2, Leaf) | k0 == k2 -> BNode(Black, l, k1, v1, r)
+//     Node(Black, Leaf, k1, v, Leaf) | k0 == k1 -> BBlack
+    // Node(c, l, k1, v, r) ->
+    //   match order2(k0, k1)
+    //     Lt2(k0, k1) -> rotatex(BNode(c, remove(l, k0, order2)))
 
 /*
 // a tad faster but less elegant?

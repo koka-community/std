@@ -96,26 +96,26 @@ pub inline fun benchmain( access : (rbtree<int,int>,int) -> div rbtree<int,int>,
   val minh = min-height(t)
   println("sum: " ++ sum(t).show ++ ", height: " ++ maxh.show ++ "/" ++ minh.show ++ ", top: " ++ tp.show ++ ", final access: " ++ i.show) // ++ ", size: " ++ size(t).show)
 
-// pub fun bu/access(t : rbtree<int,int>, k : int) : rbtree<int,int>
-//   rbtree-bu/set(t, k, k, Done) // .set-black
+pub fun bu/access(t : rbtree<int,int>, k : int) : rbtree<int,int>
+  t.bu/set(k, k) // .set-black
 
-// pub fun td/access(t : rbtree<int,int>, k : int) : div rbtree<int,int>
-//   rbtree-td/set(t, k, k, NodeNone, NodeNone, ctx _)
+pub fun td/access(t : rbtree<int,int>, k : int) : div rbtree<int,int>
+  t.td/set(k, k)
 
-// fun make-tree-aux(n : int32, t : rbtree<int,int>) : div rbtree<int,int>
-//   if n <= zero then t else
-//     val n1 = n.dec
-//     make-tree-aux(n1, rbtree-td/set(t, n1, n1 % 10.int32 == zero))
+fun make-tree-aux(n : int, t : rbtree<int,bool>) : div rbtree<int,bool>
+  if n <= 0 then t else
+    val n1 = n.dec
+    make-tree-aux(n1, t.td/set(n1, n1 % 10 == 0))
 
-// pub fun make-tree(n : int32) : div rbtree<int,int>
-//   make-tree-aux(n, E)
+pub fun make-tree(n : int) : div rbtree<int,bool>
+  make-tree-aux(n, Leaf)
 
 // pub fun test-main()
-//   val n = get-args().head("").parse-int.default(4200000).int32
+//   val n = get-args().head("").parse-int.default(4200000)
 //   val t = make-tree(n)
-//   val v = t.fold(zero) fn(k,v,r:int32){ if (v) then r.inc else r }
+//   val v = t.fold(0) fn(l, r, k, v){ if (v) then r.inc else r }
 //   v.show.println
 
-// fun test-benchmark()  
-//   benchmain(access)
+pub fun bench-main()  
+  benchmain(td/access)
 
