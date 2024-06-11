@@ -3,7 +3,7 @@ module rbtree
 import std/os/env
 import std/num/random
 import std/num/int32
-import tree-common
+import std/data/tree-common
 
 pub type color
   Red
@@ -43,3 +43,9 @@ pub fun print( t : rbtree<k,v>, ?key/show: (k) -> <io|e> string, ?value/show: (v
 
 pub fun print-trees( ts : list<rbtree<k,v>>, ?key/show: (k) -> <io|e> string, ?value/show: (v) -> <io|e> string ) : <io|e> ()
   ts.show-trees.println
+
+pub fun fold( t : rbtree<k,v>, z : a, f : (a,a,k,v) -> a ) : a
+  match t
+    Leaf -> z
+    Node(_,l,k,v,r) -> 
+      f(r.fold(z, f), l.fold(z, f), k, v)

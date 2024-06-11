@@ -1,7 +1,7 @@
 module rbtree-bu
 
 import std/num/int32
-import rbtree
+pub import std/data/rbtree
 
 pub type zipper<k,v>
   NodeR(color : color, lchild : rbtree<k,v>, key : k, value : v, zip : zipper<k,v>)
@@ -51,7 +51,7 @@ pub fip fun balance( z : zipper<k,v>, t : root<k,v> ) : rbtree<k,v>
       Done -> Node(Black, t.to-node, k1, v1, r1)
     z -> rebuild(z, t.to-node)
 
-pub fip(1) fun set(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
+pub fip(1) fun zip/set(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   match t
     Node(c, l, kx, vx, r) ->
       match order2(key, kx)
@@ -59,3 +59,6 @@ pub fip(1) fun set(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order2: (
         Gt2(ki, kj) -> set(r, ki, v, NodeR(c, l, kj, vx, z))
         Eq2(ki) -> rebuild(z, Node(c, l, ki, v, r)) // Actually override the value
     Leaf -> balance(z, Root(Red, Leaf, key, v, Leaf)) // Insert a new node and balance
+
+pub fip(1) fun bu/set(t: rbtree<k,v>, key: k, value: v, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
+  t.set(key, value, Done)
