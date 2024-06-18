@@ -50,12 +50,14 @@ fip fun is-redd( ^t : dtree<k,v> ) : bool
 fip fun rotate( t : dtree<k,v>, p : dtree<k,v>, g : dtree<k,v> ) : (dtree<k,v>,dtree<k,v>)
   match (t,p,g)
     // single rotations:
-    (t,NodeL(_,_,px,pv,pr),NodeL(_,_,gx,gv,gr))
-      -> (t, NodeL(Black,Hole,px,pv,Node(Red,pr,gx,gv,gr)))
-    (t,NodeR(_,pl,px,pv,_),NodeR(_,gl,gx,gv,_))
+    (t,NodeL(_,_,px,pv,pr),NodeL(_,_,gx,gv,gr)) // parent / grandparent have holes in the left
+      // make this the parent, and the grandparent has it's hole in the left filled with the parent
+      // we don't fill the parent hole with the current, because it could require further rotations
+      -> (t, NodeL(Black,Hole,px,pv,Node(Red,pr,gx,gv,gr))) 
+    (t,NodeR(_,pl,px,pv,_),NodeR(_,gl,gx,gv,_)) // inverted condition
       -> (t, NodeR(Black,Node(Red,gl,gx,gv,pl),px,pv,Hole))
     // double rotations:
-    (NodeL(_,_,x,v,r),NodeR(_,pl,px,pv,_),NodeL(_,_,gx,gv,gr))
+    (NodeL(_,_,x,v,r),NodeR(_,pl,px,pv,_),NodeL(_,_,gx,gv,gr)) 
       -> (NodeR(Red,pl,px,pv,Hole), NodeL(Black,Hole,x,v,Node(Red,r,gx,gv,gr)))
     (NodeR(_,l,x,v,_),NodeR(_,pl,px,pv,_),NodeL(_,_,gx,gv,gr))
       -> (NodeL(Red,Hole,gx,gv,gr), NodeR(Black,Node(Red,pl,px,pv,l),x,v,Hole))
@@ -68,52 +70,41 @@ fip fun rotate( t : dtree<k,v>, p : dtree<k,v>, g : dtree<k,v> ) : (dtree<k,v>,d
       -> (t,p)  // discarding `g` ? not fip.. but otherwise koka thinks its partial
 
 // If a node is black with red children, then flip the colors
+// If black->black, or red->black then wait to flip till a black-red is found.
+// Precondition, no red-red
 fip fun flip-color( t : rbtree<k,v> ) : rbtree<k,v>
   match t
     Node(Black, Node(Red,ll,lx,lv,lr), x, v, Node(Red,rl,rx,rv,rr))
       -> Node(Red, Node(Black,ll,lx,lv,lr), x, v, Node(Black,rl,rx,rv,rr))
     t -> t
 
+// find and possibly insert `k`,`w` into a tree `t` with parent `p` and grandparent `g` under `acc`.
+pub fip(1) fun dtree/set(t : rbtree<k,v>, k : k, w : v, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<k,v>>, ^?order2: (k, k) -> order2<k>) : div rbtree<k,v>
+  match flip-color(t)
+    // If flipping the color would cause a red-red, we need a partially applied rotation
+    Node(Red, l, x, v, r) | is-redd(p) ->  // rotate to fix red-red between t and p ?
+      match order2(x, k) 
+        Lt2(x', k') -> val (p',g') = rotate( NodeR(Red,l,x',v,Hole), p, g ) in set(r, k', w, p', g', acc) // Recur on the right
+        Gt2(x', k') -> val (p',g') = rotate( NodeL(Red,Hole,x',v,r), p, g ) in set(l, k', w, p', g', acc) // Recur on the left
+        Eq2(x') -> done(Node(Red,l,x',w,r), p, g, acc) // Found the key, update the value
+    Node(c, l, x, v, r) ->
+      match order2(x, k)
+        Lt2(x', k') -> set(r, k', w, NodeR(c,l,x',v,Hole), p, acc ++ g) // Recur on the right
+        Gt2(x', k') -> set(l, k', w, NodeL(c,Hole,x',v,r), p, acc ++ g) // Recur on the left
+        Eq2(x') -> done( Node(c,l,x',w,r), p, g, acc ) // Found the key, update the value
+    Leaf -> done( Node(Red,Leaf,k,w,Leaf), p, g, acc ) // No key, inser the value
 
 // Insert node `t` with parent `p` and grandparent `g` under `acc`.
 fip fun done( t : rbtree<k,v>, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<k,v>> ) : rbtree<k,v>
   match t
-    Node(Red,l,x,v,r) | is-redd(p)   // sometimes we need rotate to fix red-red between t and p
-      -> val (p',g') = rotate( NodeL(Red,Hole,x,v,r), p, g ) in acc ++. (g' ++. (p' ++. l))
+    Node(Red,l,x,v,r) | is-redd(p) -> 
+      // sometimes we need rotate to fix red-red between t and p
+      val (p',g') = rotate( NodeL(Red,Hole,x,v,r), p, g )
+      // Combine the accumulator with the grandparent composed with the parent composed with the tree.
+      // There are only three levels of pointers that need to be adjusted
+      // because we fixed all potential rotation violations on the way down
+      acc ++. (g' ++. (p' ++. l))
     t -> acc ++. (g ++. (p ++. t))
-
-
-fip fun (!=)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
-  match order2(x, y)
-    Eq2 -> False
-    _ -> True
-
-fip fun (==)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
-  match order2(x, y)
-    Eq2 -> True
-    _ -> False
-
-fip fun (<)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
-  match order2(x, y)
-    Lt2 -> True
-    _ -> False
-
-fip fun (>)(^x : k, ^y : k, ^?order2: (k, k) -> order2<k>) : bool
-  match order2(x, y)
-    Gt2 -> True
-    _ -> False
-
-// find and possibly insert `k`,`w` into a tree `t` with parent `p` and grandparent `g` under `acc`.
-pub fip(1) fun dtree/set(t : rbtree<k,v>, k : k, w : v, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<k,v>>, ^?order2: (k, k) -> order2<k>) : div rbtree<k,v>
-  match flip-color(t)
-    Node(Red, l, x, v, r) | is-redd(p) && x != k ->  // rotate to fix red-red between t and p ?
-      if x < k then val (p',g') = rotate( NodeR(Red,l,x,v,Hole), p, g ) in set(r, k, w, p', g', acc)
-               else val (p',g') = rotate( NodeL(Red,Hole,x,v,r), p, g ) in set(l, k, w, p', g', acc)
-    Node(c, l, x, v, r) ->
-      if   x < k then set(r, k, w, NodeR(c,l,x,v,Hole), p, acc ++ g)
-      elif x > k then set(l, k, w, NodeL(c,Hole,x,v,r), p, acc ++ g)
-                 else done( Node(c,l,k,w,r), p, g, acc )
-    Leaf -> done( Node(Red,Leaf,k,w,Leaf), p, g, acc )
 
 pub fip(1) fun td/set(t : rbtree<k,v>, k : k, w : v, ^?order2: (k, k) -> order2<k>) : rbtree<k,v>
   pretend-no-div
