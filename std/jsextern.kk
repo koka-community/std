@@ -233,14 +233,24 @@ pub inline fun obj/entries(a: jsobject<t>): list<(string, jsobject<any>)>
 // Array operations
 inline extern any/@index(a: any, index: int): any
   js inline "#1[#2]"
+inline extern many/@index(a: any, index: int): maybe<any>
+  js inline "maybeget(#1, #2)"
 inline extern string/@index(a: any, index: int): string
   js inline "#1[#2]"
+inline extern mstring/@index(a: any, index: int): maybe<string>
+  js inline "maybeget(#1, #2)"
 inline extern int/@index(a: any, index: int): int
   js inline "#1[#2]"
+inline extern mint/@index(a: any, index: int): maybe<int>
+  js inline "maybeget(#1, #2)"
 inline extern float/@index(a: any, index: int): float64
   js inline "#1[#2]"
+inline extern mfloat/@index(a: any, index: int): maybe<float64>
+  js inline "maybeget(#1, #2)"
 inline extern bool/@index(a: any, index: int): bool
-  js inline "#1[#2]"
+  js inline "#1[#2]" 
+inline extern mbool/@index(a: any, index: int): maybe<bool>
+  js inline "maybeget(#1, #2)"
 inline extern any/@assign(a: any, index: int, value: any): ()
   js inline "#1[#2] = #3"
 inline extern string/@assign(a: any, index: int, value: string): ()
@@ -254,15 +264,27 @@ inline extern bool/@assign(a: any, index: int, value: bool): ()
 
 pub inline fun objarray/@index(a: jsarray<jsobject<t>>, index: int): jsobject<t>
   Jsobject(a.internal[index])
+pub inline fun mobjarray/@index(a: jsarray<maybe<jsobject<t>>>, index: int): maybe<jsobject<t>>
+  a.internal.many/@index(index).map(Jsobject)
 pub inline fun jsarray/@index(a: jsarray<jsarray<t>>, index: int): jsarray<t>
   Jsarray(a.internal[index])
+pub inline fun mjsarray/@index(a: jsarray<int>, index: int): maybe<jsarray<t>>
+  a.internal.many/@index(index).map(Jsarray)
 pub inline fun strarray/@index(a: jsarray<string>, index: int): string
+  a.internal[index]
+pub inline fun mstrarray/@index(a: jsarray<maybe<string>>, index: int): maybe<string>
   a.internal[index]
 pub inline fun intarray/@index(a: jsarray<int>, index: int): int
   a.internal[index]
+pub inline fun mintarray/@index(a: jsarray<maybe<int>>, index: int): maybe<int>
+  a.internal[index]
 pub inline fun floatarray/@index(a: jsarray<float64>, index: int): float64
   a.internal[index]
+pub inline fun mfloatarray/@index(a: jsarray<maybe<float64>>, index: int): maybe<float64>
+  a.internal[index]
 pub inline fun boolarray/@index(a: jsarray<bool>, index: int): bool
+  a.internal[index]
+pub inline fun mboolarray/@index(a: jsarray<maybe<bool>>, index: int): maybe<bool>
   a.internal[index]
 pub inline fun objarray/@assign(a: jsarray<jsobject<t>>, index: int, value: jsobject<t>): ()
   a.internal.@assign(index, value.internal)
@@ -282,3 +304,19 @@ inline extern ext/length(a: any): int
   js inline "#1.length"
 pub inline fun arr/length(a: jsarray<t>): int
   a.internal.length()
+
+pub inline fun objarr/list(a: jsarray<jsobject<t>>): list<jsobject<t>>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun mobjarr/list(a: jsarray<maybe<jsobject<t>>>): list<maybe<jsobject<t>>>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun arrarr/list(a: jsarray<jsarray<t>>): list<jsarray<t>>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun strarray/list(a: jsarray<string>): list<string>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun intarray/list(a: jsarray<int>): list<int>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun floatarray/list(a: jsarray<float64>): list<float64>
+  list(0, a.length() - 1).map fn(i) a[i]
+pub inline fun boolarray/list(a: jsarray<bool>): list<bool>
+  list(0, a.length() - 1).map fn(i) a[i]
+

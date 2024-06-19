@@ -20,6 +20,9 @@ pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool
       Just(v') -> v' == x.snd
       Nothing -> False
 
+pub fun map/contains-key(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e bool
+  m.internal.any(fn((kk, _)) kk == k)
+
 pub fun key/contains(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e bool
   l.any(fn((kk, _)) kk == k)
 
@@ -83,11 +86,23 @@ pub fun filter(m: linearMap<k,v>, f: (k, v) -> e bool): e linearMap<k,v>
 pub fun remove(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e linearMap<k,v>
   m.filter(fn(k1,_) !(k == k1))
 
+pub fun keys(m: linearMap<k,v>): e list<k>
+  m.internal.map(fn((k,_)) k)
+
+pub fun values(m: linearMap<k,v>): e list<v>
+  m.internal.map(fn((_,v)) v)
+
+pub fun entries(m: linearMap<k,v>): e list<(k,v)>
+  m.internal
+
 pub fun remove-all(m: linearMap<k,v>, l: list<k>, ?(==): (k, k) -> e bool): e linearMap<k,v>
   m.filter(fn(k1,_) !l.any(fn(k2) k1 == k2))
 
 pub fun union-with(m1: linearMap<k,v>, m2: linearMap<k,v>, f: (v, v) -> e v, ?(==): (k, k) -> e bool): e linearMap<k,v>
   m2.internal.foldl(m1, fn(x, (k, y)) x.update(k, y, f))
+
+pub fun foreach(m: linearMap<k,v>, f: (k, v) -> e ()): e ()
+  m.internal.foreach(fn((k,v)) f(k,v))
   
 fun test-map()
   basic/scope("add")
