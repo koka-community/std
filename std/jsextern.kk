@@ -47,6 +47,25 @@ pub inline fun maybeobj/unsafe-cast(a: maybe<jsobject<t>>): maybe<jsobject<s>>
     Nothing -> Nothing
 pub inline fun obj/unsafe-cast(a: jsobject<t>): jsobject<s>
   Jsobject(a.internal)
+
+// A marker function that t is a subtype of s
+pub alias is-subtype<t,s> = (jsobject<t>, jsobject<s>) -> bool;
+// Cast to a supertype, given the evidence that t is a subtype of s
+pub inline fun obj/supertype-cast(a: jsobject<t>, ?is-subtype: is-subtype<t,s>): jsobject<s>
+  Jsobject(a.internal)
+pub inline fun unit/supertype-cast(a: jsobject<t>): jsobject<t>
+  a
+// Cast to a subtype, given the evidence that t is a supertype of s
+pub inline fun obj/subtype-cast(a: jsobject<t>, ?is-subtype: is-subtype<s,t>): jsobject<s>
+  Jsobject(a.internal)
+pub inline fun unit/subtype-cast(a: jsobject<t>): jsobject<t>
+  a
+// Transitive closure for evidence
+pub inline fun trans/is-subtype<m>(a: jsobject<t>, b: jsobject<s>, ?a/is-subtype: is-subtype<t,m>, ?b/is-subtype: is-subtype<m,s>): bool
+  True
+// An object of the same type is trivially a subtype of itself
+pub inline fun unit/is-subtype(a: jsobject<t>, b: jsobject<t>): bool
+  True
 pub inline fun obj/show(a: jsobject<t>): string
   show(a.internal)
 pub inline fun array/show(a: jsarray<t>): string
