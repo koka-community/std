@@ -95,6 +95,9 @@ pub fun values(m: linearMap<k,v>): e list<v>
 pub fun entries(m: linearMap<k,v>): e list<(k,v)>
   m.internal
 
+pub fun list(m: linearMap<k,v>): e list<(k,v)>
+  m.internal
+
 pub fun remove-all(m: linearMap<k,v>, l: list<k>, ?(==): (k, k) -> e bool): e linearMap<k,v>
   m.filter(fn(k1,_) !l.any(fn(k2) k1 == k2))
 

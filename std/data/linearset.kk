@@ -77,6 +77,9 @@ pub fun common(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e b
 pub fun is-subset-of(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e bool
   l1.internal.all(fn(x) l2.member(x))
 
+pub fun list(l: linearSet<v>): e list<v>
+  l.internal
+
 pub fun test-set()
   basic/test("Basics")
     val s = linear-set([1, 2, 3])
