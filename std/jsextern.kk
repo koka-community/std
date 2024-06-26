@@ -30,6 +30,18 @@ inline extern ext/arr/copy(a: any): any
   js inline "[...#1]"
 inline extern ext/show(a: any): string
   js inline "JSON.stringify(#1)"
+inline extern ext/is-bool(a: any): bool
+  js inline "typeof #1 === 'boolean'"
+inline extern ext/is-int(a: any): bool
+  js inline "Number.isInteger(#1)"
+inline extern ext/is-num(a: any): bool
+  js inline "typeof #1 === 'number'"
+inline extern ext/is-string(a: any): bool
+  js inline "typeof #1 === 'string'"
+inline extern any/is-array(a: any): bool
+  js inline "Array.isArray(#1)"
+pub inline fun arr/is-array(a: jsobject<t>): bool
+  is-array(a.internal)
 
 pub inline fun obj/new(): jsobject<t>
   Jsobject(new-obj())
@@ -47,6 +59,14 @@ pub inline fun maybeobj/unsafe-cast(a: maybe<jsobject<t>>): maybe<jsobject<s>>
     Nothing -> Nothing
 pub inline fun obj/unsafe-cast(a: jsobject<t>): jsobject<s>
   Jsobject(a.internal)
+pub inline fun obj/is-bool(a: jsobject<t>): bool
+  is-bool(a.internal)
+pub inline fun obj/is-int(a: jsobject<t>): bool
+  is-int(a.internal)
+pub inline fun obj/is-num(a: jsobject<t>): bool
+  is-num(a.internal)
+pub inline fun obj/is-string(a: jsobject<t>): bool
+  is-string(a.internal)
 
 // A marker function that t is a subtype of s
 pub alias is-subtype<t,s> = (jsobject<t>, jsobject<s>) -> bool;
@@ -102,7 +122,11 @@ inline extern ext/set-bool(a: any, key: string, value: bool): ()
   js inline "#1[#2] = #3"
 inline extern ext/update-bool(a: any, key: string, value: bool): any
   js inline "{...#1}[#2] = #3"
+inline extern ext/field/is-bool(a: any, key: string): bool
+  js inline "typeof #1[#2] === 'boolean'"
 
+pub inline fun field/is-bool(a: jsobject<t>, key: string): bool
+  is-bool(a.internal, key)
 pub inline fun obj/get-mbool(a: jsobject<t>, key: string): maybe<bool>
   get-mbool(a.internal, key)
 pub inline fun obj/get-bool(a: jsobject<t>, key: string): bool
@@ -121,7 +145,11 @@ inline extern ext/set-int(a: any, key: string, value: int): ()
   js inline "#1[#2] = #3"
 inline extern ext/update-int(a: any, key: string, value: int): any
   js inline "{...#1}[#2] = #3"
+inline extern ext/field/is-int(a: any, key: string): bool
+  js inline "Number.isInteger(#1[#2])"
 
+pub inline fun field/is-int(a: jsobject<t>, key: string): bool
+  is-int(a.internal, key)
 pub inline fun obj/get-mint(a: jsobject<t>, key: string): maybe<int>
   get-mint(a.internal, key)
 pub inline fun obj/get-int(a: jsobject<t>, key: string): int
@@ -140,7 +168,13 @@ inline extern ext/set-float(a: any, key: string, value: float64): ()
   js inline "#1[#2] = #3"
 inline extern ext/update-float(a: any, key: string, value: float64): any
   js inline "{...#1}[#2] = #3"
+inline extern ext/field/is-float(a: any, key: string): bool
+  js inline "typeof #1[#2] === 'number'"
 
+pub inline fun field/is-num(a: jsobject<t>, key: string): bool
+  is-float(a.internal, key)
+pub inline fun field/is-float(a: jsobject<t>, key: string): bool
+  is-float(a.internal, key)
 pub inline fun obj/get-mfloat(a: jsobject<t>, key: string): maybe<float64>
   get-mfloat(a.internal, key)
 pub inline fun obj/get-float(a: jsobject<t>, key: string): float64
@@ -149,6 +183,7 @@ pub inline fun obj/set-float(a: jsobject<t>, key: string, value: float64): ()
   set-float(a.internal, key, value)
 pub inline fun obj/update-float(a: jsobject<t>, key: string, value: float64): jsobject<t>
   Jsobject(update-float(a.internal, key, value))
+
 
 // Object fields
 extern ext/get-mobj(a: any, key: string): maybe<any>
@@ -182,7 +217,11 @@ pub inline fun obj/update-array(a: jsobject<t>, key: string, value: jsarray<s>):
   Jsobject(update-obj(a.internal, key, value.internal))
 
 // Misc object operations
-extern ext/unsafe-as-string(a: any): string
+inline extern has-key(a: any, key: string): bool
+  js inline "#1[#2] !== undefined"
+pub inline fun obj/has-key(a: jsobject<t>, key: string): bool
+  has-key(a.internal, key)
+inline extern ext/unsafe-as-string(a: any): string
   js inline "#1"
 pub inline fun obj/unsafe-as-string(a: jsobject<t>): string
   a.internal.unsafe-as-string()
@@ -237,10 +276,10 @@ pub inline fun obj/array/@assign(a: jsobject<t>, index: string, value: jsarray<s
 
 // Object operations
 // entries returns an array of [key, value] pairs
-inline extern ext/entries(a: any): jsarray<jsarray<jsobject<any>>>
+inline extern ext/entries(a: any): any
   js inline "Object.entries(#1)"
 pub inline fun obj/entries(a: jsobject<t>): list<(string, jsobject<any>)>
-  val entries:jsarray<jsarray<jsobject<any>>> = a.internal.entries() 
+  val entries:jsarray<jsarray<jsobject<any>>> = JsArray(a.internal.entries()) 
   val len = entries.length
   list(0, len - 1).map fn(i)
     val jsobj: jsarray<jsobject<any>> = entries[i]
@@ -248,6 +287,15 @@ pub inline fun obj/entries(a: jsobject<t>): list<(string, jsobject<any>)>
     val value = jsobj[1]
     (key, value)
 
+inline extern ext/keys(a: any): any
+  js inline "Object.keys(#1)"
+pub inline fun obj/keys(a: jsobject<t>): jsarray<string>
+  JsArray(a.internal.keys)
+
+inline extern ext/values(a: any): any
+  js inline "Object.values(#1)"
+pub inline fun obj/values(a: jsobject<t>): jsarray<s>
+  JsArray(a.internal.values)
 
 // Array operations
 inline extern any/@index(a: any, index: int): any
