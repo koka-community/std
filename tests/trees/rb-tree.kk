@@ -119,3 +119,56 @@ pub fun make-tree(n : int) : div rbtree<int,bool>
 pub fun bench-main()  
   benchmain(td/access)
 
+
+pub fun check-valid(t1: rbtree<int,v>) : exn ()
+  fun check(t: rbtree<int,v>, p: color, min: int, max: int) : exn ()
+    match t
+      Node(b, l, k, _, r) ->
+        if k < min || k > max then
+          throw("Error key is invalid position")
+        elif p.is-red && b.is-red then throw("Error red-red")
+        else 
+          check(l, b, min, k)
+          check(r, b, k, max)
+      Leaf -> ()
+  check(t1, Red, -1000000, 100000)
+
+pub fun bu/random-tree(n: int, r: int) : random rbtree<int,int>
+  if n == 0 then Leaf
+  else 
+    val t = bu/random-tree((n - 1).pretend-decreasing, r)
+    t.bu/set(random-int() % r, 0)
+
+pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
+  if n == 0 then Leaf
+  else 
+    val t = td/random-tree((n - 1).pretend-decreasing, r)
+    t.td/set(random-int() % r, 0)
+
+// fun main()
+//   val r = 10000
+//   val t = bu/random-tree(10000, r)
+//   // println(t)
+//   check-valid(t)
+//   fun delete-check(t0)
+//     val k = random-int() % r
+//     val t1 = t0.bu/remove(k)
+//     check-valid(t1)
+//     if t1.is-leaf then ()
+//     else delete-check(t1)
+//   delete-check(t)
+//   println("All tests passed")
+fun main()
+  val r = 10
+  val t = td/random-tree(10, r)
+  println(t)
+  fun delete-check(t0: rbtree<int,int>)
+    val k = random-int() % r
+    println(k)
+    val t1 = t0.td/remove(k)
+    println(t1)
+    check-valid(t1)
+    if t1.is-leaf then ()
+    else delete-check(t1)
+  delete-check(t)
+  println("All tests passed")

@@ -23,7 +23,7 @@ pub fip fun rebuild(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
   match z
     NodeR(c, l, k, v, z1) -> rebuild(z1, Node(c, l, k, v, t))
     NodeL(c, z1, k, v, r) -> rebuild(z1, Node(c, t, k, v, r))
-    Done -> t
+    Done -> t.set-black
 
 pub fip fun to-node( root : root<k,v> ) : rbtree<k,v>
   match root
@@ -56,9 +56,21 @@ pub fip(1) fun zip/set(t : rbtree<k,v>, key : k, v : v, z : zipper<k,v>, ^?order
     Node(c, l, kx, vx, r) ->
       match order2(key, kx)
         Lt2(ki, kj) -> set(l, ki, v, NodeL(c, z, kj, vx, r))
-        Gt2(ki, kj) -> set(r, ki, v, NodeR(c, l, kj, vx, z))
-        Eq2(ki) -> rebuild(z, Node(c, l, ki, v, r)) // Actually override the value
+        Gt2(kj, ki) -> set(r, ki, v, NodeR(c, l, kj, vx, z))
+        Eq2(ki) -> rebuild(z, Node(c, l, ki, v, r)) // Actually override the value, no balancing needed
     Leaf -> balance(z, Root(Red, Leaf, key, v, Leaf)) // Insert a new node and balance
+
+pub fip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
+  match t
+    Node(c, l, kx, vx, r) ->
+      match order2(key, kx)
+        Lt2(ki, kj) -> remove(l, ki, NodeL(c, z, kj, vx, r))
+        Gt2(kj, ki) -> remove(r, ki, NodeR(c, l, kj, vx, z))
+        Eq2(_) -> rebuild(z, Leaf) // Actually override the value, no balancing needed
+    Leaf -> rebuild(z, Leaf) // Not found
 
 pub fip(1) fun bu/set(t: rbtree<k,v>, key: k, value: v, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   t.set(key, value, Done)
+
+pub fip(1) fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
+  t.remove(key, Done)
