@@ -66,8 +66,19 @@ pub fip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k
       match order2(key, kx)
         Lt2(ki, kj) -> remove(l, ki, NodeL(c, z, kj, vx, r))
         Gt2(kj, ki) -> remove(r, ki, NodeR(c, l, kj, vx, z))
-        Eq2(_) -> rebuild(z, Leaf) // Actually override the value, no balancing needed
+        Eq2(_) -> do-remove(z, l, r) // Actually override the value, no balancing needed
     Leaf -> rebuild(z, Leaf) // Not found
+
+pub fun do-remove(z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbtree<k,v>
+  match l
+    Leaf -> 
+      match r
+        Leaf -> rebuild(z, Leaf)
+        Node -> do-remove-single(z, r)
+    Node(  ) ->
+      match r
+        Leaf -> do-remove-single(z, l)
+        Node -> do-remove-double(z, l, r)
 
 pub fip(1) fun bu/set(t: rbtree<k,v>, key: k, value: v, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   t.set(key, value, Done)
