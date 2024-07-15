@@ -14,11 +14,24 @@ pub type json
   JSList(list: list<json>)
   JSObj(dict: list<(string,json)>)
 
+fun char/quote(c: char): string
+  match c
+    '"' -> "\\\""
+    '\\' -> "\\\\"
+    '\n' -> "\\n"
+    '\r' -> "\\r"
+    '\t' -> "\\t"
+    _ -> c.string
+
+// quote essential and whitespace characters in a JSON string
+fun string/quote(s: string): string
+  s.list.map(quote).join
+
 pub fun json/show(j: json): string
   match j
     JSNull -> "null"
     JSBool(b) -> if b then "true" else "false"
-    JSString(s) -> "\"" ++ s ++ "\""
+    JSString(s) -> "\"" ++ s.quote ++ "\""
     JSNum(s) -> s.show
     JSInt(i) -> i.show
     JSList(l) -> l.show(?show=fn(s) s.pretend-decreasing.show)
@@ -28,11 +41,11 @@ pub fun json/pretty(j: json): doc
   match j
     JSNull -> "null".text
     JSBool(b) -> if b then "true".text else "false".text
-    JSString(s) -> ("\"" ++ s ++ "\"").text
+    JSString(s) -> ("\"" ++ s.quote ++ "\"").text
     JSNum(s) -> s.pretty
     JSInt(i) -> i.pretty
-    JSList(l) -> "[".text |--| vcat(l.map(fn(i) i.pretend-decreasing.pretty)).indent(2) |--| "]".text
-    JSObj(dict) -> "{".text |--| vcat(dict.map(fn((k, v)) ("\"" ++ k ++ "\"").text |+| colon |+| v.pretend-decreasing.pretty)).indent(2) |--| "}".text 
+    JSList(l) -> "[".text |--| vcat(l.map(fn(i) i.pretend-decreasing.pretty).punctuate(",".text)).indent(2) |--| "]".text
+    JSObj(dict) -> "{".text |--| vcat(dict.map(fn((k, v)) ("\"" ++ k ++ "\"").text |+| colon |+| v.pretend-decreasing.pretty).punctuate(",".text)).indent(2) |--| "}".text 
 
 pub fun list/to-json(l: list<v>, ?to-json: v -> e json): e json
   JSList(l.map(to-json))
