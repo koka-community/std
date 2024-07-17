@@ -100,10 +100,10 @@ pub inline fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v
       if c.is-red then rebuild(z, Leaf)
       //  - if the node to delete was black we need to rebalance
       else 
-        remove-rebalance(z, Leaf)
+        remove-rebalance(z, Leaf, True)
     else rebuild(z, r.set-black) // Only has one child
   elif r.is-leaf then
-    rebuild(z, l.set-black)
+    rebuild(z, l.set-black) // One child
   else
     do-remove-inorder(c, z, l, r, Done)
 
@@ -124,7 +124,7 @@ pub inline fun do-remove-inorder(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rb
       else balance(z, balance-root(rz, Root(c, l, k, v, rr)))
     Node(rc, rl, k, v, rr) -> // Inorder search 
       do-remove-inorder(c, z, l, rl, NodeL(rc, rz, k, v, rr))
-    Leaf -> Leaf // Never reached due to invariants
+    Leaf -> Leaf // Should never be reached due to invariants
 
 pub fip(1) fun bu/set(t: rbtree<k,v>, key: k, value: v, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   t.set(key, value, Done)
