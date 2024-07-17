@@ -44,6 +44,10 @@ pub fun map/lookup(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
   val LinearMap(l) = m
   catch({Just(l.get(k))}, fn(x) {Nothing})
 
+pub fun map/get(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): <exn|e> v  
+  val LinearMap(l) = m
+  l.get(k)
+
 pub fun get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
   match l
     Cons((kk, vv), rst) -> if kk == k then vv else rst.get-default(k, v)
