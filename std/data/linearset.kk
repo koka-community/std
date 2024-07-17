@@ -53,6 +53,10 @@ pub fun member/(-)(l: linearSet<v>, v: v, ?(==): (v, v) -> e bool): e linearSet<
   val LinearSet(l') = l
   LinearSet(l'.filter(fn(x) !(==)(x, v)))
 
+pub fun filter(l: linearSet<v>, f: (v) -> e bool): e linearSet<v>
+  val LinearSet(l') = l
+  LinearSet(l'.filter(f))
+
 pub fun member-maybe/(-)(l: linearSet<v>, v: maybe<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   match v
     Just(vv) -> 
