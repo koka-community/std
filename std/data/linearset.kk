@@ -31,7 +31,7 @@ pub inline fun member(l: linearSet<v>, a: v, ?(==): (v,v) -> e bool): e bool
 pub fun union(l: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   l2.internal.foldl(l, fn(acc, x) acc.add(x))
 
-pub fun unions(ls: list<linearSet<v>>, ?(==): (v, v) -> <exn|e> bool): <exn|e> linearSet<v>
+pub fun unions(ls: list<linearSet<v>>, ?(==): (v, v) -> e bool): e linearSet<v>
   match ls
     Nil -> LinearSet([])
     Cons(x, xs) -> xs.foldl(x, fn(acc, x') acc.union(x'))
@@ -56,10 +56,6 @@ pub fun member/(-)(l: linearSet<v>, v: v, ?(==): (v, v) -> e bool): e linearSet<
   val LinearSet(l') = l
   LinearSet(l'.filter(fn(x) !(==)(x, v)))
 
-pub fun filter(l: linearSet<v>, f: (v) -> e bool): e linearSet<v>
-  val LinearSet(l') = l
-  LinearSet(l'.filter(f))
-
 pub fun member-maybe/(-)(l: linearSet<v>, v: maybe<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   match v
     Just(vv) -> 
@@ -70,6 +66,13 @@ pub fun member-maybe/(-)(l: linearSet<v>, v: maybe<v>, ?(==): (v, v) -> e bool):
 pub fun set/(-)(l: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   val LinearSet(l') = l
   LinearSet(l'.filter(fn(x) !l2.member(x)))
+
+pub fun list/(-)(l: linearSet<v>, l2: list<v>, ?(==): (v, v) -> e bool): e linearSet<v>
+  l2.foldl(l, fn(s, v) s - v)
+
+pub fun filter(l: linearSet<v>, f: (v) -> e bool): e linearSet<v>
+  val LinearSet(l') = l
+  LinearSet(l'.filter(f))
 
 pub fun intersection(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   val LinearSet(l') = l1
