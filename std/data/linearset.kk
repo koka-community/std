@@ -49,6 +49,9 @@ pub fun member/(+)(l: linearSet<v>, a: v, ?(==): (v, v) -> e bool): e linearSet<
 pub fun set/(+)(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   l1.union(l2)
 
+pub fun list/(+)(l1: linearSet<v>, l2: list<v>, ?(==): (v, v) -> e bool): e linearSet<v>
+  l2.foldl(l1, fn(s, v) s + v)
+
 pub fun member/(-)(l: linearSet<v>, v: v, ?(==): (v, v) -> e bool): e linearSet<v>
   val LinearSet(l') = l
   LinearSet(l'.filter(fn(x) !(==)(x, v)))
