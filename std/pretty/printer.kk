@@ -27,11 +27,48 @@ pub linear effect printer
 
 // A colored printer has additional coloring and formatting options
 pub linear effect coloredPrinter
-  fun set-color(c: color): ()
-  fun set-back-color(c: color): ()
-  fun set-reverse(b: bool): ()
-  fun set-underline(b: bool): ()
-  fun set-color-settings(s: print-color-settings): ()
+  fun push-color-settings(s: print-color-settings): ()
+  fun pop-color-settings(): ()
+  fun update-push-color-settings(f: print-color-settings -> print-color-settings): ()
+
+pub struct print-color-settings
+  fcolor: color = ColorDefault
+  bcolor: color = ColorDefault
+  invert: bool = False
+  underline: bool = False
+
+fun color-settings(s: print-color-settings, action)
+  push-color-settings(s)
+  action()
+  pop-color-settings()
+
+fun fcolor(c: color, action)
+  update-push-color-settings(fn(old) old(fcolor=c))
+  action()
+  pop-color-settings()
+
+fun bcolor(c: color, action)
+  update-push-color-settings(fn(old) old(bcolor=c))
+  action()
+  pop-color-settings()
+
+fun underline(u: bool, action)
+  update-push-color-settings(fn(old) old(underline=u))
+  action()
+  pop-color-settings()
+
+fun invert(i: bool, action)
+  update-push-color-settings(fn(old) old(invert=i))
+  action()
+  pop-color-settings()
+
+fun print-colored(s: string, c: color)
+  with fcolor(c)
+  s.write()
+
+fun println-colored(s: string, c: color)
+  with fcolor(c)
+  s.write-ln()
 
 //--------------------------------------------------------------------------
 //  Interface
@@ -60,12 +97,11 @@ pub type color
 //--------------------------------------------------------------------------
 //  Simple monochrome printer
 //--------------------------------------------------------------------------}
-pub val no-color-printer = handler
-  fun set-color(c: color) ()
-  fun set-back-color(c: color) ()
-  fun set-reverse(b: bool) ()
-  fun set-underline(b: bool) ()
-  fun set-color-settings(s: print-color-settings) ()
+pub val no-color-printer = 
+  handler
+    fun push-color-settings(s: print-color-settings) ()
+    fun update-push-color-settings(f: print-color-settings -> print-color-settings) ()
+    fun pop-color-settings() ()
 
 // On windows, we cannot print unicode characters :-(
 pub fun sanitize(s: string): <ndet> string
@@ -90,7 +126,13 @@ pub fun file-printer(file-path: string, action)
   handle action
     fun write(s) f := f ++ s
     fun write-ln(s) f := f ++ s ++ "\n"
-    fun flush() try{write-text-file(file-path.path, f)}.default(())
+    fun flush() try{write-text-file(file-path.path, f)}.default(()) // TODO: Start by clearing the file, and on flush, seek to the end and append just what was added since last write
+
+pub fun io-printer(action)
+  handle action
+    fun write(s) s.print()
+    fun write-ln(s) s.println()
+    fun flush() ()
 
 // Use a file printer that ignores colors. Creates or overwrites the file
 pub fun new-file-printer(file-path: string, action)
@@ -99,7 +141,6 @@ pub fun new-file-printer(file-path: string, action)
     fun write(s) f := f ++ s
     fun write-ln(s) f := f ++ s ++ "\n"
     fun flush() try{write-text-file(file-path.path, f)}.default(())
-
 
 pub fun string-printer(action: () -> <printer|e> ()): e string
   var res := ""
@@ -114,41 +155,38 @@ pub fun string-printer(action: () -> <printer|e> ()): e string
 //  Standard ANSI escape sequences
 // --------------------------------------------------------------------------}
 // Use a color printer that uses ANSI escape sequences.
-pub effect val color-settings: print-color-settings
 
-pub struct print-color-settings
-  fcolor: color = ColorDefault
-  bcolor: color = ColorDefault
-  invert: bool = False
-  underline: bool = False
-
-pub fun ansi-printer(action)
-  with val color-settings = Print-color-settings()
-  handle action
-    fun write(s) s.print()
-    fun write-ln(s) s.println()
-    fun flush() ()
-
-pub fun ansi-string-printer(action)
-  with val color-settings = Print-color-settings()
-  string-printer(action)
-
-pub fun ansi-with-console(console: print-color-settings, action)
-  val old = color-settings
-  with finally fn()
-    ansi-escape(seq-set-console(console, old)).write()
-  with override val color-settings = console
-  ansi-escape(reset(console)).write()
+pub fun ansi-color-settings(action)
+  var settings := [Print-color-settings()]
+  with handler
+    fun push-color-settings(s)
+      match settings
+        Cons(old, _) -> 
+          ansi-escape(seq-set-console(old, s)).write()
+          settings := Cons(s, settings)
+        Nil -> ()
+    fun update-push-color-settings(f) 
+      match settings
+        Cons(old, _) -> 
+          val new = f(old)
+          ansi-escape(seq-set-console(old, new)).write()
+          settings := Cons(new, settings)
+        Nil -> ()
+    fun pop-color-settings() 
+      match settings
+        Cons(new, Cons(old, rest)) ->
+          ansi-escape(seq-set-console(new, old)).write()
+          settings := Cons(old, rest)
+        _ -> ()
   action()
 
-pub fun ansi-with-color(c: color, action)
-  ansi-with-console(color-settings(fcolor=c), action)
+pub fun ansi-printer(action)
+  with io-printer
+  ansi-color-settings(action)
 
-pub fun ansi-color-println(s: string, c: color)
-  ansi-with-color(c, {s.write-ln()})
-
-pub fun ansi-color-print(s: string, c: color)
-  ansi-with-color(c, {s.write()})
+pub fun ansi-string-printer(action)
+  with string-printer
+  ansi-color-settings(action)
 
 pub fun ansi-escape(color-settings: string)
   "\x1B[" ++ color-settings ++ "m"
@@ -221,25 +259,89 @@ val console-printer = handler
   fun write-ln(s) s.sanitize().println()
   fun flush() ()
 
-pub fun html-printer(action)
+pub linear effect html-raw
+  fun write-raw(s: string): ()
+
+pub fun html-string-printer(action)
   var html := ""
-  handle action
-    fun write(s) html := s.html-escape()
-    fun write-ln(s) html := s.html-escape() ++ "<br>"
+  with handler
+    fun write(s) html := html ++ s.html-escape()
+    fun write-ln(s) html := html ++ s.html-escape() ++ "<br>"
     fun flush() ()
+  with fun write-raw(s) html := html ++ s
+  mask<local>{action()}
+  html
 
-// TODO: Implement color printer, instead of overriding color settings? - in particular to have generic instances of with-color, set-color etc.
-
-pub fun html-color-printer(action)
-  with val color-settings = Print-color-settings()
-  with html-printer
+pub fun html-color-string-printer(action)
+  with html-string-printer
+  with html-color-settings
   action()
 
-pub fun html-text-span(prop: string, v: string, action)
-  write("<span style='" ++ prop ++ ":" ++ v ++ ";'>")
-  val x = action()
-  write("</span>")
-  x
+pub fun html-color-settings(action)
+  var settings := [(Print-color-settings(),0)]
+  with handler
+    fun push-color-settings(new) 
+      match settings
+        Cons((old,n), rest) ->
+          span-reset(n)
+          val n' = html-set-color(old, new)
+          settings := Cons((new,n'), Cons((old,0), rest))
+        Nil -> ()
+    fun update-push-color-settings(f) 
+      match settings
+        Cons((old,n), rest) ->
+          val new = f(old)
+          span-reset(n)
+          val n' = html-set-color(old, new)
+          settings := Cons((new,n'), Cons((old,0), rest))
+        Nil -> ()
+    fun pop-color-settings()
+      match settings
+        Cons((_,n'), Cons((old,n), rest)) ->
+          span-reset(n')
+          settings := Cons((old,n), rest)
+        _ -> ()
+  action()
+
+pub fun span-reset(n: int)
+  if n > 0 then 
+    repeat("</span>", n).write-raw()
+  else ()
+
+pub fun html-set-color(old: print-color-settings, new: print-color-settings)
+  diff-text-span(old.fcolor != new.fcolor, "color", new.fcolor.html-color2) + 
+  diff-text-span(old.bcolor != new.bcolor, "background-color", new.bcolor.html-color2) + 
+  diff-text-span(old.underline != new.underline, "text-decoration", "underline")
+
+// VSCode sanitized spans to only allow colors with hex codes
+fun html-color2(c: color): string
+  match c
+    ColorDefault -> "#000000" // Should never happen for VSCode
+    Black -> "#000000"
+    White -> "#FFFFFF"
+    DarkRed -> "#8B0000"
+    DarkGreen -> "#006400"
+    DarkYellow -> "#8B8000"
+    DarkBlue -> "#00008B"
+    DarkMagenta -> "#8B008B"
+    DarkCyan -> "#008B8B"
+    Gray -> "#808080"
+    DarkGray -> "#A9A9A9"
+    Red -> "#FF0000"
+    Green -> "#008000"
+    Yellow -> "#FFFF00"
+    Blue -> "#0000FF"
+    Magenta -> "#FF00FF"
+    Cyan -> "#00FFFF"
+
+fun diff-text-span(changed: bool, prop: string, v: string)
+  if changed then 
+    html-text-span(prop, v)
+    1
+  else 0
+
+pub fun html-text-span(prop: string, v: string)
+  write-raw("<span style='" ++ prop ++ ":" ++ v ++ ";'>")
 
 pub fun html-escape(s: string): string
   val r = s.list.map fn(c)
@@ -268,22 +370,27 @@ fun test(): <console, exn, fsys, ndet> ()
   " there".write-ln()
   flush()
   with ansi-printer
-  with override val color-settings = Print-color-settings(invert=True)
-  "hello".ansi-color-println(Red)
-  "world".ansi-color-println(Blue)
-  with override val color-settings = Print-color-settings(underline=True)
-  "hello".ansi-color-println(Red)
-  "world".ansi-color-println(Blue)
-  with override val color-settings = Print-color-settings()
-  "hello".ansi-color-println(Red)
-  "world".ansi-color-println(Blue)
-  ansi-with-console(Print-color-settings(fcolor=Green))
+  with color-settings(Print-color-settings(invert=True))
+  with color-settings(Print-color-settings(invert=True))
+  "hello".println-colored(Red)
+  "world".println-colored(Blue)
+  with color-settings(Print-color-settings(underline=True))
+  "hello".println-colored(Red)
+  "world".println-colored(Blue)
+  with color-settings(Print-color-settings())
+  "hello".println-colored(Red)
+  "world".println-colored(Blue)
+  color-settings(Print-color-settings(fcolor=Green))
     "hello ".write()
     "world!".write-ln()
-  ansi-with-console(Print-color-settings(fcolor=DarkYellow, invert=True))
+  color-settings(Print-color-settings(fcolor=DarkYellow, invert=True))
     "This is crazy, ".write()
-    ansi-with-console(Print-color-settings(fcolor=DarkCyan, underline=True))
+    color-settings(Print-color-settings(fcolor=DarkCyan, underline=True))
       "but it's ok".write-ln()
+  val res = 
+    with html-color-string-printer
+    "hello".println-colored(Red)
+  res.println
 
 
 
