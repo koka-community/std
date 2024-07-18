@@ -144,6 +144,12 @@ pub fun ansi-with-console(console: print-color-settings, action)
 pub fun ansi-with-color(c: color, action)
   ansi-with-console(color-settings(fcolor=c), action)
 
+pub fun ansi-color-println(s: string, c: color)
+  ansi-with-color(c, {s.write-ln()})
+
+pub fun ansi-color-print(s: string, c: color)
+  ansi-with-color(c, {s.write()})
+
 pub fun ansi-escape(color-settings: string)
   "\x1B[" ++ color-settings ++ "m"
 
@@ -210,64 +216,74 @@ pub fun seq-set-console(old: print-color-settings, new: print-color-settings)
   else if (old.underline && !new.underline) then reset(new)
   else diff(old, new)
 
-val consolePrinter = handler
+val console-printer = handler
   fun write(s) s.sanitize().print()
   fun write-ln(s) s.sanitize().println()
   fun flush() ()
 
-pub fun htmlPrinter(action)
+pub fun html-printer(action)
   var html := ""
   handle action
-    fun write(s) html := s.htmlEscape()
-    fun write-ln(s) html := s.htmlEscape() ++ "\n"
-    fun flush() html.println()
+    fun write(s) html := s.html-escape()
+    fun write-ln(s) html := s.html-escape() ++ "<br>"
+    fun flush() ()
 
-pub fun htmlSpan(s: string): <color-settings> string
-  // "<span style='" ++ prop ++ ":" ++ v ++ "'>" ++ s ++ "</span>"
-  ""
+// TODO: Implement color printer, instead of overriding color settings? - in particular to have generic instances of with-color, set-color etc.
 
-pub fun htmlEscape(s: string): string
-  val r = s.split("").map fn(c)
+pub fun html-color-printer(action)
+  with val color-settings = Print-color-settings()
+  with html-printer
+  action()
+
+pub fun html-text-span(prop: string, v: string, action)
+  write("<span style='" ++ prop ++ ":" ++ v ++ ";'>")
+  val x = action()
+  write("</span>")
+  x
+
+pub fun html-escape(s: string): string
+  val r = s.list.map fn(c)
     match c
-      "<" -> "&lt;"
-      ">" -> "&gt;"
-      "&" -> "&amp;"
-      "\"" -> "&quot;"
-      "\'" -> "&apos;"
-      _ -> c
-  r.join()
+      '<' -> "&lt;"
+      '>' -> "&gt;"
+      '&' -> "&amp;"
+      '\"' -> "&quot;"
+      '\'' -> "&apos;"
+      '_'  -> "&#95;"
+      _ -> c.string
+  r.join
 
 /// Test of printer features
-// fun main(): <console, exn, fsys, ndet> ()
-//   with consolePrinter
-//   "hi\xFF".write-ln() // Will not print unicode on Windows
-//   with monoPrinter
-//   "hi\xAA".write-ln() // Also will get rid of unicode on Windows
-//   with newFilePrinter("/tmp/tmp1.txt")
-//   "new".write()
-//   " file".write-ln()
-//   flush()
-//   with filePrinter("/tmp/tmp1.txt")
-//   "hi".write()
-//   " there".write-ln()
-//   flush()
-//   with ansiPrinter
-//   with override val color-settings = Print-color-settings(invert=True)
-//   "hello".ansiWithColor(Red)
-//   "world".ansiWithColor(Blue)
-//   with override val color-settings = Print-color-settings(underline=True)
-//   "hello".ansiWithColor(Red)
-//   "world".ansiWithColor(Blue)
-//   with override val color-settings = Print-color-settings()
-//   "hello".ansiWithColor(Red)
-//   "world".ansiWithColor(Blue)
-//   ansiWithConsole(Print-color-settings(fcolor=Green))
-//     "hello ".write()
-//     "world!".write-ln()
-//   ansiWithConsole(Print-color-settings(fcolor=DarkYellow, invert=True))
-//     "This is crazy, ".write()
-//     ansiWithConsole(Print-color-settings(fcolor=DarkCyan, underline=True))
-//       "but it's ok".write-ln()
+fun test(): <console, exn, fsys, ndet> ()
+  with console-printer
+  "hi\xFF".write-ln() // Will not print unicode on Windows
+  with mono-printer
+  "hi\xAA".write-ln() // Also will get rid of unicode on Windows
+  with new-file-printer("/tmp/tmp1.txt")
+  "new".write()
+  " file".write-ln()
+  flush()
+  with file-printer("/tmp/tmp1.txt")
+  "hi".write()
+  " there".write-ln()
+  flush()
+  with ansi-printer
+  with override val color-settings = Print-color-settings(invert=True)
+  "hello".ansi-color-println(Red)
+  "world".ansi-color-println(Blue)
+  with override val color-settings = Print-color-settings(underline=True)
+  "hello".ansi-color-println(Red)
+  "world".ansi-color-println(Blue)
+  with override val color-settings = Print-color-settings()
+  "hello".ansi-color-println(Red)
+  "world".ansi-color-println(Blue)
+  ansi-with-console(Print-color-settings(fcolor=Green))
+    "hello ".write()
+    "world!".write-ln()
+  ansi-with-console(Print-color-settings(fcolor=DarkYellow, invert=True))
+    "This is crazy, ".write()
+    ansi-with-console(Print-color-settings(fcolor=DarkCyan, underline=True))
+      "but it's ok".write-ln()
 
 
 

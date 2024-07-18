@@ -155,6 +155,26 @@ pub fun int/pretty(i: int): doc
 pub fun float64/pretty(d: float64): doc
   d.show.text
 
+pub fun unit/pretty(unit: ()): doc
+  "()".text
+
+pub fun show-pretty(a: a, ?show: a -> e string) : e doc
+  a.show.text
+
+pub fun list/pretty(a: list<a>, ?pretty: a -> e doc): e doc
+  a.map(pretty).list
+
+pub fun tuple/pretty((a,b): (a, b), ?a/pretty: a -> e doc, ?b/pretty: b -> e doc): e doc
+  tupled([a.pretty, b.pretty])
+
+pub fun triple/pretty((a,b,c): (a, b, c), ?a/pretty: a -> e doc, ?b/pretty: b -> e doc, ?c/pretty: c -> e doc): e doc
+  tupled([a.pretty, b.pretty, c.pretty])
+
+pub fun maybe/pretty(a: maybe<a>, ?pretty: a -> e doc): e doc
+  match a
+    Just(x) -> x.pretty
+    Nothing -> empty
+
 // Semi primitive: fill and fill-break
 
 pub fun fill-break(d: doc, f: int): doc
@@ -201,6 +221,16 @@ pub type simpleDoc
   SColorOpen(b: bool, c: color, d: simpleDoc)
   SColorClose(d: simpleDoc)
 
+pub fun make-markdown(d: doc): doc
+  match d
+    Line(True) -> "\n\n".text
+    Column(f) -> Column(fn(x) make-markdown(f(x)))
+    Nesting(f) -> Nesting(fn(x) make-markdown(f(x)))
+    Cat(x, y) -> Cat(make-markdown(x), make-markdown(y))
+    Nest(i, x) -> Nest(i, make-markdown(x))
+    Union(x, y) -> Union(make-markdown(x), make-markdown(y))
+    Colored(b, c, x) -> Colored(b, c, make-markdown(x))
+    _ -> d
 
 pub val empty = Empty
 
@@ -213,25 +243,25 @@ pub fun text(s: string): doc
 pub val line = Line(False)
 pub val linebreak = Line(True)
 
-pub fun beside(x: doc, y: doc): doc
+pub inline fun beside(x: doc, y: doc): doc
   if x.is-empty then y else if y.is-empty then x else Cat(x, y)
 
-pub fun nest(x: doc, i: int): doc
+pub inline fun nest(x: doc, i: int): doc
   Nest(i, x)
 
-pub fun column(f: int -> doc): doc
+pub inline fun column(f: int -> doc): doc
   Column(f)
 
-pub fun nesting(f: int -> doc): doc
+pub inline fun nesting(f: int -> doc): doc
   Nesting(f)
 
-pub fun group(d: doc): doc
+pub inline fun group(d: doc): doc
   Union(d.flatten, d)
 
-pub fun color(d: doc, c: color): doc
+pub inline fun color(d: doc, c: color): doc
   Colored(True, c, d)
 
-pub fun bcolor(d: doc, c: color): doc
+pub inline fun bcolor(d: doc, c: color): doc
   Colored(False, c, d)
 
 pub fun flatten(d: doc): doc
@@ -243,9 +273,9 @@ pub fun flatten(d: doc): doc
     Column(f) -> Column(fn(x) flatten(f(x)))
     Nesting(f) -> Nesting(fn(x) flatten(f(x)))
     Colored(b, c, x) -> Colored(b, c, flatten(x))
-    x -> x
+    x -> x // Empty,Char,Text
 
-pub fun dcontains(d: doc, p: (string -> e bool)): e bool
+pub fun doc-contains(d: doc, p: (string -> e bool)): e bool
   d.texts.any(p)
 
 pub fun doc-starts-with(d: doc, s: string): bool
