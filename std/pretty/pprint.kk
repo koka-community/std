@@ -17,22 +17,22 @@ import std/num/float64
 pub infixr 5 (/), (||), (|-|), (|--|) 
 pub infixr 6 (|.|), (|+|)
 
-// List, tupled and semiBraces pretty print a list of documents
+// List, tupled and semi-braces pretty print a list of documents
 // either horizontally or vertically aligned.
 
 pub fun list(l: list<doc>): doc
-  encloseSep(l, lbracket, rbracket, comma)
+  enclose-sep(l, lbracket, rbracket, comma)
 
 pub fun tupled(l: list<doc>): doc
-  l.encloseSep(lparen, rparen, text(", "))
+  l.enclose-sep(lparen, rparen, text(", "))
 
-pub fun semiBraces(l: list<doc>): doc
-  l.encloseSep(lbrace, rbrace, semi)
+pub fun semi-braces(l: list<doc>): doc
+  l.enclose-sep(lbrace, rbrace, semi)
 
 pub fun angled(l: list<doc>): doc
-  l.encloseSep(langle, rangle, comma)
+  l.enclose-sep(langle, rangle, comma)
 
-pub fun encloseSep(lst: list<doc>, l: doc, r: doc, p: doc): doc
+pub fun enclose-sep(lst: list<doc>, l: doc, r: doc, p: doc): doc
   match lst
     Nil -> l |.| r
     Cons(c, Nil) -> l |.| c |.| r
@@ -50,7 +50,7 @@ pub fun punctuate(l: list<doc>, p: doc): list<doc>
 pub fun sep(l: list<doc>): doc
   l.vsep.group
 
-pub fun fillSep(l: list<doc>): doc
+pub fun fill-sep(l: list<doc>): doc
   l.fold((/))
 
 pub fun hsep(l: list<doc>): doc
@@ -62,7 +62,7 @@ pub fun vsep(l: list<doc>): doc
 pub fun cat(l: list<doc>): doc
   l.vcat.group
 
-pub fun fillCat(l: list<doc>): doc
+pub fun fill-cat(l: list<doc>): doc
   l.fold((||))
 
 pub fun hcat(l: list<doc>): doc
@@ -155,9 +155,9 @@ pub fun int/pretty(i: int): doc
 pub fun float64/pretty(d: float64): doc
   d.show.text
 
-// Semi primitive: fill and fillBreak
+// Semi primitive: fill and fill-break
 
-pub fun fillBreak(d: doc, f): doc
+pub fun fill-break(d: doc, f: int): doc
   d.width(fn(w) if w > f then linebreak.nest(f) else spaces(f - w).text)
 
 pub fun fill(d: doc, f: int): doc
@@ -248,10 +248,10 @@ pub fun flatten(d: doc): doc
 pub fun dcontains(d: doc, p: (string -> e bool)): e bool
   d.texts.any(p)
 
-pub fun dStartsWith(d: doc, s: string): bool
-  dStartsWithT(d.texts, s, s.count)
+pub fun doc-starts-with(d: doc, s: string): bool
+  doc-starts-withT(d.texts, s, s.count)
 
-pub fun dStartsWithT(l: list<string>, pre: string, n: int)
+pub fun doc-starts-withT(l: list<string>, pre: string, n: int)
   match l
     Nil -> n == 0
     Cons(s, xs) ->
@@ -259,13 +259,13 @@ pub fun dStartsWithT(l: list<string>, pre: string, n: int)
       if m >= n then
         s.slice.take(n).string == pre
       else
-        pre.slice.take(m).string == s && dStartsWithT(xs, pre.slice.subslice(m,pre.count).string, n - m)
+        pre.slice.take(m).string == s && doc-starts-withT(xs, pre.slice.subslice(m,pre.count).string, n - m)
 
 // TODO: Optimize a bunch of this
-pub fun dEndsWith(d: doc, s: string): bool
-  dEndsWithT(d.rtexts, s.list.reverse.string, s.count)
+pub fun doc-ends-with(d: doc, s: string): bool
+  doc-ends-withT(d.rtexts, s.list.reverse.string, s.count)
 
-pub fun dEndsWithT(l:list<string>, rpost: string, n:int)
+pub fun doc-ends-withT(l:list<string>, rpost: string, n:int)
   match l
     Nil -> n == 0
     Cons(s, xs) ->
@@ -273,7 +273,7 @@ pub fun dEndsWithT(l:list<string>, rpost: string, n:int)
       if m >= n then
         s.slice.take(n).string == rpost
       else
-        rpost.slice.take(m).string == s && dEndsWithT(xs, rpost.slice.subslice(m,rpost.count).string, n - m)
+        rpost.slice.take(m).string == s && doc-ends-withT(xs, rpost.slice.subslice(m,rpost.count).string, n - m)
 
 pub fun texts(d: doc): list<string>
   match d
@@ -304,17 +304,17 @@ pub fun rtexts(d: doc): list<string> // reversed text fragments
     ColoredEnd -> []
 
 // renderers
-pub fun (==)(d1: doc, d2: doc): bool
-  d1.renderCompact.displayS == d2.renderCompact.displayS
+pub fun doc/(==)(d1: doc, d2: doc): bool
+  d1.render-compact.display-string == d2.render-compact.display-string
 
-// renderPretty: the default pretty printing algorithm
+// render-pretty: the default pretty printing algorithm
 
 // list of indentation/document pairs; saves an indirection over list<(int, doc)>
 type docList
   DocNil
   DocCons(i: int, d: doc, dl: docList)
 
-pub fun renderPrettyB(rfrac: float64, w: int, xdoc: doc): div string
+pub fun render-pretty-b(rfrac: float64, w: int, xdoc: doc): div string
   // r - the ribbon width in characters
   val r = max(0, min(w, (w.float64 * rfrac).int))
 
@@ -322,7 +322,7 @@ pub fun renderPrettyB(rfrac: float64, w: int, xdoc: doc): div string
   // x and y, the (simple) documents to chose from.
   // precondition: first lines of x are longer than the first lines of y
   fun nicest(n, k, x, y)
-    x // TODO: reimplement this according to renderPretty
+    x // TODO: reimplement this according to render-pretty
 
   // b = base nesting, n = indentation of current line, k = current column
   // (k >= n) && (k - n == count of inserted characters)
@@ -346,7 +346,7 @@ pub fun renderPrettyB(rfrac: float64, w: int, xdoc: doc): div string
           ColoredEnd -> best(b, n, k, ds)
   best(0, 0, 0, [(0, xdoc)])
 
-pub fun renderPretty(rfrac: float64, w: int, xdoc: doc): div simpleDoc
+pub fun render-pretty(rfrac: float64, w: int, xdoc: doc): div simpleDoc
   // r - the ribbon width in characters
   val r = max(0, min(w, (w.float64 * rfrac).int))
 
@@ -389,9 +389,9 @@ pub fun fits(w: int, x: simpleDoc)
     SColorOpen(_, _, x) -> fits(w, x)
     SColorClose(x) -> fits(w, x)
 
-// renderCompact: renders documents without indentation
+// render-compact: renders documents without indentation
 // fast and fewer characters output, good for machines
-pub fun renderCompact(xdoc: doc): simpleDoc
+pub fun render-compact(xdoc: doc): simpleDoc
   fun scan(k, l)
     match l
       Nil -> SEmpty
@@ -410,81 +410,81 @@ pub fun renderCompact(xdoc: doc): simpleDoc
           ColoredEnd -> SColorClose(scan(k, ds.pretend-decreasing))
   scan(0, [xdoc])
 
-pub fun asString(d: doc)
-  displayS(renderCompact(d))
+pub fun as-string(d: doc)
+  display-string(render-compact(d))
 
 // Displayers: displayS and displayIO
 
-pub fun displayS(simple: simpleDoc): string
+pub fun display-string(simple: simpleDoc): string
   match simple
     SEmpty -> ""
-    SChar(_, c, x) -> c.show-char ++ x.displayS
-    SText(_, s, x) -> s ++ x.displayS
-    SLine(i, x) -> "\n" ++ spaces(i) ++ x.displayS
-    SColorOpen(_, _, x) -> x.displayS
-    SColorClose(x) -> x.displayS
+    SChar(_, c, x) -> c.show-char ++ x.display-string
+    SText(_, s, x) -> s ++ x.display-string
+    SLine(i, x) -> "\n" ++ spaces(i) ++ x.display-string
+    SColorOpen(_, _, x) -> x.display-string
+    SColorClose(x) -> x.display-string
 
-pub fun isSpace(c: char): bool
+pub fun is-space(c: char): bool
   c == ' ' || c == '\t'
 
-pub fun skipSpaces(simple: simpleDoc): simpleDoc
+pub fun skip-spaces(simple: simpleDoc): simpleDoc
   match simple
-    SChar(_, c, x) | c.isSpace -> skipSpaces(x)
+    SChar(_, c, x) | c.is-space -> skip-spaces(x)
     SText(i, s, x) ->
-      val noSpaces = s.list.drop-while(isSpace).string
+      val noSpaces = s.list.drop-while(is-space).string
       if noSpaces == "" then
-        skipSpaces(x)
+        skip-spaces(x)
       else
         SText(i, noSpaces, x)
     _ -> simple 
 
-pub fun displayP(w: int, simple: simpleDoc): <printer,colorSettings,div> ()
-  fun display(curCol, simp, oldSettings)
+pub fun display-pretty(w: int, simple: simpleDoc): <printer,color-settings,div> ()
+  fun display(curCol, simp, old-settings)
     match simp
       SEmpty -> ()
       SChar(i, c, x) ->
         if curCol + 1 >= w  && i + 1 < w then
-          display(curCol, SLine(i + 1, simp.skipSpaces), oldSettings)
+          display(curCol, SLine(i + 1, simp.skip-spaces), old-settings)
         else
           write(c.show-char)
-          display(curCol + 1, x, oldSettings)
+          display(curCol + 1, x, old-settings)
       SText(i, s, x) ->
         if curCol + s.count >= w && i + s.count < w then
-          display(curCol, SLine(i + 1, simp.skipSpaces), oldSettings)
+          display(curCol, SLine(i + 1, simp.skip-spaces), old-settings)
         else
           write(s)
-          display(curCol + s.count, x, oldSettings)
+          display(curCol + s.count, x, old-settings)
       SLine(i, x) ->
         write-ln("")
         write(spaces(i))
-        display(i, x, oldSettings)
+        display(i, x, old-settings)
       SColorOpen(f, c, x) ->
-        val oldSettings' = colorSettings
+        val old-settings' = color-settings
         if f then 
-          with override val colorSettings = oldSettings'(fcolor=c)
-          display(curCol, x, oldSettings')
+          with override val color-settings = old-settings'(fcolor=c)
+          display(curCol, x, old-settings')
         else
-          with override val colorSettings = colorSettings(bcolor=c)
-          display(curCol, x, oldSettings')
+          with override val color-settings = color-settings(bcolor=c)
+          display(curCol, x, old-settings')
       SColorClose(x) ->
-        with override val colorSettings = oldSettings
-        display(curCol, x, oldSettings)
-  display(0, simple, colorSettings)
+        with override val color-settings = old-settings
+        display(curCol, x, old-settings)
+  display(0, simple, color-settings)
 
-pub fun writePretty(d: doc)
-  displayP(defaultWidth, renderPretty(0.8, defaultWidth, d))
+pub fun write-pretty(d: doc)
+  display-pretty(default-width, render-pretty(0.8, default-width, d))
 
-pub fun writePrettyLn(d: doc)
-  writePretty(d |.| linebreak)
+pub fun write-pretty-ln(d: doc)
+  write-pretty(d |.| linebreak)
 
 pub fun show(d: doc): div string
-  displayS(renderPretty(0.5, defaultWidth, d))
+  display-string(render-pretty(0.5, default-width, d))
 
-pub fun putDoc(d: doc)
-  println(renderPrettyB(0.5, defaultWidth, d))
+pub fun put-doc(d: doc)
+  println(render-pretty-b(0.5, default-width, d))
 
-pub fun writeDoc(fpath: path, doc: doc, width: int=defaultWidth)
-  fpath.write-text-file(renderPrettyB(0.5, width, doc))
+pub fun write-doc(fpath: path, doc: doc, width: int=default-width)
+  fpath.write-text-file(render-pretty-b(0.5, width, doc))
 
 // insert spaces "indentation" used to insert tabs, but tabs seem to cause more trouble than they solve :-)
 pub fun spaces(n: int): string
@@ -509,7 +509,7 @@ pub fun spaces(n: int): string
     17 -> "                 "
     _ -> if n <= 0 then "" else replicate(" ", n).join
 
-val defaultWidth = 160
+val default-width = 160
 
 pub fun test-pretty()
   basic/test("Basic Pretty Combinators")

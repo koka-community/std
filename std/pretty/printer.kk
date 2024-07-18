@@ -27,11 +27,11 @@ pub linear effect printer
 
 // A colored printer has additional coloring and formatting options
 pub linear effect coloredPrinter
-  fun withColor(c: color): ()
-  fun withBackColor(c: color): ()
-  fun withReverse(b: bool): ()
-  fun withUnderline(b: bool): ()
-  fun withColorSettings(s: printColorSettings): ()
+  fun set-color(c: color): ()
+  fun set-back-color(c: color): ()
+  fun set-reverse(b: bool): ()
+  fun set-underline(b: bool): ()
+  fun set-color-settings(s: print-color-settings): ()
 
 //--------------------------------------------------------------------------
 //  Interface
@@ -60,12 +60,12 @@ pub type color
 //--------------------------------------------------------------------------
 //  Simple monochrome printer
 //--------------------------------------------------------------------------}
-pub val noColorPrinter = handler
-  fun withColor(c: color) ()
-  fun withBackColor(c: color) ()
-  fun withReverse(b: bool) ()
-  fun withUnderline(b: bool) ()
-  fun withColorSettings(s: printColorSettings) ()
+pub val no-color-printer = handler
+  fun set-color(c: color) ()
+  fun set-back-color(c: color) ()
+  fun set-reverse(b: bool) ()
+  fun set-underline(b: bool) ()
+  fun set-color-settings(s: print-color-settings) ()
 
 // On windows, we cannot print unicode characters :-(
 pub fun sanitize(s: string): <ndet> string
@@ -76,7 +76,7 @@ pub fun sanitize(s: string): <ndet> string
         else x
       }
 
-pub val monoPrinter = handler
+pub val mono-printer = handler
   fun write(s) s.sanitize().print()
   fun write-ln(s) s.sanitize().println()
   fun flush() ()
@@ -85,23 +85,23 @@ pub val monoPrinter = handler
 //  Simple File printer
 //--------------------------------------------------------------------------}
 // Use a file printer that ignores colors. Appends, or creates the file
-pub fun filePrinter(filePath: string, action)
-  var f := read-text-file(filePath.path)
+pub fun file-printer(file-path: string, action)
+  var f := read-text-file(file-path.path)
   handle action
     fun write(s) f := f ++ s
     fun write-ln(s) f := f ++ s ++ "\n"
-    fun flush() try{write-text-file(filePath.path, f)}.default(())
+    fun flush() try{write-text-file(file-path.path, f)}.default(())
 
 // Use a file printer that ignores colors. Creates or overwrites the file
-pub fun newFilePrinter(filePath: string, action)
+pub fun new-file-printer(file-path: string, action)
   var f := ""
   handle action
     fun write(s) f := f ++ s
     fun write-ln(s) f := f ++ s ++ "\n"
-    fun flush() try{write-text-file(filePath.path, f)}.default(())
+    fun flush() try{write-text-file(file-path.path, f)}.default(())
 
 
-pub fun stringPrinter(action: () -> <printer|e> ()): e string
+pub fun string-printer(action: () -> <printer|e> ()): e string
   var res := ""
   with handler
     fun write(s) res := res ++ s
@@ -114,70 +114,69 @@ pub fun stringPrinter(action: () -> <printer|e> ()): e string
 //  Standard ANSI escape sequences
 // --------------------------------------------------------------------------}
 // Use a color printer that uses ANSI escape sequences.
-pub effect val colorSettings: printColorSettings
+pub effect val color-settings: print-color-settings
 
-pub struct printColorSettings
+pub struct print-color-settings
   fcolor: color = ColorDefault
   bcolor: color = ColorDefault
   invert: bool = False
   underline: bool = False
 
-pub fun ansiPrinter(action)
-  with val colorSettings = PrintColorSettings()
+pub fun ansi-printer(action)
+  with val color-settings = Print-color-settings()
   handle action
     fun write(s) s.print()
     fun write-ln(s) s.println()
     fun flush() ()
 
-pub fun ansiStringPrinter(action)
-  with val colorSettings = PrintColorSettings()
-  stringPrinter(action)
+pub fun ansi-string-printer(action)
+  with val color-settings = Print-color-settings()
+  string-printer(action)
 
-pub fun ansiWithConsole(console: printColorSettings, action)
-  val old = colorSettings
+pub fun ansi-with-console(console: print-color-settings, action)
+  val old = color-settings
   with finally fn()
-    ansiEscape(seqSetConsole(console, old)).write()
-  with override val colorSettings = console
-  ansiEscape(reset(console)).write()
+    ansi-escape(seq-set-console(console, old)).write()
+  with override val color-settings = console
+  ansi-escape(reset(console)).write()
   action()
 
-pub fun ansiWithColor(s: string, c: color)
-  ansiWithConsole(colorSettings(fcolor=c))
-    s.write-ln()
+pub fun ansi-with-color(c: color, action)
+  ansi-with-console(color-settings(fcolor=c), action)
 
-pub fun ansiEscape(colorSettings: string)
-  "\x1B[" ++ colorSettings ++ "m"
+pub fun ansi-escape(color-settings: string)
+  "\x1B[" ++ color-settings ++ "m"
 
-pub fun seqReset()
+pub fun seq-reset()
   "0;"
 
-pub fun seqUnderline(u: bool): string
+pub fun seq-underline(u: bool): string
   if (u) then "4;" else ""
 
-pub fun seqReverse(r: bool): string
+pub fun seq-reverse(r: bool): string
   if (r) then "7;" else ""
 
-pub fun seqBold(b: bool): string
+pub fun seq-bold(b: bool): string
   if (b) then "1;" else ""
 
-pub fun seqColor(back: bool, c: color): string
-  if (back) then (c.ansiColor() + 10).show
-  else c.ansiColor().show
+pub fun seq-color(back: bool, c: color): string
+  if (back) then (c.ansi-color + 10).show
+  else c.ansi-color.show
 
-pub fun reset(new: printColorSettings)
-  seqReset() ++ 
-  seqReverse(new.invert) ++ seqUnderline(new.underline) ++ 
-  seqColor(False, new.fcolor) ++ ";" ++ seqColor(True, new.bcolor) 
+pub fun reset(new: print-color-settings)
+  seq-reset() ++ 
+  seq-reverse(new.invert) ++ seq-underline(new.underline) ++ 
+  seq-color(False, new.fcolor) ++ ";" ++ seq-color(True, new.bcolor) 
 
-pub fun diff(a: printColorSettings, b: printColorSettings)
-  val r = if (a.invert != b.invert) then seqReverse(b.invert) else ""
-  val u = if (a.underline != b.underline) then seqUnderline(b.underline) else ""
-  val f = if (a.fcolor != b.fcolor) then seqColor(False, b.fcolor) else ""
-  val back = if (a.bcolor != b.bcolor) then seqColor(True, b.bcolor) else ""
+pub fun diff(a: print-color-settings, b: print-color-settings)
+  val r = if (a.invert != b.invert) then seq-reverse(b.invert) else ""
+  val u = if (a.underline != b.underline) then seq-underline(b.underline) else ""
+  val f = if (a.fcolor != b.fcolor) then seq-color(False, b.fcolor) else ""
+  val back = if (a.bcolor != b.bcolor) then seq-color(True, b.bcolor) else ""
   val f-back-sep = if (f != "" && back != "") then ";" else "";
   r ++ u ++ f ++ f-back-sep ++ back
 
-pub fun ansiColor(c: color)
+pub fun ansi-color(c: color): int
   val idx = match c
     Black -> 0
     DarkRed -> 1
@@ -201,12 +200,12 @@ pub fun ansiColor(c: color)
   else 39
 
 pub fun (==) (a: color, b: color): bool
-  a.ansiColor == b.ansiColor
+  a.ansi-color == b.ansi-color
 
 pub fun (!=) (a: color, b: color): bool
-  a.ansiColor != b.ansiColor
+  a.ansi-color != b.ansi-color
 
-pub fun seqSetConsole(old: printColorSettings, new: printColorSettings)
+pub fun seq-set-console(old: print-color-settings, new: print-color-settings)
   if (old.invert && !new.invert) then reset(new)
   else if (old.underline && !new.underline) then reset(new)
   else diff(old, new)
@@ -223,7 +222,7 @@ pub fun htmlPrinter(action)
     fun write-ln(s) html := s.htmlEscape() ++ "\n"
     fun flush() html.println()
 
-pub fun htmlSpan(s: string): <colorSettings> string
+pub fun htmlSpan(s: string): <color-settings> string
   // "<span style='" ++ prop ++ ":" ++ v ++ "'>" ++ s ++ "</span>"
   ""
 
@@ -253,21 +252,21 @@ pub fun htmlEscape(s: string): string
 //   " there".write-ln()
 //   flush()
 //   with ansiPrinter
-//   with override val colorSettings = PrintColorSettings(invert=True)
+//   with override val color-settings = Print-color-settings(invert=True)
 //   "hello".ansiWithColor(Red)
 //   "world".ansiWithColor(Blue)
-//   with override val colorSettings = PrintColorSettings(underline=True)
+//   with override val color-settings = Print-color-settings(underline=True)
 //   "hello".ansiWithColor(Red)
 //   "world".ansiWithColor(Blue)
-//   with override val colorSettings = PrintColorSettings()
+//   with override val color-settings = Print-color-settings()
 //   "hello".ansiWithColor(Red)
 //   "world".ansiWithColor(Blue)
-//   ansiWithConsole(PrintColorSettings(fcolor=Green))
+//   ansiWithConsole(Print-color-settings(fcolor=Green))
 //     "hello ".write()
 //     "world!".write-ln()
-//   ansiWithConsole(PrintColorSettings(fcolor=DarkYellow, invert=True))
+//   ansiWithConsole(Print-color-settings(fcolor=DarkYellow, invert=True))
 //     "This is crazy, ".write()
-//     ansiWithConsole(PrintColorSettings(fcolor=DarkCyan, underline=True))
+//     ansiWithConsole(Print-color-settings(fcolor=DarkCyan, underline=True))
 //       "but it's ok".write-ln()
 
 
