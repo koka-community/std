@@ -7,7 +7,7 @@
 ----------------------------------------------------------------------------*/
 // This module provides a simple resizable vector implementation
 module std/data/vector-list
-import std/core-extras
+import std/core-extras 
 import std/test
 import std/core/unsafe
 /*
@@ -18,7 +18,7 @@ import std/core/unsafe
   vector
 */
 
-alias vlist<a> = vector-list<a> 
+pub alias vlist<a> = vector-list<a> 
 
 // Create a new vector-list of length `n` with initial elements `default`.
 pub fun vlist( n : int, default : a ) : vector-list<a>
@@ -80,7 +80,7 @@ pub fun set( v : vector-list<a>, ^index : int, value : a ) : maybe<vector-list<a
       Vector-list(data, size) ->
         Just(Vector-list( data.unsafe-set( index, value ), size ))
 
-fun resizer( current : int ) : int
+pub fun resizer( current : int ) : int
   if current < 1 then 1 else current * 2
 
 // Pushes `value` at the end of the vector-list `v`.
@@ -159,7 +159,7 @@ fun test-vlist()
     val vec = unit/vector-list() 
     val vec' = vec.push(2)
     val value = vec'.at(0)
-    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show)
+    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show, ?(==) = fn(a,b) core-extras/maybe/(==)(a,b))
   basic/test("vlist pop")
     val vec = vector-list-init(10) fn (i) Something(i)
     val vec' = match vec.pop()

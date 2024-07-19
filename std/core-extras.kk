@@ -64,6 +64,12 @@ pub fun split-by(s: string, pred: (char) -> bool): list<string>
           else loop(sl'.pretend-decreasing, numchars + 1, acc)
   loop(s.slice, 0, ctx _)
 
+pub effect find<a>
+  final ctl found(a: a): b
+
+pub fun find(f: () -> <find<a>|e> a): e a
+  with final ctl found(a) a
+  f()
 
 // Maybe utilities
 pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
