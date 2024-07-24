@@ -89,7 +89,7 @@ pub fip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k
       match order2(key, kx)
         Lt2(ki, kj) -> remove(l, ki, NodeL(c, z, kj, vx, r))
         Gt2(kj, ki) -> remove(r, ki, NodeR(c, l, kj, vx, z))
-        Eq2(_) -> do-remove(c, z, l, r) // Actually override the value, no balancing needed
+        Eq2(_) -> do-remove(c, z, l, r) // Actually do the removing
     Leaf -> rebuild(z, Leaf) // Not found
 
 pub inline fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbtree<k,v>
@@ -101,7 +101,7 @@ pub inline fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v
       //  - if the node to delete was black we need to rebalance
       else 
         remove-rebalance(z, Leaf, True)
-    else rebuild(z, r.set-black) // Only has one child
+    else rebuild(z, r.set-black) // Only has one child, so we set the child to black, and rebuild from here
   elif r.is-leaf then
     rebuild(z, l.set-black) // One child
   else
