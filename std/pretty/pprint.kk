@@ -5,6 +5,10 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
+// Translated from koka/src/Lib/PPrint.hs, but using different printers // Updated 7/23/24 Commit 5ae0a77
+// Pretty printing via the effect handlers doesn't allow for as much control
+// of indentation and alignment as the original implementation.
+// We use effects on the printer layer though, which allows for the backend to be configured separately
 
 module std/pretty/pprint
 import std/pretty/printer
@@ -468,38 +472,37 @@ pub fun skip-spaces(simple: simpleDoc): simpleDoc
         SText(i, noSpaces, x)
     _ -> simple 
 
-pub fun display-pretty(w: int, simple: simpleDoc): <printer,color-settings,div> ()
-  fun display(curCol, simp, old-settings)
+pub fun display-pretty(w: int, simple: simpleDoc): <coloredPrinter,printer,div> ()
+  fun display(curCol, simp)
     match simp
       SEmpty -> ()
       SChar(i, c, x) ->
         if curCol + 1 >= w  && i + 1 < w then
-          display(curCol, SLine(i + 1, simp.skip-spaces), old-settings)
+          display(curCol, SLine(i + 1, simp.skip-spaces))
         else
           write(c.show-char)
-          display(curCol + 1, x, old-settings)
+          display(curCol + 1, x)
       SText(i, s, x) ->
         if curCol + s.count >= w && i + s.count < w then
-          display(curCol, SLine(i + 1, simp.skip-spaces), old-settings)
+          display(curCol, SLine(i + 1, simp.skip-spaces))
         else
           write(s)
-          display(curCol + s.count, x, old-settings)
+          display(curCol + s.count, x)
       SLine(i, x) ->
         write-ln("")
         write(spaces(i))
-        display(i, x, old-settings)
+        display(i, x)
       SColorOpen(f, c, x) ->
-        val old-settings' = color-settings
         if f then 
-          with override val color-settings = old-settings'(fcolor=c)
-          display(curCol, x, old-settings')
+          update-push-color-settings(fn(s) s(fcolor=c))
+          display(curCol, x)
         else
-          with override val color-settings = color-settings(bcolor=c)
-          display(curCol, x, old-settings')
+          update-push-color-settings(fn(s) s(bcolor=c))
+          display(curCol, x)
       SColorClose(x) ->
-        with override val color-settings = old-settings
-        display(curCol, x, old-settings)
-  display(0, simple, color-settings)
+        pop-color-settings()
+        display(curCol, x)
+  display(0, simple)
 
 pub fun write-pretty(d: doc)
   display-pretty(default-width, render-pretty(0.8, default-width, d))
@@ -550,3 +553,6 @@ hello"#) fn()
       ["test".text, "hello".text].vcat.show
     expect("testhello") fn()
       ["test".text, "hello".text].hcat.show
+    expect("\x1B[91m0\x1B[39m")
+      with ansi-string-printer
+      color("0".text, Red).write-pretty

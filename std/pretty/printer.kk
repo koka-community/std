@@ -5,6 +5,10 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
+// Translated from koka/src/Lib/Printer.hs, but using effects all over // Updated 7/23/24 Commit 32ada87
+
+// Module for portable control of colors in a console
+// only the color of 'stdout' is influenced by these functions, (except for the string / file variants of printers)
 
 module std/pretty/printer
 
@@ -37,36 +41,36 @@ pub struct print-color-settings
   invert: bool = False
   underline: bool = False
 
-fun color-settings(s: print-color-settings, action)
+pub fun color-settings(s: print-color-settings, action)
   push-color-settings(s)
   action()
   pop-color-settings()
 
-fun fcolor(c: color, action)
+pub fun fcolor(c: color, action)
   update-push-color-settings(fn(old) old(fcolor=c))
   action()
   pop-color-settings()
 
-fun bcolor(c: color, action)
+pub fun bcolor(c: color, action)
   update-push-color-settings(fn(old) old(bcolor=c))
   action()
   pop-color-settings()
 
-fun underline(u: bool, action)
+pub fun underline(u: bool, action)
   update-push-color-settings(fn(old) old(underline=u))
   action()
   pop-color-settings()
 
-fun invert(i: bool, action)
+pub fun invert(i: bool, action)
   update-push-color-settings(fn(old) old(invert=i))
   action()
   pop-color-settings()
 
-fun print-colored(s: string, c: color)
+pub fun print-colored(s: string, c: color)
   with fcolor(c)
   s.write()
 
-fun println-colored(s: string, c: color)
+pub fun println-colored(s: string, c: color)
   with fcolor(c)
   s.write-ln()
 
@@ -93,6 +97,49 @@ pub type color
   Cyan
   White
   ColorDefault
+
+fun color/show(c: color): string
+  match c
+    Black -> "Black"
+    DarkRed -> "DarkRed"
+    DarkGreen -> "DarkGreen"
+    DarkYellow -> "DarkYellow"
+    DarkBlue -> "DarkBlue"
+    DarkMagenta -> "DarkMagenta"
+    DarkCyan -> "DarkCyan"
+    Gray -> "Gray"
+    DarkGray -> "DarkGray"
+    Red -> "Red"
+    Green -> "Green"
+    Yellow -> "Yellow"
+    Blue -> "Blue"
+    Magenta -> "Magenta"
+    Cyan -> "Cyan"
+    White -> "White"
+    ColorDefault -> "ColorDefault"
+
+fun idx/int(c: color): int
+  match c
+    Black -> 0
+    DarkRed -> 1
+    DarkGreen -> 2
+    DarkYellow -> 3
+    DarkBlue -> 4
+    DarkMagenta -> 5
+    DarkCyan -> 6
+    Gray -> 7 
+    DarkGray -> 8
+    Red -> 9
+    Green -> 10
+    Yellow -> 11
+    Blue -> 12
+    Magenta -> 13
+    Cyan -> 14
+    White -> 15
+    ColorDefault -> 16
+
+fun color/cmp(a: color, b: color): order
+  a.int.cmp(b.int)
 
 //--------------------------------------------------------------------------
 //  Simple monochrome printer
@@ -221,24 +268,7 @@ pub fun diff(a: print-color-settings, b: print-color-settings)
   r ++ u ++ f ++ f-back-sep ++ back
 
 pub fun ansi-color(c: color): int
-  val idx = match c
-    Black -> 0
-    DarkRed -> 1
-    DarkGreen -> 2
-    DarkYellow -> 3
-    DarkBlue -> 4
-    DarkMagenta -> 5
-    DarkCyan -> 6
-    Gray -> 7 
-    DarkGray -> 8
-    Red -> 9
-    Green -> 10
-    Yellow -> 11
-    Blue -> 12
-    Magenta -> 13
-    Cyan -> 14
-    White -> 15
-    ColorDefault -> 16
+  val idx = c.int
   if (idx < 8) then idx + 30
   else if (idx < 16) then 90 + idx - 8
   else 39
