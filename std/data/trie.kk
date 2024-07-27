@@ -4,12 +4,11 @@ import std/core/undiv
 import std/test
 
 type trie
-  Root(children: linearMap<char,trie>)
   // We cache the count of the partial string to avoid recomputing it, we also keep track if this node represents a complete string
-  Trie(offset: int, part: string, pcount: int, value: string, full: bool, children: linearMap<char,trie>)
+  Trie(part: string, pcount: int, value: string, full: bool, children: linearMap<char,trie>)
 
 fun empty()
-  Root(LinearMap([]))
+  Trie("", 0, "", False, LinearMap([]))
 
 // Looking up a string from the trie
 pub fun str/lookup(t: trie, k: string): maybe<string>
@@ -27,8 +26,7 @@ inline fun lookup-child(m: linearMap<char,trie>, full: bool, v: string, kn: ssli
 
 fun slice/lookup(t: trie, k: sslice, kcount: int): div maybe<string>
   match t
-    Root(m) -> lookup-child(m, False, "", k, kcount)
-    Trie(_, p, pcount, v, full, m) -> 
+    Trie(p, pcount, v, full, m) -> 
       if k.is-prefixed-by(p.slice, kcount, pcount) then
         lookup-child(m, full, v, k.drop(pcount), kcount - pcount)
       else Nothing
@@ -48,35 +46,31 @@ fun unsafe/not-reachable(): a
   with pretend-no-div
   unsafe1/not-reachable()
 
-inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, offset: int, pcount: int, kcount': int): div trie
+inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, pcount: int, kcount': int): div trie
     val sub = m.lookup(kchar)
     match sub
-      Nothing -> Trie(offset, p, pcount, v, full, m.set(kchar, Trie(offset + pcount + 1, kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
-      Just(sub) -> Trie(offset, p, pcount, v, full, m.set(kchar, bind(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
+      Nothing -> Trie(p, pcount, v, full, m.set(kchar, Trie(kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
+      Just(sub) -> Trie(p, pcount, v, full, m.set(kchar, bind(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
 
 fun internal/bind(t: trie, k: sslice, original: string, kcount: int): div trie
   match t
-    Root(m) ->
-      Trie(0, original, kcount, original, True, m)
-    Trie(offset, p, pcount, v, full, m) ->
+    Trie(p, pcount, v, full, m) ->
       fun common-prefix(k': sslice, p': sslice, acc: sslice, acccount: int)
         match (k'.next, p'.next)
           (Just((chark, k'')), Just((charp, p''))) -> 
             if chark == charp then
               common-prefix(k''.pretend-decreasing, p'', acc.extend(1), acccount + 1)
             else
-              val accoffset = offset + acccount
-              val childoffset = accoffset + 1
               val m' = LinearMap([
-                (chark, Trie(childoffset, k''.string, k''.count, original, True, LinearMap([]))),
-                (charp, Trie(childoffset, p''.string, p''.count, v, full, m)) 
+                (chark, Trie(k''.string, k''.count, original, True, LinearMap([]))),
+                (charp, Trie(p''.string, p''.count, v, full, m)) 
               ])
-              Trie(offset, acc.string, acccount, v.slice.truncate.extend(accoffset).string, False, m')
+              Trie(acc.string, acccount, v.slice.extend(0 - acccount).string, False, m')
           (Just((chark, k'')), Nothing) ->
-            bind-map(m, full, p, v, chark, k'', original, offset, pcount, kcount - pcount)
+            bind-map(m, full, p, v, chark, k'', original, pcount, kcount - pcount)
           (Nothing, Just((charp, p''))) ->
-            bind-map(m, full, k.string, original, charp, p'', v, offset, kcount, pcount - kcount)
-          (Nothing, Nothing) -> Trie(offset, p, pcount, v, True, m)
+            bind-map(m, full, k.string, original, charp, p'', v, kcount, pcount - kcount)
+          (Nothing, Nothing) -> Trie(p, pcount, v, True, m)
           _ -> unsafe/not-reachable()
       common-prefix(k, p.slice, k.truncate, 0)
 
@@ -86,13 +80,11 @@ fun is-prefixed-by(a: sslice, b: sslice, acount: int, bcount: int): bool
 
 fun trie/show(t: trie): div string
   match t
-    Root(m) -> "Root(" ++ m.show ++ ")"
-    Trie(offset, p, pcount, v, full, m) -> "Trie(" ++ offset.show ++ ", " ++ p.show ++ ", " ++ pcount.show ++ ", " ++ v.show ++ ", " ++ full.show ++ " " ++ m.show ++ ")"
+    Trie(p, pcount, v, full, m) -> "Trie(" ++ p.show ++ ", " ++ pcount.show ++ ", " ++ v.show ++ ", " ++ full.show ++ " " ++ m.show ++ ")"
 
 fun test-trie()
   val t = trie/empty().add("Hello")
   val t1 = t.add("World").add("Worship")
-  trace(t1.show)
   basic/test("trie lookup")
     expect(Just("Hello"))
       t1.lookup("Hello")
@@ -100,4 +92,3 @@ fun test-trie()
       t1.lookup("Worship")
     expect(Nothing)
       t1.lookup("Wor")
-      
