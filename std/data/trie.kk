@@ -11,16 +11,6 @@ type trie
 fun empty()
   Root(LinearMap([]))
 
-fun unsafe1/not-reachable(): div a
-  unsafe2/not-reachable()
-
-fun unsafe2/not-reachable(): div a
-  unsafe1/not-reachable()
-
-fun unsafe/not-reachable(): a
-  with pretend-no-div
-  unsafe1/not-reachable()
-
 // Looking up a string from the trie
 pub fun str/lookup(t: trie, k: string): maybe<string>
   with pretend-no-div
@@ -48,49 +38,47 @@ pub fun add(t: trie, s: string): trie
   with pretend-no-div
   bind(t, s.slice, s, s.slice.count)
 
-inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kn: sslice, ksfull: string, offset: int, pcount: int, kcount': int): div trie
-  match kn.next
-    Nothing -> Trie(offset, p, pcount, v, True, m)
-    Just((char, k')) ->
-      val sub = m.lookup(char)
-      match sub
-        Nothing -> Trie(offset, p, pcount, v, full, m.set(char, Trie(offset + pcount + 1, k'.string, kcount' - 1, ksfull, True, LinearMap([]))))
-        Just(sub) -> Trie(offset, p, pcount, v, full, m.set(char, bind(sub.pretend-decreasing, k', ksfull, kcount' - 1)))
+fun unsafe1/not-reachable(): div a
+  unsafe2/not-reachable()
+
+fun unsafe2/not-reachable(): div a
+  unsafe1/not-reachable()
+
+fun unsafe/not-reachable(): a
+  with pretend-no-div
+  unsafe1/not-reachable()
+
+inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, offset: int, pcount: int, kcount': int): div trie
+    val sub = m.lookup(kchar)
+    match sub
+      Nothing -> Trie(offset, p, pcount, v, full, m.set(kchar, Trie(offset + pcount + 1, kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
+      Just(sub) -> Trie(offset, p, pcount, v, full, m.set(kchar, bind(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
 
 fun internal/bind(t: trie, k: sslice, original: string, kcount: int): div trie
   match t
     Root(m) ->
-      bind-map(m, False, "", "", k, original, 0, 0, kcount)
+      Trie(0, original, kcount, original, True, m)
     Trie(offset, p, pcount, v, full, m) ->
-      val pslice = p.slice
-      // We go over the strings multiple times, we should inline common-prefix here, which also removes the need for non-reachable
-      if k.is-prefixed-by(pslice, kcount, pcount) then 
-        bind-map(m, full, p, v, k.drop(pcount), original, offset, pcount, kcount - pcount)
-      elif pslice.is-prefixed-by(k, pcount, kcount) then
-        bind-map(m, full, k.string, original, pslice.drop(kcount), v, offset, kcount, pcount - kcount)
-      else
-        val common = k.common-prefix(pslice, pslice.truncate)
-        val commoncount = common.count
-        val newoffset = offset + commoncount
-        val k' = k.drop(commoncount)
-        val p' = pslice.drop(commoncount)
-        val commonv = v.slice.truncate.extend(newoffset)
+      fun common-prefix(k': sslice, p': sslice, acc: sslice, acccount: int)
         match (k'.next, p'.next)
-          (Just((chark, k'')), Just((charp, p''))) ->
-            val m' = LinearMap([
-              (chark, Trie(newoffset, k''.string, k''.count, original, True, LinearMap([]))),
-              (charp, Trie(newoffset, p''.string, p''.count, v, full, m)) 
-            ])
-            Trie(offset, common.string, commoncount, commonv.string, False, m')
-          _ -> 
-            trace("trie unreachable case 2 " ++ p.show ++ " " ++ k.show ++ " " ++ v.show)
-            unsafe/not-reachable()
-
-fun common-prefix(a: sslice, b: sslice, acc: sslice): sslice
-  match (a.next, b.next)
-    (Just((chara, a')), Just((charb, b'))) | chara == charb -> 
-        common-prefix(a'.pretend-decreasing, b', acc.extend(1))
-    _ -> acc
+          (Just((chark, k'')), Just((charp, p''))) -> 
+            if chark == charp then
+              common-prefix(k''.pretend-decreasing, p'', acc.extend(1), acccount + 1)
+            else
+              val accoffset = offset + acccount
+              val childoffset = accoffset + 1
+              val m' = LinearMap([
+                (chark, Trie(childoffset, k''.string, k''.count, original, True, LinearMap([]))),
+                (charp, Trie(childoffset, p''.string, p''.count, v, full, m)) 
+              ])
+              Trie(offset, acc.string, acccount, v.slice.truncate.extend(accoffset).string, False, m')
+          (Just((chark, k'')), Nothing) ->
+            bind-map(m, full, p, v, chark, k'', original, offset, pcount, kcount - pcount)
+          (Nothing, Just((charp, p''))) ->
+            bind-map(m, full, k.string, original, charp, p'', v, offset, kcount, pcount - kcount)
+          (Nothing, Nothing) -> Trie(offset, p, pcount, v, True, m)
+          _ -> unsafe/not-reachable()
+      common-prefix(k, p.slice, k.truncate, 0)
 
 fun is-prefixed-by(a: sslice, b: sslice, acount: int, bcount: int): bool
   bcount <= acount &&
