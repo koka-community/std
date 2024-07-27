@@ -28,6 +28,7 @@ fun slice/lookup(t: trie, k: sslice, kcount: int): div maybe<string>
   match t
     Trie(p, pcount, v, full, m) -> 
       if k.is-prefixed-by(p.slice, kcount, pcount) then
+        // TODO: Optimize, drop + prefixed both traverse the same part of the string.
         lookup-child(m, full, v, k.drop(pcount), kcount - pcount)
       else Nothing
 

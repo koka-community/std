@@ -38,14 +38,14 @@ fun (==)(x: intern-ref<a>, y: intern-ref<a>): bool
 
 val strs : some<s> delayed<<pure,interner<s>>,ev<intern<s,string>>> = delay({interner(string/(==))})
 
-fun string/intern(s: string): <pure,interner<s>> intern-ref<string>
+fun s-intern(s: string): <pure,interner<s>> intern-ref<string>
   strs.force.intern(s)
 
 fun test()
   with intern-creator
   
-  val a = intern("a")
-  val b = intern("b")
-  val anothera = intern("a")
+  val a = s-intern("a")
+  val b = s-intern("b")
+  val anothera = s-intern("a")
   println(a == b)
   println(a == anothera)
