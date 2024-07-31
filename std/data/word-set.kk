@@ -21,6 +21,7 @@ inline fun member(s: string, t: word-set): bool
 
 named effect string-intern
   fun intern-string(x: string): istring
+  fun is-interned(x: string): bool
 
 value struct istring
   str: string
@@ -37,7 +38,13 @@ fun string-pool(): <> ev<string-intern>
         Nothing ->
           trie := add(trie, a)
           Istring(a)
+    fun is-interned(a)
+      trie.lookup(a).is-just
   r
+
+inline fun add-all(s: ev<string-intern>, xs: list<string>): exn ev<string-intern>
+  xs.foreach(fn(x) {s.intern-string(x); ()})
+  s
 
 inline fun intern(s: string): exn istring
   words.intern-string(s)

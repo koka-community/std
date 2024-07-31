@@ -83,6 +83,11 @@ pub fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
     (Nothing, Nothing) -> True
     _ -> False
 
+pub fun expect( m : maybe<a>, msg: string ="", ?kk-file-line: string ) : exn a
+  match m
+    Just(a) -> a
+    Nothing -> throw(kk-file-line ++ " expected Just " ++ msg)
+
 pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
   match m
     Just(a) -> a
