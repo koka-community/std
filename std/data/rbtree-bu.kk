@@ -2,6 +2,7 @@ module rbtree-bu
 
 import std/num/int32
 pub import std/data/rbtree
+import std/core/undiv
 
 pub type zipper<k,v>
   NodeR(color : color, lchild : rbtree<k,v>, key : k, value : v, zip : zipper<k,v>)
@@ -91,6 +92,29 @@ pub fip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k
         Gt2(kj, ki) -> remove(r, ki, NodeR(c, l, kj, vx, z))
         Eq2(_) -> do-remove(c, z, l, r) // Actually do the removing
     Leaf -> rebuild(z, Leaf) // Not found
+
+pub inline fun db-balance(t: rbtree<k,v>, is-double-black: bool): rbtree<k,v>
+  if is-double-black then
+    match t
+      Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d) ->
+        Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d) ->
+        Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      _ -> db-balance(t.pretend-decreasing, False)
+  else
+    match t
+      Node(Black, Node(Red, Node(Red, a, x, vx, b), y, vy, c), z, vz, d)
+        -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      Node(Black, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d)
+        -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      Node(Black, a, x, vx, Node(Red, Node(Red, b, y, vy, c), z, vz, d))
+        -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      Node(Black, a, x, vx, Node(Red, b, y, vy, Node(Red, c, z, vz, d)))
+        -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
+      _ -> t
+
+// TODO: Need to double a double black rotate in terms of a zipper.
+// pub inline fun db-rotate(t: zipper<k,v>) 
 
 pub inline fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbtree<k,v>
   if l.is-leaf then 
