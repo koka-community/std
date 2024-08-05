@@ -139,10 +139,11 @@ pub fun check-valid(t1: rbtree<int,v>) : exn ()
   check(t1, Red, -1000000, 100000)
   ()
 
-pub fun bu/random-tree(n: int, r: int) : random rbtree<int,int>
+pub fun bu/random-tree(n: int, r: int) : <exn,random> rbtree<int,int>
   if n == 0 then Leaf
   else 
     val t = bu/random-tree((n - 1).pretend-decreasing, r)
+    t.check-valid()
     t.bu/set(random-int() % r, 0)
 
 pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
@@ -160,7 +161,7 @@ fun main()
   fun delete-check(t0:rbtree<int,int>)
     val k = random-int() % r
     val t1 = t0.bu/remove(k)
-    println("")
+    println("\n\n\n")
     println(t1)
     check-valid(t1)
     if t1.is-leaf then ()
@@ -181,3 +182,12 @@ fun main()
 //     else delete-check(t1)
 //   delete-check(t)
 //   println("All tests passed")
+
+fun test-cases()
+  val t1 = Node(Black, Node(Black, Leaf, 2, 2, Leaf), 3, 3, Node(Red, Node(Black, Leaf, 4, 4, Leaf), 5, 5, Node(Black, Leaf, 9, 9, Leaf)))
+  t1.show.trace
+  trace("  ")
+  val t2 = t1.bu/remove(3)
+  t2.show.trace
+  t2.check-valid()
+  ()
