@@ -19,5 +19,5 @@ pub fun set/insert(s: set<t>, x: t, ?(<): (t,t) -> bool): set<t>
 pub fun tree/insert(s: tree<t>, x: t, ?(<): (t,t) -> bool): tree<t>
   match s
     E -> T(E, x, E)
-    T(l, y, r) -> if x < y then T(l.insert(x), y, r) else if y < x then T(l, y, r.insert(x)) else s
+    T(l, y, r) -> if x < y then T(l.insert(x), y, r) else if y < x then T(l, y, r.insert(x)) else T(l, x, r)
 

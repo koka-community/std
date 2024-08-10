@@ -105,6 +105,9 @@ pub fun vector-init-list( ^n: int, xs: list<(int, a)>): vector<a>
   assigns(xs)
   v
 
+pub fun is-space(c: char): bool
+  c == ' ' || c == '\t'
+
 // Copies a vector
 pub inline extern copy( v : vector<a> ) : vector<a>
   c "kk_vector_copy"

@@ -17,6 +17,7 @@ import std/os/path
 import std/os/file
 import std/test
 import std/num/float64
+import std/core-extras
 
 pub infixr 5 (/), (||), (|-|), (|--|) 
 pub infixr 6 (|.|), (|+|)
@@ -457,9 +458,6 @@ pub fun display-string(simple: simpleDoc): string
     SLine(i, x) -> "\n" ++ spaces(i) ++ x.display-string
     SColorOpen(_, _, x) -> x.display-string
     SColorClose(x) -> x.display-string
-
-pub fun is-space(c: char): bool
-  c == ' ' || c == '\t'
 
 pub fun skip-spaces(simple: simpleDoc): simpleDoc
   match simple
