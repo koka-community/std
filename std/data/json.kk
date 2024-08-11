@@ -14,6 +14,32 @@ pub type json
   JSList(list: list<json>)
   JSObj(dict: list<(string,json)>)
 
+pub inline fun json/(==)(j1: json, j2: json): bool
+  with pretend-no-div
+  eq(j1, j2)
+
+pub fun json/eq(j1: json, j2: json): div bool
+  fun eql(l1: list<json>, l2: list<json>): div bool
+    match (l1, l2)
+      (Nil, Nil) -> True
+      (Cons(h1, t1), Cons(h2, t2)) -> eq(h1, h2) && eql(t1, t2)
+      _ -> False
+
+  fun eqd(d1: list<(string,json)>, d2: list<(string,json)>): div bool
+    match (d1, d2)
+      (Nil, Nil) -> True
+      (Cons((k1, v1), t1), Cons((k2, v2), t2)) -> k1 == k2 && eq(v1, v2) && eqd(t1, t2)
+      _ -> False
+  match (j1, j2)
+    (JSNull, JSNull) -> True
+    (JSBool(b1), JSBool(b2)) -> b1 == b2
+    (JSString(s1), JSString(s2)) -> s1 == s2
+    (JSNum(d1), JSNum(d2)) -> d1 == d2
+    (JSInt(i1), JSInt(i2)) -> i1 == i2
+    (JSList(l1), JSList(l2)) -> eql(l1, l2)
+    (JSObj(d1), JSObj(d2)) -> eqd(d1, d2)
+    _ -> False
+
 fun char/quote(c: char): string
   match c
     '"' -> "\\\""
