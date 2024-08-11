@@ -17,10 +17,10 @@ pub fun sort(l: list<a>, ?cmp: (a, a) -> e order): e list<a>
       val (smaller, greater) = rst.partition fn(it) { cmp(it, pivot) == Lt }
       return sort(smaller.pretend-decreasing) ++ Cons(pivot, sort(greater.pretend-decreasing))
 
-pub fun group(l: list<a>, ?cmp: (a, a) -> e bool): e list<list<a>>
+pub fun group(l: list<a>, ?(==): (a, a) -> e bool): e list<list<a>>
   match l
     Nil -> Nil
     Cons(h, Nil) -> Cons(Cons(h, Nil), Nil)
     Cons(pivot, rst) -> 
-      val (smaller, greater) = rst.partition fn(it) { cmp(it, pivot) }
+      val (smaller, greater) = rst.partition fn(it) { it == pivot }
       return group(smaller.pretend-decreasing) ++ Cons(Cons(pivot, greater), Nil)
