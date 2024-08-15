@@ -153,7 +153,7 @@ pub fun unsafe-set( v : vector<a>, ^index : int, value : a ) : vector<a>
     v
   else 
     // trace("unsafe-set: vector is not unique")
-    val v' = v.copy
+    val v' = v.vector/copy
     v'.unsafe-assign(index.ssize_t, value)
     v'
 
@@ -164,7 +164,7 @@ pub fun a/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : vector<a>
     v.unsafe-assign( idx2.ssize_t, item1 )
     v
   else 
-    val v' = v.copy
+    val v' = v.vector/copy
     val item1 = v'.unsafe-idx( idx1.ssize_t )
     v'.unsafe-assign( idx1.ssize_t, v'.unsafe-idx( idx2.ssize_t ))
     v'.unsafe-assign( idx2.ssize_t, item1 )
@@ -186,7 +186,7 @@ pub inline extern unsafe-box-drop(^x: a): total ()
   c inline "kk_box_drop(#1, kk_context())"
 
 pub inline extern drop-at( ^v : vector<a>, index : ssize_t ) : ()
-  c inline "kk_vector_dup(#1, kk_context()); kk_box_drop(kk_vector_at_borrow(#1, #2, kk_context()), kk_context()); kk_vector_unsafe_assign(#1, #2, kk_box_null(), kk_context())"
+  c inline "kk_vector_dup(#1, kk_context()); kk_box_drop(kk_vector_at_borrow(#1, #2, kk_context()), kk_context()); kk_vector_unsafe_assign_borrow(#1, #2, kk_box_null(), kk_context())"
 
 // Valid only for boxed values
 pub inline extern unsafe-ignore-type(x: a): b
@@ -199,8 +199,8 @@ pub inline extern unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
   js inline "Array(#1)"
 
 // This function should never be called directly unless you know exactly what you are doing
-pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
-  c "kk_vector_unsafe_assign"
+pub inline extern unsafe-assign( ^v : vector<a>, i : ssize_t, x : a ): total ()
+  c "kk_vector_unsafe_assign_borrow"
   cs inline "(#1)[#2] = #3"
   js inline "(#1)[#2] = #3"
 
