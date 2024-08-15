@@ -1,5 +1,5 @@
-import std/data/linearset
-import std/data/linearmap
+pub import std/data/linearmap
+import std/fixpoint/lattice
 
 effect cache<s,c>
   fun add-result(s: s, r: c): ()
@@ -9,7 +9,7 @@ effect cache<s,c>
   final ctl none(): b
   ctl depend(s: s): c
 
-fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> div bool, ?bottom: r, ?join: (r, c) -> (bool, r), ?changes: (r) -> list<c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> linearMap<s,r>
+fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> div bool, .?change-lattice:change-lattice<r,c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> linearMap<s,r>
   var m : some<s,r> linearMap<s,r> := LinearMap([])
   var deps : some<s,c,e> linearMap<s, list<(c -> <pure|e> ())>> := LinearMap([])
   fun update(s, c)
@@ -32,7 +32,7 @@ fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> div bool, ?bottom: r,
               update(s, c)
             else ()
           Nothing -> 
-            m := m.set(s, ?bottom.join(c).snd)
+            m := m.set(s, bottom.join(c).snd)
             update(s, c)
       fun is-cached(s)
         m.contains-key(s)
@@ -68,22 +68,3 @@ fun fix/each(s: s, ls: list<(() -> <cache<s,c>|e> c)>): <cache<s,c>|e> c
   val r = f()
   add-result(s,r)
   r
-
-fun swap(a: int, b: int)
-  with each <- memo((a,b))
-  trace("Calculating fact of " ++ a.show ++ " " ++ b.show)
-  each([{(b,a)}, {swap(b,a)}])
-
-fun test-swap()
-  val res = 
-    with cache
-    swap(0, 1)
-  res.show.println
-
-fun join(old: list<(int, int)>, new: (int, int)): (bool, list<(int,int)>)
-  if old.any(fn(x) x == new) then (False, old) else (True, Cons(new, old))
-
-val bottom = []
-
-fun changes(x: list<(int, int)>): list<(int, int)>
-  x

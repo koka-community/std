@@ -38,7 +38,7 @@ fun cache(f: () -> <div,cache<s,r>,each|e> r, ?(==): (s, s) -> div bool): <div|e
 
 fun memo(s, f)
   match is-cached(s)
-    True -> none()
+    True -> get-cached(s)
     False ->
       val r = f()
       add-result(s, r)
@@ -52,8 +52,22 @@ fun fact(n: int)
   else
     n * fact(n - 1)
 
+fun fib(n: int)
+  with memo(n) 
+  trace("Calculating fib of " ++ n.show)
+  if n == 0 || n == 1 then
+    n
+  else
+    int/(+)(fib(n - 1), fib(n - 2))
+
 fun test-fact()
   val res = 
     with cache
     fact(10)
+  res.show.println
+
+fun test-fib()
+  val res = 
+    with cache
+    fib(10)
   res.show.println
