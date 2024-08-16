@@ -9,7 +9,7 @@ effect cache<s,c>
   final ctl none(): b
   ctl depend(s: s): c
 
-fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> div bool, .?change-lattice:change-lattice<r,c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> linearMap<s,r>
+fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> pure bool, .?change-lattice:change-lattice<r,c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> linearMap<s,r>
   var m : some<s,r> linearMap<s,r> := LinearMap([])
   var deps : some<s,c,e> linearMap<s, list<(c -> <pure|e> ())>> := LinearMap([])
   fun update(s, c)

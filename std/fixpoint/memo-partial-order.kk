@@ -21,7 +21,7 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
       ()
   f()
 
-fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?(==): (s, s) -> div bool, ?join: (r, r) -> (bool, r), ?s/show: s -> string, ?r/show: r -> string): <pure|e> linearMap<s,r>
+fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?(==): (s, s) -> pure bool, ?join: (r, r) -> (bool, r), ?s/show: s -> string, ?r/show: r -> string): <pure|e> linearMap<s,r>
   var m : some<s,r> linearMap<s,r> := LinearMap([])
   var deps : some<s,r,e> linearMap<s, list<(r -> <pure|e> ())>> := LinearMap([])
   fun update(s, r)
