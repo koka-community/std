@@ -1,8 +1,6 @@
 // Copied and derived from https://github.com/koka-lang/koka/tree/artifact-pldi24/test/artifact/pldi24
 module rbtree-td
 
-import std/num/random
-import std/num/int32
 pub import std/data/rbtree
 pub import std/core/undiv
 

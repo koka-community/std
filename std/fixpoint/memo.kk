@@ -1,5 +1,4 @@
-import std/data/linearset
-import std/data/linearmap
+import std/data/rb-map
 
 effect cache<s,r>
   fun add-result(s: s, r: r): ()
@@ -21,13 +20,13 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
       ()
   f()
 
-fun cache(f: () -> <div,cache<s,r>,each|e> r, ?(==): (s, s) -> div bool): <div|e> linearMap<s,r>
-  var m := LinearMap([])
+fun cache(f: () -> <div,cache<s,r>,each|e> r, ?order2: (s, s) -> div order2<s>): <div|e> rbmap<s,r>
+  var m := rb-map/empty()
   with handler
     fun add-result(s, r)
       m := m.set(s, r)
     fun is-cached(s)
-      m.contains-key(s)
+      m.contains(s)
     ctl get-cached(s)
       match m.lookup(s)
         Just(r) -> resume(r)

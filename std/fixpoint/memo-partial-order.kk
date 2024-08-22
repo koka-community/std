@@ -1,5 +1,5 @@
-import std/data/linearset
-import std/data/linearmap
+import std/data/rb-set
+import std/data/rb-map
 
 effect cache<s,r>
   fun add-result(s: s, r: r): ()
@@ -21,9 +21,11 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
       ()
   f()
 
-fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?(==): (s, s) -> pure bool, ?join: (r, r) -> (bool, r), ?s/show: s -> string, ?r/show: r -> string): <pure|e> linearMap<s,r>
-  var m : some<s,r> linearMap<s,r> := LinearMap([])
-  var deps : some<s,r,e> linearMap<s, list<(r -> <pure|e> ())>> := LinearMap([])
+fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?order2: (s, s) -> pure order2<s>, 
+                                                ?join: (r, r) -> (bool, r), 
+                                                ?s/show: s -> string, ?r/show: r -> string): <pure|e> rbmap<s,r>
+  var m : some<s,r> rbmap<s,r> := empty()
+  var deps : some<s,r,e> rbmap<s, list<(r -> <pure|e> ())>> := empty()
   fun update(s, r)
     match deps.lookup(s)
       Just(resumes) -> 
@@ -45,7 +47,7 @@ fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?(==): (s, s) -> pure bool, ?join
             m := m.set(s, r)
             update(s, r)
       fun is-cached(s)
-        m.contains-key(s)
+        m.contains(s)
       ctl depend(s)
         trace("Adding dep for " ++ s.s/show)
         match deps.lookup(s)

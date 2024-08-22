@@ -7,7 +7,7 @@ fun swap(a: int, b: int)
   each([{(b,a)}, {swap(b,a)}])
 
 fun test-swap()
-  val res: linearMap<(int, int), list<(int, int)>> = 
+  val res: rbmap<(int, int), list<(int, int)>> = 
     with cache
     swap(0, 1)
   res.show.println

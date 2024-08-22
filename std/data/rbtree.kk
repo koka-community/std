@@ -31,21 +31,60 @@ pub type dtree<k,v>
 pub ref type dhole   // define as a reference type so the derivative tree constructors can reuse with Node's
   Hole
 
-pub fip fun rbtree/is-red(^t : rbtree<k,v>) : bool
+// Common functionality
+// TODO: Optimize
+pub fun list(t: rbtree<k,v>) : list<(k,v)>
   match t
-    Node(Red) -> True
-    _         -> False
+    Leaf -> []
+    Node(_,l,k,v,r) -> Cons((k,v), l.list ++ r.list)
 
-pub fip fun dt/is-red( ^t : dtree<k,v> ) : bool
+pub fun keys(t: rbtree<k,v>) : list<k>
   match t
-    DNodeR(Red) -> True
-    DNodeL(Red) -> True
-    _          -> False
+    Leaf -> []
+    Node(_,l,k,_,r) -> Cons(k, l.keys ++ r.keys)
+
+pub fun values(t: rbtree<k,v>) : list<v>
+  match t
+    Leaf -> []
+    Node(_,l,_,v,r) -> Cons(v, l.values ++ r.values)
+
+pub fun empty() : rbtree<k,v>
+  Leaf
 
 pub fip fun set-black( t : rbtree<k,v> ) : rbtree<k,v>
   match t
     Node(_,l,x,v,r) -> Node(Black,l,x,v,r)
     Leaf            -> Leaf
+
+pub fun contains(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> e order2<k>) : e bool
+  match t
+    Leaf -> False
+    Node(_, l, kx, _, r) ->
+      match order2(key, kx)
+        Lt2 -> contains(l, key)
+        Gt2 -> contains(r, key)
+        Eq2 -> True
+
+pub fun lookup(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> e order2<k>) : e maybe<v>
+  match t
+    Leaf -> Nothing
+    Node(_, l, kx, v, r) ->
+      match order2(key, kx)
+        Lt2 -> lookup(l, key)
+        Gt2 -> lookup(r, key)
+        Eq2 -> Just(v)
+
+pub fip fun rbtree/is-red(^t : rbtree<k,v>) : bool
+  match t
+    Node(Red) -> True
+    _         -> False
+
+// Helpers for other variants of the tree
+pub fip fun dt/is-red( ^t : dtree<k,v> ) : bool
+  match t
+    DNodeR(Red) -> True
+    DNodeL(Red) -> True
+    _          -> False
 
 // Cormen et al. textbook version
 pub fip fun rebuild(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
@@ -72,7 +111,8 @@ pub fip fun (++.)( d : dtree<k,v>, t : rbtree<k,v> ) : rbtree<k,v>
 pub fip fun to-node( root : root<k,v> ) : rbtree<k,v>
   match root
     Root(c,l,k,v,r) -> Node(c,l,k,v,r)
-  
+
+
 // ---------------------------------------------------------
 // show and print trees
 

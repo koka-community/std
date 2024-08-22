@@ -1,4 +1,4 @@
-pub import std/data/linearmap
+pub import std/data/rb-map
 import std/fixpoint/lattice
 
 effect cache<s,c>
@@ -9,9 +9,9 @@ effect cache<s,c>
   final ctl none(): b
   ctl depend(s: s): c
 
-fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> pure bool, .?change-lattice:change-lattice<r,c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> linearMap<s,r>
-  var m : some<s,r> linearMap<s,r> := LinearMap([])
-  var deps : some<s,c,e> linearMap<s, list<(c -> <pure|e> ())>> := LinearMap([])
+fun cache(f: () -> <pure,cache<s,c>|e> b, ?order2: (s, s) -> pure order2<s>, .?change-lattice:change-lattice<r,c>, ?s/show: s -> string, ?c/show: c -> string): <pure|e> rbmap<s,r>
+  var m : some<s,r> rbmap<s,r> := empty()
+  var deps : some<s,c,e> rbmap<s, list<(c -> <pure|e> ())>> := empty()
   fun update(s, c)
     match deps.lookup(s)
       Just(resumes) -> 
@@ -35,7 +35,7 @@ fun cache(f: () -> <pure,cache<s,c>|e> b, ?(==): (s, s) -> pure bool, .?change-l
             m := m.set(s, bottom.join(c).snd)
             update(s, c)
       fun is-cached(s)
-        m.contains-key(s)
+        m.contains(s)
       ctl depend(s)
         trace("Adding dep for " ++ s.s/show)
         match deps.lookup(s)
