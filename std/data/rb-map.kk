@@ -50,3 +50,11 @@ pub fun lookup(s: rbmap<k,v>, k: k, ^?order2: (k,k) -> e order2<k>): e maybe<v>
 pub fun show(s: rbmap<k,v>, ?k/show: k -> e string, ?v/show: v -> e string): e string
   val Rbmap(tree) = s 
   tree.list.show
+
+pub fun kvalue/map(s: rbmap<k,v>, f: (k, v) -> e x): e rbmap<k,x>
+  val Rbmap(tree) = s 
+  Rbmap(tree.map(f))
+
+pub fun value/map(s: rbmap<k,v>, f: (v) -> e x): e rbmap<k,x>
+  val Rbmap(tree) = s 
+  Rbmap(tree.map(fn(v) f(v)))

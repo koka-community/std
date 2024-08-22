@@ -181,3 +181,16 @@ pub fun buacc/fold( t : rbtree<k,v>, acc: a, f : (a,k,v) -> a ) : a
       f(r.buacc/fold(acc, f), k, v)
     Node(_,l,k,v,r) ->
       f(r.buacc/fold(l.buacc/fold(acc, f), f), k, v)
+
+// TODO: Optimize
+pub fun rb/map( t : rbtree<k,v>, f : (v) -> e x ) : e rbtree<k,x>
+  match t
+    Leaf -> Leaf
+    Node(c,l,k,v,r) ->
+      Node(c, l.map(f), k, f(v), r.map(f))
+
+pub fun keyvalue/map( t : rbtree<k,v>, f : (k, v) -> e x ) : e rbtree<k,x>
+  match t
+    Leaf -> Leaf
+    Node(c,l,k,v,r) ->
+      Node(c, l.map(f), k, f(k, v), r.map(f))
