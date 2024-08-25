@@ -12,6 +12,17 @@ import std/core/undiv
 extern import 
   c file "inline/core-extras"
 
+// Order two `:maybe` values in ascending order
+pub fip fun eff/order2( mb1 : maybe<a>, mb2 : maybe<a>, ^?order2 : (a,a) -> e order2<a> ) : e order2<maybe<a>>
+  match mb1
+    Just(x)  -> match mb2
+                  Just(y) -> match order2(x,y)
+                               Eq2(z)   -> Eq2(Just(z))
+                               Lt2(l,g) -> Lt2(Just(l),Just(g))
+                               Gt2(l,g) -> Gt2(Just(l),Just(g))
+                  Nothing -> Gt2(Nothing,Just(x))
+    Nothing  -> Lt2(Nothing,mb2)
+
 // pub fun char/order2(c1: char, c2: char): order2<char>
 //   if c1 == c2 then Eq2(c1)
 //   else if c1 < c2 then Lt2(c1, c2)
