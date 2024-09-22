@@ -73,9 +73,10 @@ pub fun add-all(m: linearMap<k,v>, l: list<(k,v)>, ?(==): (k, k) -> e bool): e l
 pub fun foldr(m: linearMap<k,v>, acc: a, f: (k, v, a) -> e a): e a
   m.internal.foldr(acc, fn((k, v), x) f(k, v, x))
 
-pub fun map/map(m: linearMap<k,v>, f: (k, v) -> e (k, v)): e linearMap<k,v>
+// Cannot also map the keys unless we require a bijective function between keys
+pub fun map/map(m: linearMap<k,v>, f: (k, v) -> e v1): e linearMap<k,v1> 
   val LinearMap(l) = m
-  LinearMap(l.map(fn((k,v)) f(k,v)))
+  LinearMap(l.map(fn((k,v)) (k, f(k,v))))
 
 pub fun unions(l: list<linearMap<k,v>>, ?(==): (k, k) -> <exn|e> bool): <exn|e> linearMap<k,v>
   val fst = l.head.default(LinearMap([]))
