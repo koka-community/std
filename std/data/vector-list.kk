@@ -10,6 +10,8 @@ module std/data/vector-list
 import std/core-extras 
 import std/test
 import std/core/unsafe
+import std/num/int64
+import std/data/hash/hash
 /*
   todo
   list/vector-list
@@ -17,6 +19,8 @@ import std/core/unsafe
   list
   vector
 */
+extern import 
+  c file "hash/inline/hash"
 
 pub alias vlist<a> = vector-list<a> 
 
@@ -152,6 +156,15 @@ pub fun foreach( v : vector-list<a>, f : (a) -> e () ) : e ()
 pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
   for( v.size ) fn (i) 
     f(i, v.data.unsafe-idx( i.ssize_t ))
+
+inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
+  c "kk_hash_vector_int64"
+
+pub fun vlist/hash( v : vector-list<a>, ?hasher: (a, int64) -> int, ?seed : int64 ) : int
+  val vec = unsafe-vector( v.size.ssize_t )
+  for( v.size ) fn (i)
+    vec.unsafe-assign( i.ssize_t, hasher( v.data.unsafe-idx( i.ssize_t ), seed ).int64 )
+  hash-vector-int64( vec, seed )
 
 ref struct something {i: int}
 fun test-vlist()  
