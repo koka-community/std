@@ -12,6 +12,50 @@ import std/core/undiv
 extern import 
   c file "inline/core-extras"
 
+// Order two `:maybe` values in ascending order
+pub fip fun eff/order2( mb1 : maybe<a>, mb2 : maybe<a>, ^?order2 : (a,a) -> e order2<a> ) : e order2<maybe<a>>
+  match mb1
+    Just(x)  -> match mb2
+                  Just(y) -> match order2(x,y)
+                               Eq2(z)   -> Eq2(Just(z))
+                               Lt2(l,g) -> Lt2(Just(l),Just(g))
+                               Gt2(l,g) -> Gt2(Just(l),Just(g))
+                  Nothing -> Gt2(Nothing,Just(x))
+    Nothing  -> Lt2(Nothing,mb2)
+
+// pub fun char/order2(c1: char, c2: char): order2<char>
+//   if c1 == c2 then Eq2(c1)
+//   else if c1 < c2 then Lt2(c1, c2)
+//   else Gt2(c2, c1)
+
+// Order two integers in ascending order.
+pub fun tuple2/order2(t1: (a,b), t2: (a,b), ^?a/order2:(a,a) -> e order2<a>, ^?b/order2:(b,b) -> e order2<b>): e order2<(a,b)>
+  val (a1, b1) = t1
+  val (a2, b2) = t2
+  match a1.order2(a2)
+    Lt2(a1', a2') -> Lt2((a1', b1), (a2', b2))
+    Gt2(a2', a1') -> Gt2((a2', b2), (a1', b1))
+    Eq2(a1') -> match b1.order2(b2)
+      Lt2(b1', b2') -> Lt2((a1', b1'), (a1', b2'))
+      Gt2(b2', b1') -> Gt2((a1', b2'), (a1', b1'))
+      Eq2(b1') -> Eq2((a1', b1'))
+
+pub tail fun list/order2(l1: list<a>, l2: list<a>, ?order2: (a, a) -> e order2<a>): e order2<list<a>>
+  match (l1, l2)
+    (Nil, Nil) -> Eq2(Nil)
+    (Nil, _) -> Lt2(Nil, l2)
+    (_, Nil) -> Gt2(Nil, l1)
+    (Cons(h1, t1), Cons(h2, t2)) -> 
+      match h1.order2(h2)
+        Lt2(h1', h2') -> Lt2(Cons(h1', t1), Cons(h2', t2))
+        Gt2(h2', h1') -> Gt2(Cons(h2', t2), Cons(h1', t1))
+        Eq2(h1') -> 
+          match t1.pretend-decreasing.order2(t2)
+            Lt2(t1', t2') -> Lt2(Cons(h1', t1'), Cons(h1', t2'))
+            Gt2(t2', t1') -> Gt2(Cons(h1', t2'), Cons(h1', t1'))
+            Eq2(t1') -> Eq2(Cons(h1', t1'))
+
+
 // List Utilities
 pub fun eql/(==)(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
   match (l1, l2)
@@ -199,7 +243,7 @@ pub inline extern unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
   js inline "Array(#1)"
 
 // This function should never be called directly unless you know exactly what you are doing
-pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
+pub inline extern unsafe-assign( v : vector<a>, i : ssize_t, x : a ): total ()
   c "kk_vector_unsafe_assign"
   cs inline "(#1)[#2] = #3"
   js inline "(#1)[#2] = #3"
