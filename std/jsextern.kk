@@ -6,13 +6,15 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 
+pub import async
+
 extern import
   js file "inline/jsextern.mjs"
 
-struct jsobject<t>
+pub struct jsobject<t>
   internal: any;
 
-struct jsarray<t>
+pub struct jsarray<t>
   internal: any;
 
 // Basics for objects / arrays
@@ -387,3 +389,25 @@ pub inline fun floatarray/list(a: jsarray<float64>): list<float64>
 pub inline fun boolarray/list(a: jsarray<bool>): list<bool>
   list(0, a.length() - 1).map fn(i) a[i]
 
+pub struct jspromise<t>
+  internal: any;
+
+abstract extend type exception-info
+  con JSError(error: jsobject<any>)
+
+pub fun js-promise/wrap(promise: jspromise<t>): asyncx jsobject<t>
+  setup/await fn(cb)
+    promise.on-resolve(fn(output) cb(Ok(output)), fn(error) cb(Error(Exception("Exception in promise.", JSError(error)))))
+    Nothing
+
+pub inline fun js-promise/resolve(value: jsobject<t>): jspromise<t>
+  Jspromise(any/resolve(value.internal))
+
+inline extern any/resolve(value: any): any
+  js inline "Promise.resolve(#1)"
+
+pub inline fun js-promise/on-resolve(value: jspromise<t>, success: (jsobject<t>) -> io-noexn (), error: (jsobject<e>) -> io-noexn ()): io-noexn ()
+  value.internal.any/on-resolve(fn(output) success(Jsobject(output)), fn(err) error(Jsobject(err)))
+
+inline extern any/on-resolve(promise: any, success: (any) -> io-noexn (), error: (any) -> io-noexn ()): io-noexn ()
+  js inline "#1.then(#2).catch(#3)"
