@@ -2,6 +2,7 @@ import std/async
 import std/time/duration
 import std/time/timestamp
 
+// In VSCode Cmd/Ctrl+Shift+P Then select Koka: Compilation target, and switch to nodejs, prior to running this
 fun main()
   val res = try
     val x = ref(0)
