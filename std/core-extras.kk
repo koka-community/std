@@ -220,7 +220,7 @@ pub fun a/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : vector<a>
     v'.unsafe-assign( idx2.ssize_t, item1 )
     v'
 
-// This variant mutates inplace
+// This variant mutates in-place
 pub fun unit/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : ()
   val item1 = v.unsafe-idx( idx1.ssize_t )
   v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))

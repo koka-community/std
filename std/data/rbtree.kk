@@ -28,7 +28,7 @@ pub type dtree<k,v>
   DNodeL(color : color, dhole : dhole, key : k, value : v, rchild : rbtree<k,v>)
   NodeNone   // for convenience
 
-pub ref type dhole   // define as a reference type so the derivative tree constructors can reuse with Node's
+pub reference type dhole   // define as a reference type so the derivative tree constructors can reuse with Node's
   Hole
 
 // Common functionality
@@ -48,10 +48,10 @@ pub fun values(t: rbtree<k,v>) : list<v>
     Leaf -> []
     Node(_,l,_,v,r) -> Cons(v, l.values ++ r.values)
 
-pub fun empty() : rbtree<k,v>
+pub inline fun empty() : rbtree<k,v>
   Leaf
 
-pub fip fun set-black( t : rbtree<k,v> ) : rbtree<k,v>
+pub inline fip fun set-black( t : rbtree<k,v> ) : rbtree<k,v>
   match t
     Node(_,l,x,v,r) -> Node(Black,l,x,v,r)
     Leaf            -> Leaf
@@ -74,13 +74,13 @@ pub fun lookup(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> e order2<k>) : e maybe
         Gt2 -> lookup(r, key)
         Eq2 -> Just(v)
 
-pub fip fun rbtree/is-red(^t : rbtree<k,v>) : bool
+pub inline fip fun rbtree/is-red(^t : rbtree<k,v>) : bool
   match t
     Node(Red) -> True
     _         -> False
 
 // Helpers for other variants of the tree
-pub fip fun dt/is-red( ^t : dtree<k,v> ) : bool
+pub inline fip fun dt/is-red( ^t : dtree<k,v> ) : bool
   match t
     DNodeR(Red) -> True
     DNodeL(Red) -> True
@@ -95,20 +95,20 @@ pub fip fun rebuild(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
 
 
 // append a `dtree<k,v>` to a context `acc`.
-pub fip fun (++)( acc : ctx<rbtree<k,v>>, t : dtree<k,v> ) : ctx<rbtree<k,v>>
+pub inline fip fun (++)( acc : ctx<rbtree<k,v>>, t : dtree<k,v> ) : ctx<rbtree<k,v>>
   match t
     DNodeR(c,l,x,v,_) -> acc ++ ctx Node(c,l,x,v,_)
     DNodeL(c,_,x,v,r) -> acc ++ ctx Node(c,_,x,v,r)
     NodeNone         -> acc
 
 // plug an `rbtree<k,v>`` into a `dtree<k,v>`
-pub fip fun (++.)( d : dtree<k,v>, t : rbtree<k,v> ) : rbtree<k,v>
+pub inline fip fun (++.)( d : dtree<k,v>, t : rbtree<k,v> ) : rbtree<k,v>
   match d
     DNodeR(c,l,x,v,_) -> Node(c,l,x,v,t)
     DNodeL(c,_,x,v,r) -> Node(c,t,x,v,r)
     NodeNone         -> t
 
-pub fip fun to-node( root : root<k,v> ) : rbtree<k,v>
+pub inline fip fun to-node( root : root<k,v> ) : rbtree<k,v>
   match root
     Root(c,l,k,v,r) -> Node(c,l,k,v,r)
 

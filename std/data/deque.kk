@@ -211,13 +211,13 @@ pub fun (==)( xs : deque<a>, ys : deque<a>, ?(==) : (a, a) -> bool ) : bool
       Nothing -> True
       Just(x) -> x
 
-ref struct something {i: int}
+reference struct something {i: int}
 fun test-deque()
   basic/test("deque push-front")
     val deq = unit/deque()
     val deq' = deq.push-front(2)
     val value = deq'.at(0)
-    expect(Just(2), { value }, details="Expected Just(2) but got " ++ value.show )
+    expect(Just(2), { value }, details="Expected Just(2) but got " ++ value.show) 
   basic/test("deque push-back")
     val deq = unit/deque()
     val deq' = deq.push-back(2)

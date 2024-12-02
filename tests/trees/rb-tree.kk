@@ -132,8 +132,11 @@ pub fun test-main()
     val v4 = t.fold(0, Done) fn(l, k, v){ if v then l.inc else l }
     v4.show.println
 
-pub fun example-bench()  
+pub fun example-benchtd()  
   benchmain(td/access)
+
+pub fun example-benchbu()  
+  benchmain(bu/access)
 
 pub fun check-valid(t1: rbtree<int,v>) : exn ()
   fun check(t: rbtree<int,v>, p: color, min: int, max: int) : exn int
