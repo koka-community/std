@@ -370,109 +370,119 @@ inline fun update-key-real( h : heap<a>, key : a, new-key : a, ?cmp: (a, a) -> o
         Heap( data', size ).push-down( 1 )
 
 
+fun mb/(==)(a: maybe<int>, b: maybe<int>)
+  match (a, b)
+    (Nothing, Nothing) -> True
+    (Just(x), Just(y)) -> x == y
+    _ -> False
+
 fun test-heap()  
-  basic/test("heap min ordered")
-    val heap = list/heap( [1, 2, 3] )
-    val min = heap.min()
-    expect(Just(1), { min }, details = "Expected Just(1) but found " ++ min.show )
-  basic/test("heap min reversed")
-    val heap = list/heap( [3, 2, 1] )
-    val min = heap.min()
-    expect(Just(1), { min }, details = "Expected Just(1) but found " ++ min.show )
-  basic/test("heap max ordered")
-    val heap = list/heap( [3, 2, 1] )
-    val min = heap.max()
-    expect(Just(3), { min }, details = "Expected Just(3) but found " ++ min.show )
-  basic/test("heap max reversed")
-    val heap = list/heap( [1, 2, 3] )
-    val min = heap.max()
-    expect(Just(3), { min }, details = "Expected Just(3) but found " ++ min.show )
-  basic/test("heap min unordered")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
-    val min = heap.min()
-    expect(Just(1), { min }, details = "Expected Just(1) but found " ++ min.show )
-  basic/test("heap max unordered")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
-    val min = heap.max()
-    expect(Just(12), { min }, details = "Expected Just(12) but found " ++ min.show )
-  basic/test("heap insertion min")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).insert( -1 )
-    val min = heap.min()
-    expect(Just(-1), { min }, details = "Expected Just(-1) but found " ++ min.show )
-  basic/test("heap insertion max")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).insert( 17 )
-    val min = heap.max()
-    expect(Just(17), { min }, details = "Expected Just(17) but found " ++ min.show )
-  basic/test("heap delete-min unordered")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
-    val heap' = match heap.delete-min()
-      Nothing -> heap
-      Just((_, h)) -> h
-    val min = heap'.min()
-    expect(Just(2), { min }, details = "Expected Just(2) but found " ++ min.show )
-  basic/test("heap delete-max unordered")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
-    val heap' = match heap.delete-max()
-      Nothing -> heap
-      Just((_, h)) -> h
-    val max = heap'.max()
-    expect(Just(7), { max }, details = "Expected Just(7) but found " ++ max.show )
-  basic/test("heap update-key min")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 12, 0 )
-    val min = heap.min()
-    expect(Just(0), { min }, details = "Expected Just(0) but found " ++ min.show )
-  basic/test("heap update-key max")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 2, 17 )
-    val max = heap.max()
-    expect(Just(17), { max }, details = "Expected Just(17) but found " ++ max.show )
-  basic/test("heap update-key min no-change")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 13, 0 )
-    val min = heap.min()
-    expect(Just(1), { min }, details = "Expected Just(0) but found " ++ min.show )
-  basic/test("heap update-key max no-change")
-    val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 5, 17 )
-    val max = heap.max()
-    expect(Just(12), { max }, details = "Expected Just(17) but found " ++ max.show )
-  basic/test("heap stress test")
-    var heap := heap()
-    for(50000) fn (i)
-      heap := heap.insert( i * random-int() )
-    expect(True, { True }, details = "Heap did not succeed." )
-  basic/test("heap delete min 1")
-    var heap := heap()
-    heap := heap.insert( 1 )
-    heap.delete-min()
-    expect(True, { True }, details = "Heap did not succeed." )
-  basic/test("heap delete max 1")
-    var heap := heap()
-    heap := heap.insert( 1 )
-    heap.delete-max()
-    expect(True, { True }, details = "Heap did not succeed." )
-  basic/test("heap clear each element min ordered")
-    val heap = list/heap( [1, 2, 3] )
-    val min1 = heap.min()
-    expect(Just(1), { min1 }, details = "Expected Just(1) but found " ++ min1.show )
-    match heap.delete-min()
-      Nothing -> expect(True, { False }, details = "No more elements when there should be 2 more." )
-      Just((_, heap')) ->
-        val min2 = heap'.min()
-        expect(Just(2), { min2 }, details = "Expected Just(2) but found " ++ min2.show )
-        match heap'.delete-min()
-          Nothing -> expect(True, { False }, details = "No more elements when there should be 1 more." )
-          Just((_, heap@)) ->
-            val min3 = heap@.min()
-            expect(Just(3), { min3 }, details = "Expected Just(3) but found " ++ min3.show )
-  basic/test("heap clear each element max ordered")
-    val heap = list/heap( [1, 2, 3] )
-    val max1 = heap.max()
-    expect(Just(3), { max1 }, details = "Expected Just(3) but found " ++ max1.show )
-    match heap.delete-max()
-      Nothing -> expect(True, { False }, details = "No more elements when there should be 2 more." )
-      Just((_, heap')) ->
-        val max2 = heap'.max()
-        expect(Just(2), { max2 }, details = "Expected Just(2) but found " ++ max2.show )
-        match heap'.delete-max()
-          Nothing -> expect(True, { False }, details = "No more elements when there should be 1 more." )
-          Just((_, heap@)) ->
-            val max3 = heap@.max()
-            expect(Just(1), { max3 }, details = "Expected Just(1) but found " ++ max3.show )
+  group("heap")
+    test("heap min ordered")
+      expect(Just(1))
+        val heap = list/heap( [1, 2, 3] )
+        heap.min
+    test("heap min reversed")
+      expect(Just(1))
+        val heap = list/heap( [3, 2, 1] )
+        heap.min
+    test("heap max ordered")
+      expect(Just(3))
+        val heap = list/heap( [3, 2, 1] )
+        heap.max
+    test("heap max reversed")
+      expect(Just(3))
+        val heap = list/heap( [1, 2, 3] )
+        heap.max
+    test("heap min unordered")
+      expect(Just(1))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        heap.min
+    test("heap max unordered")
+      expect(Just(12))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        heap.max
+    test("heap insertion min")
+      expect(Just(-1))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        heap.insert( -1 ).min
+    test("heap insertion max")
+      expect(Just(17))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        heap.insert( 17 ).max
+    test("heap delete-min unordered")
+      expect(Just(2))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        val heap' = match heap.delete-min()
+          Nothing -> heap
+          Just((_, h)) -> h
+        heap'.min
+    test("heap delete-max unordered")
+      expect(Just(7))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] )
+        val heap' = match heap.delete-max()
+          Nothing -> heap
+          Just((_, h)) -> h
+        heap'.max
+    test("heap update-key min")
+      expect(Just(0))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 12, 0 )
+        heap.min
+    test("heap update-key max")
+      expect(Just(17))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 2, 17 )
+        heap.max
+    test("heap update-key min no-change")
+      expect(Just(1))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 13, 0 )
+        heap.min
+    test("heap update-key max no-change")
+      expect(Just(12))
+        val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 5, 17 )
+        heap.max
+    test("heap stress test")
+      var heap := heap()
+      expect(True)
+        for(50000) fn (i)
+          heap := heap.insert( i * random-int() )
+        True
+    test("heap delete min 1")
+      var heap := heap()
+      expect(True)
+        heap := heap.insert( 1 )
+        heap.delete-min()
+        True
+    test("heap delete max 1")
+      var heap := heap()
+      expect(True) 
+        heap := heap.insert( 1 )
+        heap.delete-max
+        True
+    test("heap clear each element min ordered")
+      val heap = list/heap( [1, 2, 3] )
+      expect(Just(1))
+        heap.min
+      match heap.delete-min()
+        Nothing -> assert-error("No more elements when there should be 2 more.")
+        Just((_, heap')) ->
+          expect(Just(2))
+            heap'.min
+          match heap'.delete-min()
+            Nothing -> assert-error("No more elements when there should be 1 more.")
+            Just((_, heap@)) ->
+              expect(Just(3))
+                heap@.min
+    test("heap clear each element max ordered")
+      val heap = list/heap( [1, 2, 3] )
+      expect(Just(3))
+        heap.max
+      match heap.delete-max()
+        Nothing -> assert-error("No more elements when there should be 2 more.")
+        Just((_, heap')) ->
+          expect(Just(2))
+            heap'.max
+          match heap'.delete-max()
+            Nothing -> assert-error("No more elements when there should be 1 more.")
+            Just((_, heap@)) ->
+              expect(Just(1))
+                heap@.max

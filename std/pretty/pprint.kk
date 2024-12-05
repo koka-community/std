@@ -543,14 +543,15 @@ pub fun spaces(n: int): string
 val default-width = 160
 
 pub fun test-pretty()
-  basic/test("Basic Pretty Combinators")
-    expect("test hello") fn()
-      ("test".text |+| "hello".text).show
-    expect(r#"test
+  group("Pretty Printing")
+    test("Basic Combinators")
+      expect("test hello") fn()
+        ("test".text |+| "hello".text).show
+      expect(r#"test
 hello"#) fn()
-      ["test".text, "hello".text].vcat.show
-    expect("testhello") fn()
-      ["test".text, "hello".text].hcat.show
-    expect("\x1B[91m0\x1B[39m")
-      with ansi-string-printer
-      color("0".text, Red).write-pretty
+        ["test".text, "hello".text].vcat.show
+      expect("testhello") fn()
+        ["test".text, "hello".text].hcat.show
+      expect("\x1B[91m0\x1B[39m")
+        with ansi-string-printer
+        color("0".text, Red).write-pretty

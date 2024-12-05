@@ -12,6 +12,7 @@ pub fun list/suffixes(l: list<a>): list<list<a>>
   loop(l, ctx _)
 
 fun test-suffixes()
-  basic/test("suffixes")
-    expect([[1,2,3,4], [2,3,4], [3,4], [4], []])
-      suffixes([1,2,3,4])
+  group("list additions")
+    test("suffixes")
+      expect([[1,2,3,4], [2,3,4], [3,4], [4], []])
+        suffixes([1,2,3,4])

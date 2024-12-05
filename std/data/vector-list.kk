@@ -168,65 +168,75 @@ pub fun vlist/hash( v : vector-list<a>, ?hasher: (a, int64) -> int, ?seed : int6
 
 reference struct something {i: int}
 fun test-vlist()  
-  basic/test("vlist push")
-    val vec = unit/vector-list() 
-    val vec' = vec.push(2)
-    val value = vec'.at(0)
-    expect(Just(2), { value } , details="Expected Just(2) but got " ++ value.show, ?(==) = fn(a,b) core-extras/maybe/(==)(a,b))
-  basic/test("vlist pop")
-    val vec = vector-list-init(10) fn (i) Something(i)
-    val vec' = match vec.pop()
-      Just((x, v)) -> 
-        expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
-        v
-      Nothing -> vec
-    var after-pop := ""
-    vec'.foreach() fn (x)
-      after-pop := after-pop ++ x.i.show ++ " "
-    expect("0 1 2 3 4 5 6 7 8 ", { after-pop }, details="Expected '0 1 2 3 4 5 6 7 8 ' but got: " ++ after-pop)
-  basic/test("vlist unique map")
-    val vec = vector-list-init(10) fn (i) Something(i)
-    val vec2 = vec.unique/map(fn (x) x.i + 1)
-    var after-map := ""
-    vec2.foreach() fn (x)
-      after-map := after-map ++ x.show ++ " "
-    expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)
-  basic/test("vlist resize push")
-    val vec = vector-list-init(10) fn (i) i
-    val vec' = vec.push(11)
-    expect(20, { vec'.capacity }, details="Expected 20 but got: " ++ vec'.capacity.show)
-  basic/test("vlist copies on set")
-    val vec1 = vector-list-init(10) fn (i) i
-    val vec2 = vec1.set(0, 100).unjust
-    expect(True, { vec1.at(0).default(0) != vec2.at(0).default(0) }, details="Expected vec1 and vec2 to be different")
-  basic/test("vlist doesn't copy when unique")
-    val vec1 = vector-list-init(10) fn(i) Something(i)
-    val vec10 = vec1.at(0).unjust
-    val vec2 = vec1.set(9, Something(1)).unjust
-    expect(False, { unsafe-ptr-eq(vec10, vec2.at(4).unjust) }, details="Expected vec1 and vec10 to be the same")
-  basic/test("vlist stress test")
-    var vec := unit/vlist()
-    for(50000) fn (i)
-      vec := vec.push(i)
-    expect(True, { True }, details="Vec did not succeed")
-  basic/test("vlist ref")
-    var vec := ref(vector-list-init(10) fn(i) i)
-    vec.modify(fn(v) v := v.unique/map(fn (x) x + 1))
-    var after-map := ""
-    (!vec).foreach() fn (x)
-      after-map := after-map ++ x.show ++ " "
-    expect("1 2 3 4 5 6 7 8 9 10 ", { after-map }, details="Expected '0 1 2 3 4 5 6 7 8 9 ' but got: " ++ after-map)
-  basic/test("vlist clear test")
-    var vec := unit/vlist()
-    for(20) fn (i)
-      vec := vec.push(i)
-    vec := vec.clear
-    expect(0, { vec.length }, details="Vec should have zero elements but instead had " ++ vec.length.show ++ " elements.")
-  basic/test("vlist insertion after clear test")
-    var vec : vector-list<int> := unit/vlist()
-    for(8) fn (i)
-      vec := vec.push(i)
-    vec := vec.clear
-    for(9) fn (i)
-      vec := vec.push(i)
-    expect(9, { vec.length }, details="Vec should have 9 elements but instead had " ++ vec.length.show ++ " elements.")
+  group("vlist")
+    test("push")
+      val vec = unit/vector-list() 
+      expect(2)
+        val vec' = vec.push(2)
+        vec'.at(0).unjust
+    test("pop")
+      val vec = vector-list-init(10) fn (i) Something(i)
+      expect("0 1 2 3 4 5 6 7 8 ")
+
+        val vec' = match vec.pop()
+          Just((x, v)) -> 
+            expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
+            v
+          Nothing -> vec
+        var after-pop := ""
+        vec'.foreach() fn (x)
+          after-pop := after-pop ++ x.i.show ++ " "
+        after-pop
+    test("unique map")
+      val vec = vector-list-init(10) fn (i) Something(i)
+      expect("1 2 3 4 5 6 7 8 9 10 ")
+        val vec2 = vec.unique/map(fn (x) x.i + 1)
+        var after-map := ""
+        vec2.foreach() fn (x)
+          after-map := after-map ++ x.show ++ " "
+        after-map
+    test("resize push")
+      val vec = vector-list-init(10) fn (i) i
+      expect(20)
+        vec.push(11).capacity
+    test("copies on set")
+      val vec1 = vector-list-init(10) fn (i) i
+      expect(True, details="Expected vec1 and vec2 to be different")
+        val vec2 = vec1.set(0, 100).unjust
+        vec1.at(0).default(0) != vec2.at(0).default(0)
+    test("doesn't copy when unique")
+      val vec1 = vector-list-init(10) fn(i) Something(i)
+      expect(False, details="Expected vec1 and vec10 to be the same")
+        val vec10 = vec1.at(0).unjust
+        val vec2 = vec1.set(9, Something(1)).unjust
+        unsafe-ptr-eq(vec10, vec2.at(4).unjust)
+    test("stress test")
+      var vec := unit/vlist()
+      expect(True)
+        for(50000) fn (i)
+          vec := vec.push(i)
+        True
+    test("ref")
+      expect("1 2 3 4 5 6 7 8 9 10 ")
+        var vec := ref(vector-list-init(10) fn(i) i)
+        vec.modify(fn(v) v := v.unique/map(fn (x) x + 1))
+        var after-map := ""
+        (!vec).foreach() fn (x)
+          after-map := after-map ++ x.show ++ " "
+        after-map
+    test("clear test")
+      expect(0)
+        var vec := unit/vlist()
+        for(20) fn (i)
+          vec := vec.push(i)
+        vec := vec.clear
+        vec.length
+    test("insertion after clear test")
+      var vec : vector-list<int> := unit/vlist()
+      for(8) fn (i)
+        vec := vec.push(i)
+      expect(9)
+        vec := vec.clear
+        for(9) fn (i)
+          vec := vec.push(i)
+        vec.length

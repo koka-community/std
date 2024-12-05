@@ -27,7 +27,7 @@ pub struct hash-set<v>
 // If zero then the hash-set will set capacity to 1.
 // The seed is initialized from the thread id.
 pub fun thread/hash-set( capacity : int = 1 ) : hash-set<v>
-  Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed() )
+  Hash-set( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed )
 
 // Creates a hash-set with a specified inital `capacity`.
 // If zero then the hash-set will set capacity to 1.
@@ -202,34 +202,38 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
 
 
 fun test-hash-set()
-  basic/test("hash-set insert")
-    val hs = thread/hash-set(1)
-    val hs' = hs.insert( 2, ?hash = int-hash )
-    val value = hs'.contains(2, ?hash = int/hash)
-    expect(True, { value } , details="Expected True but got " ++ value.show)
-  basic/test("hash-set remove")
-    val hs = thread/hash-set(1)
-    val hs' = hs.insert(2, ?hash = int/hash )
-    val hs@ = hs'.remove(2, ?hash = int/hash )
-    expect(0, { hs@.length } , details="Expected 0 but got " ++ hs@.length.show)
-  basic/test("hash-set stress test")
-    var hs := thread/hash-set(1)
-    for(50000) fn (i)
-      hs := hs.insert(i, ?hash = int/hash )
-    expect(True, { True } , details="Expected Resizing to work")
-  basic/test("hash-set clear")
-    var hs := thread/hash-set(1)
-    for(50) fn (i)
-      hs := hs.insert(i, ?hash = int/hash )
-    hs := hs.clear()
-    val value = hs.length()
-    expect(0, { value } , details="Expected 0 but got " ++ value.show)
-  basic/test("hash-set clear then fill")
-    var hs := thread/hash-set(1)
-    for(50) fn (i)
-      hs := hs.insert(i, ?hash = int/hash )
-    hs := hs.clear()
-    for(50) fn (i)
-      hs := hs.insert(i, ?hash = int/hash )
-    val value = hs.length()
-    expect(50, { value } , details="Expected 0 but got " ++ value.show)
+  fun hash(i: int, seed: int64): int
+    int/hash(i)
+  group("hash-set")
+    test("insert")
+      val hs = thread/hash-set(1)
+      expect(True)
+        val hs' = hs.insert(2)
+        hs'.contains(2)
+    test("remove")
+      val hs = thread/hash-set(1)
+      val hs' = hs.insert(2)
+      expect(0)
+        hs'.remove(2).length
+    test("stress test")
+      var hs := thread/hash-set(1)
+      expect(True)
+        for(50000) fn(i)
+          hs := hs.insert(i)
+        True
+    test("clear")
+      var hs := thread/hash-set(1)
+      for(50) fn(i)
+        hs := hs.insert(i)
+      expect(0)
+        hs := hs.clear
+        hs.length
+    test("clear then fill")
+      var hs := thread/hash-set(1)
+      for(50) fn(i)
+        hs := hs.insert(i)
+      expect(50)
+        hs := hs.clear
+        for(50) fn(i)
+          hs := hs.insert(i)
+        hs.length
