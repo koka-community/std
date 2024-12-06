@@ -1,10 +1,11 @@
 import std/data/rb-set
 import std/data/rb-map
 
-effect cache<s,r>
-  fun add-result(s: s, r: r): ()
-  fun is-cached(s: s): bool
-  ctl depend(s: s): r
+// k = key, r = result
+effect cache<k,r>
+  fun add-result(s: k, r: r): ()
+  fun is-cached(s: k): bool
+  ctl depend(s: k): r
 
 // Non determinism
 effect each
@@ -21,57 +22,57 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
       ()
   f()
 
-fun cache(f: () -> <pure,cache<s,r>,each|e> b, ?order2: (s, s) -> pure order2<s>, 
+// r = result, c = change, e = effect
+struct cache-entry<r,e>
+  cache: r
+  deps: list<(r -> <pure|e> ())>
+
+fun remove-deps(m: rbmap<k,cache-entry<r,e>>): rbmap<k,r>
+  m.map(fn(k, v) v.cache)
+
+// A fixpoint cache handler
+fun cache(comp: () -> <pure,cache<k,r>,each|e> b, ?order2: (k, k) -> pure order2<k>, 
+                                                ?bottom: r,
                                                 ?join: (r, r) -> (bool, r), 
-                                                ?s/show: s -> string, ?r/show: r -> string): <pure|e> rbmap<s,r>
-  var m : some<s,r> rbmap<s,r> := empty()
-  var deps : some<s,r,e> rbmap<s, list<(r -> <pure|e> ())>> := empty()
-  fun update(s, r)
-    match deps.lookup(s)
-      Just(resumes) -> 
-        trace("Updating " ++ resumes.length.show ++ " deps for " ++ s.show ++ " with " ++ r.r/show)
-        resumes.list/foreach(fn(res) {res(r); ()})
-      Nothing -> ()
+                                                ?s/show: k -> string, ?r/show: r -> string): <pure|e> rbmap<k,r>
+  var cache : some<k,r,e> rbmap<k,cache-entry<r,e>> := empty()
   val do = 
     with handler
-      fun add-result(s, r)
-        trace("Adding result for " ++ s.s/show ++ " " ++ r.r/show)
-        match m.lookup(s)
-          Just(r') ->
-            val (changed, r'') = join(r', r)
+      fun add-result(key, change)
+        // trace("Adding result for " ++ s.s/show ++ " " ++ r.r/show)
+        match cache.lookup(key)
+          Just(Cache-entry(result, deps)) ->
+            val (changed, new) = join(result, change)
             if changed then 
-              m := m.set(s, r'')
-              update(s, r'')
+              cache := cache.set(key, Cache-entry(new, deps))
+              deps.foreach(fn(resumption) resumption(change))
             else ()
           Nothing -> 
-            m := m.set(s, r)
-            update(s, r)
-      fun is-cached(s)
-        m.contains(s)
-      ctl depend(s)
-        trace("Adding dep for " ++ s.s/show)
-        match deps.lookup(s)
-          Just(resumes) ->
-            val ress = Cons(fn(r) resume(r), resumes)
-            deps := deps.set(s, ress)
-          Nothing -> 
-            deps := deps.set(s, [fn(r) resume(r)])
-        match m.lookup(s)
-          Just(r) -> 
-            update(s, r)
-          Nothing -> ()
+            cache := cache.set(key, Cache-entry(change, []))
+      fun is-cached(key)
+        if cache.contains(key) then True
+        else
+          cache := cache.set(key, Cache-entry(bottom, []))
+          False
+      ctl depend(key)
+        // trace("Adding dep for " ++ s.s/show)
+        match cache.lookup(key)
+          Just(Cache-entry(current, deps)) -> 
+            cache := cache.set(key, Cache-entry(current, Cons(fn(change) resume(change), deps)))
+            resume(current)
       return(x) ()
     with nondet
-    f()
-  m
+    comp()
+  cache.remove-deps
 
-fun memo(s, f)
-  match is-cached(s)
-    True -> depend(s)
+// Inserts a memoization point at a recursive invocation
+fun memo(key, func)
+  match is-cached(key)
+    True -> depend(key)
     False ->
-      val r = f()
-      add-result(s, r)
-      r
+      val result = func()
+      add-result(key, result)
+      result
 
 fun fact(n: int)
   with memo(n) 
@@ -80,6 +81,8 @@ fun fact(n: int)
     1
   else
     n * fact(n - 1)
+
+val int/bottom = 0
 
 fun test-fact()
   val res = 

@@ -36,17 +36,17 @@ pub reference type dhole   // define as a reference type so the derivative tree 
 pub fun list(t: rbtree<k,v>) : list<(k,v)>
   match t
     Leaf -> []
-    Node(_,l,k,v,r) -> Cons((k,v), l.list ++ r.list)
+    Node(_,l,k,v,r) -> l.list ++ Cons((k,v), r.list)
 
 pub fun keys(t: rbtree<k,v>) : list<k>
   match t
     Leaf -> []
-    Node(_,l,k,_,r) -> Cons(k, l.keys ++ r.keys)
+    Node(_,l,k,_,r) -> l.keys ++ Cons(k, r.keys)
 
 pub fun values(t: rbtree<k,v>) : list<v>
   match t
     Leaf -> []
-    Node(_,l,_,v,r) -> Cons(v, l.values ++ r.values)
+    Node(_,l,_,v,r) -> l.values ++ Cons(v, r.values)
 
 pub inline fun empty() : rbtree<k,v>
   Leaf

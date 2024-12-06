@@ -58,3 +58,35 @@ pub fun kvalue/map(s: rbmap<k,v>, f: (k, v) -> e x): e rbmap<k,x>
 pub fun value/map(s: rbmap<k,v>, f: (v) -> e x): e rbmap<k,x>
   val Rbmap(tree) = s 
   Rbmap(tree.map(fn(v) f(v)))
+
+pub fun (==)(s1: rbmap<k,v>, s2: rbmap<k,v>, ^?k/order2: (k,k) -> e order2<k>, ^?v/order2: (v,v) -> e order2<v>): e bool
+  match order2(s1, s2)
+    Eq2 -> True
+    _ -> False
+
+pub fun order2(orig1: rbmap<k,v>, orig2: rbmap<k,v>, ^?k/order2: (k,k) -> e order2<k>, ^?v/order2: (v,v) -> e order2<v>): e order2<rbmap<k,v>>
+  match orig1
+    Rbmap(t1) -> 
+      match orig2
+        Rbmap(t2) -> order2(t1, t2, orig1, orig2)
+
+fun rec/order2(t1: rbtree<k,v>, t2: rbtree<k,v>, orig1: rbmap<k,v>, orig2: rbmap<k,v>, ^?k/order2: (k,k) -> e order2<k>, ^?v/order2: (v,v) -> e order2<v>): e order2<rbmap<k,v>>
+  match t1
+    Leaf -> match t2
+      Leaf -> Eq2(orig1)
+      Node -> Lt2(orig1, orig2)
+    Node(_,l1,k1,v1,r1) -> match t2
+      Leaf -> Gt2(orig2, orig1)
+      Node(_,l2,k2,v2,r2) -> 
+        match order2(k1, k2)
+          Lt2 -> Lt2(orig1, orig2)
+          Gt2 -> Gt2(orig2, orig1)
+          Eq2 -> 
+            match order2(v1, v2)
+              Lt2 -> Lt2(orig1, orig2)
+              Gt2 -> Gt2(orig2, orig1)
+              Eq2 ->
+                match order2(l1, l2, orig1, orig2)
+                  Lt2 -> Lt2(orig1, orig2)
+                  Gt2 -> Gt2(orig2, orig1)
+                  Eq2 -> order2(r1, r2, orig1, orig2)
