@@ -276,7 +276,7 @@ fun get-grandparent( i : int ) : maybe<int>
     Just( i / 4 )
 
 // Internal base function for dictating how to resize the vector buffer.
-fun resizer( size : int ) : int
+pub fun resizer( size : int ) : int
   if size == 0 then
     1
   else
