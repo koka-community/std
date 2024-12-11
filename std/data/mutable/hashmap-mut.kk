@@ -79,7 +79,7 @@ pub fun resize( hm : hash-map-mut<k, v>, new-capacity : int, ?hash : (k, int64) 
       
       new-hm.rehash( buckets, ?hash = hash )
 
-fun rehash( hm : hash-map-mut<k, v>, buckets : vector<list<(k,v)>>, ?hash : (k, int64) -> int ) : hash-map-mut<k, v>
+pub fun rehash( hm : hash-map-mut<k, v>, buckets : vector<list<(k,v)>>, ?hash : (k, int64) -> int ) : hash-map-mut<k, v>
   buckets.foreach fn (bucket)
     bucket.foreach fn (entry)
       val (key, _) = entry
@@ -91,14 +91,14 @@ fun rehash( hm : hash-map-mut<k, v>, buckets : vector<list<(k,v)>>, ?hash : (k, 
   hm
 
 // Internal function that dictates when to resize the hash-map-mut. This can be overridden with implicits.
-fun when-resize( table-size : int, item-count : int ) : bool
+pub fun when-resize( table-size : int, item-count : int ) : bool
   if 2 * table-size <= item-count then
     True
   else
     False
 
 // Internal function that determines the new size of a hash-map-mut when inserting. This can be overridden with implicits.
-fun resizer( table-size : int, item-count : int ) : int
+pub fun resizer( table-size : int, item-count : int ) : int
    item-count * 2
 
 // Inserts a `value` into the hash-map-mut with a given `key`.
@@ -222,8 +222,6 @@ pub fun foreach-value( hm : hash-map-mut<k, v>, f : (v) -> e () ) : e ()
 
 
 fun test-hash-map-mut()
-  fun hash(x: int, seed: int64)
-    int/hash(x)
   group("hash-map-mut")
     test("insert")
       val hm = random/hash-map-mut(1)

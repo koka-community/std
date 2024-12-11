@@ -89,7 +89,7 @@ fun helper/resize( v : vector<list<(k, v)>> ) : vector<list<(k, v)>>
     vector( v.length, Nil)
 
 // Rehash will overwrite vector `v` with values from `buckets` if it is unique, otherwise it will use `unsafe-set`
-fun rehash( v : vector<list<(k,v)>>, buckets : vector<list<(k,v)>>, seed : int64, ?hash : (k, int64) -> int ) : vector<list<(k,v)>>
+pub fun rehash( v : vector<list<(k,v)>>, buckets : vector<list<(k,v)>>, seed : int64, ?hash : (k, int64) -> int ) : vector<list<(k,v)>>
   if v.is-vec-unique then
     buckets.foreach fn (bucket)
       bucket.foreach fn (entry)
@@ -116,14 +116,14 @@ fun helper/rehash( v : vector<list<(k, v)>>, buckets : list<(k, v)>, seed : int6
       helper/rehash( new-v, xs, seed )
 
 // Internal function that dictates when to resize the hash-map. This can be overridden with implicits.
-fun when-resize( table-size : int, item-count : int ) : bool
+pub fun when-resize( table-size : int, item-count : int ) : bool
   if 2 * table-size <= item-count then
     True
   else
     False
 
 // Internal function that determines the new size of a hash-map when inserting. This can be overridden with implicits.
-fun resizer( table-size : int, item-count : int ) : int
+pub fun resizer( table-size : int, item-count : int ) : int
    item-count * 2
 
 // Inserts a `value` into the hash-map with a given `key`.
@@ -257,8 +257,6 @@ fun mb/(==)(a: maybe<int>, b: maybe<int>)
     _ -> False
 
 fun test-hash-map()
-  fun hash(i: int, seed: int64): int
-    int/hash(i)
   group("hash-map")
     test("insert")
       val hm = random/hash-map(1)

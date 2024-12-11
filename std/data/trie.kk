@@ -48,10 +48,10 @@ fun unsafe/not-reachable(): a
   unsafe1/not-reachable()
 
 inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, pcount: int, kcount': int): div trie
-    val sub = m.lookup(kchar)
-    match sub
-      Nothing -> Trie(p, pcount, v, full, m.set(kchar, Trie(kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
-      Just(sub) -> Trie(p, pcount, v, full, m.set(kchar, bind(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
+  val sub = m.lookup(kchar)
+  match sub
+    Nothing -> Trie(p, pcount, v, full, m.set(kchar, Trie(kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
+    Just(sub) -> Trie(p, pcount, v, full, m.set(kchar, bind(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
 
 fun internal/bind(t: trie, k: sslice, original: string, kcount: int): div trie
   match t

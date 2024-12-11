@@ -92,7 +92,7 @@ fun helper/resize( v : vector<list<v>> ) : vector<list<v>>
     //trace("helper/resize: vector isn't unique")
     vector( v.length, Nil)
 
-fun rehash( v : vector<list<v>>, buckets : vector<list<v>>, seed : int64, ?hash : (v, int64) -> int ) : vector<list<v>>
+pub fun rehash( v : vector<list<v>>, buckets : vector<list<v>>, seed : int64, ?hash : (v, int64) -> int ) : vector<list<v>>
   if v.is-vec-unique then
     buckets.foreach fn (bucket)
       bucket.foreach fn (entry)
@@ -117,14 +117,14 @@ fun helper/rehash( v : vector<list<v>>, buckets : list<v>, seed : int64, ?hash :
 
 
 // Internal function that dictates when to resize the hash-set. This can be overridden with implicits.
-fun when-resize( table-size : int, item-count : int ) : bool
+pub fun when-resize( table-size : int, item-count : int ) : bool
   if 2 * table-size <= item-count then
     True
   else
     False
 
 // Internal function that determines the new size of a hash-set when inserting. This can be overridden with implicits.
-fun resizer( table-size : int, item-count : int ) : int
+pub fun resizer( table-size : int, item-count : int ) : int
    item-count * 2
 
 // Inserts a `value` into the hash-set.
@@ -202,8 +202,6 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
 
 
 fun test-hash-set()
-  fun hash(i: int, seed: int64): int
-    int/hash(i)
   group("hash-set")
     test("insert")
       val hs = thread/hash-set(1)

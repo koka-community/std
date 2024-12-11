@@ -25,21 +25,21 @@ pub inline extern extern-int-hash( i : int, seed : int64 ) : int
 
 pub val thread/seed: int64 = thread/get-seed()
 
-pub fun int/hash(i: int, ?seed: int64): int
-  extern-int-hash(i, ?seed)
+pub fun int/hash(i: int, seed: int64): int
+  extern-int-hash(i, seed)
 
 // A hashing function for characters. It takes a char `c` and an implicit `seed` which is is an `int64`.
-pub fun char/hash( c : char, ?seed : int64 ) : int
-  c.int.hash()
+pub fun char/hash( c : char, seed : int64 ) : int
+  c.int.hash(seed)
 
 // A hashing function for booleans. It takes a bool `b` and an implicit `seed` which is is an `int64`.
-pub fun bool/hash( b : bool, ?seed : int64 ) : int
+pub fun bool/hash( b : bool, seed : int64 ) : int
   match b
-    True -> hash(1)
-    False -> hash(0)
+    True -> hash(1, seed)
+    False -> hash(0, seed)
 
 // A hashing function for strings. It takes a string `s` and an implicit `seed` which is is an `int64`.
-pub inline extern string/hash( s : string, ?seed : int64 ) : int
+pub inline extern string/hash( s : string, seed : int64 ) : int
   c "kk_string_hash"
 
 // A hashing function for lists. It takes a list `l`, an implicit `hasher` for hashing each element, and an implicit `seed` which is is an `int64`.
@@ -72,26 +72,26 @@ inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
 
 
 // A hashing function for maybes. It takes a maybe `m`, an implicit `hasher` for `Just(a)`, and an implicit `seed` which is is an `int64`.
-pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, ?seed : int64 ) : int
+pub fun maybe/hash( m : maybe<a>, ?hasher : (a, int64) -> int, seed : int64 ) : int
   match m
-    Nothing -> int/hash( 109043358147367465933604847619)
+    Nothing -> int/hash( 109043358147367465933604847619, seed)
     Just(x) -> 
       val vec = unsafe-vector( 2.ssize_t )
-      vec.unsafe-assign( 0.ssize_t, hasher(x, ?seed).int64 )
+      vec.unsafe-assign( 0.ssize_t, hasher(x, seed).int64 )
       vec.unsafe-assign( 1.ssize_t, 636221073298515699161266525619.int64 )
-      hash-vector-int64( vec, ?seed )
+      hash-vector-int64( vec, seed )
 
 
 // A hashing function for eithers. It takes an either `e`, 2 implicit `hasher`s for hashing `Left` and `Right`, and an implicit `seed` which is is an `int64`.
-pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int, ?seed : int64 ) : int
+pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher : (r, int64) -> int, seed : int64 ) : int
   val hash-key = match e
-    Left(l) -> (hasher( l, ?seed ), 979671666476914879931210933431)
-    Right(r) -> (hasher( r, ?seed ), 214237100480734178309831475373)
+    Left(l) -> (hasher( l, seed ), 979671666476914879931210933431)
+    Right(r) -> (hasher( r, seed ), 214237100480734178309831475373)
   val (the-hash, prime) = hash-key
   val vec = unsafe-vector( 2.ssize_t )
   vec.unsafe-assign( 0.ssize_t, the-hash.int64 )
   vec.unsafe-assign( 1.ssize_t, prime.int64 )
-  hash-vector-int64( vec, ?seed )
+  hash-vector-int64( vec, seed )
 
 
 fun test-hash()
