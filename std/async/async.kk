@@ -29,7 +29,7 @@ import std/data/array
 import std/num/int32
 import std/num/ddouble    // for C# backend
 import std/time/duration
-import std/os/null
+import std/async/null
 import std/core/unsafe
 pub import std/num/ddouble
 pub import std/num/float64
