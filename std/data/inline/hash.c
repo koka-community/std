@@ -7,19 +7,19 @@
 ----------------------------------------------------------------------------*/
 
 
-const uint64_t PRIME_1 = 0x9E3779B185EBCA87;
-const uint64_t PRIME_2 = 0xC2B2AE3D27D4EB4F;
-const uint64_t PRIME_3 = 0x165667B19E3779F9;
-const uint64_t PRIME_4 = 0x85EBCA77C2B2AE63;
-const uint64_t PRIME_5 = 0x27D4EB2F165667C5;
-const size_t CHUNK_SIZE = sizeof(uint64_t) * 4;
+static const uint64_t PRIME_1 = 0x9E3779B185EBCA87;
+static const uint64_t PRIME_2 = 0xC2B2AE3D27D4EB4F;
+static const uint64_t PRIME_3 = 0x165667B19E3779F9;
+static const uint64_t PRIME_4 = 0x85EBCA77C2B2AE63;
+static const uint64_t PRIME_5 = 0x27D4EB2F165667C5;
+static const size_t CHUNK_SIZE = sizeof(uint64_t) * 4;
 
-int64_t kk_thread_seed(kk_context_t* ctx) {
+static int64_t kk_thread_seed(kk_context_t* ctx) {
     return ctx->thread_id;
 }
 
 
-kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
+static kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
 
     kk_ssize_t length;
     uint8_t* str = (uint8_t*)kk_string_buf_borrow(s, &length, ctx);
@@ -28,7 +28,7 @@ kk_integer_t kk_string_hash(kk_string_t s, int64_t seed, kk_context_t* ctx) {
     return kk_integer_from_int64(result, ctx);
 }
 
-kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx) {
+static kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx) {
 
     kk_ssize_t length;
     kk_box_t* buf = kk_vector_buf_borrow(v, &length, ctx);
@@ -43,7 +43,7 @@ kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx
     return kk_integer_from_int64(result, ctx);
 }
 
-kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
+static kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
     if (kk_is_smallint(i)) {
         return hash_small_integer(i, seed, ctx);
     } else {
@@ -51,7 +51,7 @@ kk_integer_t kk_integer_hash(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
     }
 }
 
-kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
+static kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
     int64_t input = 0 | kk_smallint_from_integer(i);
     uint8_t* input_ptr = ((uint8_t*)&input);
@@ -59,7 +59,7 @@ kk_integer_t hash_small_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx)
     return kk_integer_from_int64(result, ctx);
 }
 
-kk_integer_t hash_big_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
+static kk_integer_t hash_big_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
 
     kk_warning_message("Warning! Hashing big integers may be incorrect.\n");
     uint8_t* input_ptr = ((uint8_t*)&i);
@@ -67,7 +67,7 @@ kk_integer_t hash_big_integer(kk_integer_t i, int64_t seed, kk_context_t* ctx) {
     return kk_integer_from_int64(result, ctx);
 }
 
-uint64_t xxh64_read_u64(uint8_t* input, size_t cursor) {
+static uint64_t xxh64_read_u64(uint8_t* input, size_t cursor) {
     uint64_t output = 0 | input[0];
     output = output 
         | ((uint64_t)input[cursor + 1]) << 8
@@ -80,7 +80,7 @@ uint64_t xxh64_read_u64(uint8_t* input, size_t cursor) {
     return output;
 }
 
-uint32_t xxh64_read_u32(uint8_t* input, size_t cursor) {
+static uint32_t xxh64_read_u32(uint8_t* input, size_t cursor) {
     uint32_t output = 0 | input[0];
     output = output 
         | ((uint64_t)input[cursor + 1]) << 8
@@ -89,7 +89,7 @@ uint32_t xxh64_read_u32(uint8_t* input, size_t cursor) {
     return output;
 }
 
-uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed) {
+static uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed) {
     size_t cursor = 0;
     uint64_t result = 0;
 
@@ -126,16 +126,16 @@ uint64_t xxh64(uint8_t* input, size_t input_length, uint64_t seed) {
     return xxh64_finalize(result, input, input_length, cursor);
 }
 
-uint64_t xxh64_round(uint64_t acc, uint64_t input) {
+static uint64_t xxh64_round(uint64_t acc, uint64_t input) {
     return kk_bits_rotl64(acc + input * PRIME_2, 31) * PRIME_1;
 }
 
-uint64_t xxh64_merge_round(uint64_t acc, uint64_t value) {
+static uint64_t xxh64_merge_round(uint64_t acc, uint64_t value) {
     acc ^= xxh64_round(0, value);
     return acc * PRIME_1 + PRIME_4;
 }
 
-uint64_t xxh64_finalize(uint64_t input, uint8_t* data, size_t data_length, uint64_t cursor) {
+static uint64_t xxh64_finalize(uint64_t input, uint8_t* data, size_t data_length, uint64_t cursor) {
     uint64_t len = data_length - cursor;
 
     while (len >= 8) {
@@ -162,7 +162,7 @@ uint64_t xxh64_finalize(uint64_t input, uint8_t* data, size_t data_length, uint6
     return xxh64_avalanche(input);
 }
 
-uint64_t xxh64_avalanche(uint64_t input) {
+static uint64_t xxh64_avalanche(uint64_t input) {
     input ^= input >> 33;
     input = input * PRIME_2;
     input ^= input >> 29;
