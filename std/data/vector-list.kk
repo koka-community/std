@@ -19,8 +19,6 @@ import std/data/hash
   list
   vector
 */
-extern import 
-  c file "inline/hash"
 
 pub alias vlist<a> = vector-list<a> 
 
@@ -157,7 +155,7 @@ pub fun foreach-indexed( v : vector-list<a>, f : (int, a) -> e () ) : e ()
   for( v.size ) fn (i) 
     f(i, v.data.unsafe-idx( i.ssize_t ))
 
-inline extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
+extern hash-vector-int64( v : vector<int64>, seed : int64 ) : int
   c "kk_hash_vector_int64"
 
 pub fun vlist/hash( v : vector-list<a>, ?hasher: (a, int64) -> int, ?seed : int64 ) : int
