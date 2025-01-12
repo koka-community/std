@@ -143,6 +143,11 @@ pub fun dict/from-json(l: list<(string, json)>, key: string, path: string, ?from
     Nothing -> throw("Expecting " ++ key ++ " in " ++ JSObj(l).show, info=JsonDeserializationException(JSObj(l), path))
     Just(s) -> from-json(s, path=path ++ "->" ++ key)
 
+pub fun dict/maybe/from-json(l: list<(string, json)>, key: string, path: string, ?from-json: (j: json, path: string) -> pure a): pure maybe<a>
+  match l.lookup(fn(k) k == key)
+    Nothing -> Nothing
+    Just(s) -> Just(from-json(s, path=path ++ "->" ++ key))
+
 pub fun either/from-json(l: list<(string, json)>, key1: string, key2: string, path: string, ?a/from-json: (j: json, path: string) -> pure a, ?b/from-json: (j: json, path: string) -> pure b): pure either<a,b> 
   match l.lookup(fn(k) k == key1)
     Just(s) -> Left(a/from-json(s, path=path ++ "->" ++ key1))
