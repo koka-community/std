@@ -285,3 +285,6 @@ pub fip extern ssize_t/incr(i : ssize_t ) : ssize_t
 
 pub inline fip extern ssize_t/(<) : (ssize_t,ssize_t) -> bool
   inline "(#1 < #2)"
+
+pub extern read-byte-file(path: string): vector<int8>
+  c "kk_os_read_byte_file"

@@ -369,7 +369,7 @@ pub fun render-pretty-b(rfrac: float64, w: int, xdoc: doc): div string
           Empty -> best(b, n, k, ds)
           Char(c) -> c.show-char ++ best(b, n, k + 1, ds)
           Text(s) -> s.show ++ best(b, n, k + s.count, ds)
-          Line -> "\n" ++ best(b, i, i, ds)
+          Line(_) -> "\n" ++ best(b, i, i, ds)
           Cat(x, y) -> best(b, n, k, Cons((i, x), Cons((i, y), ds)))
           Nest(j, x) ->
             val i' = i + j
@@ -402,7 +402,7 @@ pub fun render-pretty(rfrac: float64, w: int, xdoc: doc): div simpleDoc
           Empty -> best(b, n, k, ds)
           Char(c) -> SChar(b, c, best(b, n, k + 1, ds))
           Text(s) -> SText(b, s, best(b, n, k + s.count, ds))
-          Line -> SLine(i, best(b, i, i, ds))
+          Line(_) -> SLine(i, best(b, i, i, ds))
           Cat(x, y) -> best(b, n, k, Cons((i, x), Cons((i, y), ds)))
           Nest(j, x) ->
             val i' = i + j
@@ -435,7 +435,7 @@ pub fun render-compact(xdoc: doc): simpleDoc
           Empty -> scan(k, ds)
           Char(c) -> SChar(0, c, scan(k + 1, ds.pretend-decreasing))
           Text(s) -> SText(0, s, scan(k + s.count, ds.pretend-decreasing))
-          Line() -> SLine(0, scan(0, ds.pretend-decreasing))
+          Line(_) -> SLine(0, scan(0, ds.pretend-decreasing))
           Cat(x, y) -> scan(k, Cons(x, Cons(y, ds)).pretend-decreasing)
           Nest(_, x) -> scan(k, Cons(x, ds).pretend-decreasing)
           Union(_, y) -> scan(k, Cons(y, ds).pretend-decreasing)
