@@ -5,7 +5,7 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-// Translated from koka/src/Lib/PPrint.hs, but using different printers // Updated 7/23/24 Commit 5ae0a77
+// Translated from koka/src/Lib/PPrint.hs, but using different printers // Updated 2/10/25 Commit d7b02a2
 // Pretty printing via the effect handlers doesn't allow for as much control
 // of indentation and alignment as the original implementation.
 // We use effects on the printer layer though, which allows for the backend to be configured separately
@@ -540,7 +540,7 @@ pub fun spaces(n: int): string
     17 -> "                 "
     _ -> if n <= 0 then "" else replicate(" ", n).join
 
-val default-width = 160
+val default-width = 512
 
 pub fun test-pretty()
   group("Pretty Printing")
