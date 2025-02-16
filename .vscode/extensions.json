@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "koka.language-koka",
+    "ms-vscode.cpptools",
+    "ms-vscode.cpptools-extension-pack"
+  ]
+}
