@@ -23,10 +23,9 @@ fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<int
     fun intern(a: some<a> a)
       with find
       val v = vec
-      mask<local>
-        v.foreach-indexed fn(i,x)
-          if eq(a,x) then found(Interned(i,x))
-          else ()
+      v.foreach-indexed fn(i,x)
+        if eq(a,x) then found(Interned(i,x))
+        else ()
       vec := v.push(a)
       // Weak map, when the interned values are dropped, the concrete value will also be dropped, but unfortunately not the vector memory
       a.unsafe-box-drop 

@@ -112,6 +112,21 @@ fun istest/scope(name: string, is-test: bool, f: () -> <test-scope,console|e> ()
       else println(infomsg ++ " failed!")
   f()
 
+pub fun basic/scope(name: string, f: () -> <test-scope,console|e> (), is-test: bool = False, ?kk-module: string, ?kk-line: string): <console|e> ()
+  val sname = if is-test then "Test" else "Scope"
+  val infomsg = sname ++ "(" ++ ?kk-module ++ ":" ++ ?kk-line ++ "): " ++ name 
+  println(infomsg ++ " ... ")
+  var anyfail := False
+  with handler
+    val indentation = "  "
+    val scope-name = name
+    fun report-fail() 
+      anyfail := True
+    return(x)
+      if !anyfail then println(infomsg ++ " passed!")
+      else println(infomsg ++ " failed!")
+  f()
+
 // A subgroup of tests
 pub fun subgroup(name: string, f: () -> <test-scope,console|e> (), is-test: bool = False, ?kk-module: string, ?kk-line: string): <test-scope,console|e> ()
   scope(name, is-test, f)
