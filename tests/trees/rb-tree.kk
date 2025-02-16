@@ -171,7 +171,41 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     t.td/set(random-int() % r, 0)
 
 fun main()
-  val r = 100
-  val t = bu/random-tree(100, r)
+  val r = 10
+  val t = bu/random-tree(10, r)
   println(t)
   check-valid(t)
+  println("Start delete")
+  fun delete-check(t0:rbtree<int,int>)
+    val k = random-int() % r
+    val t1 = t0.bu/remove(k)
+    println("\n\n\n")
+    println(t1)
+    check-valid(t1)
+    if t1.is-leaf then ()
+    else delete-check(t1)
+  delete-check(t)
+  println("All tests passed")
+// fun main()
+//   val r = 10
+//   val t = td/random-tree(10, r)
+//   println(t)
+//   fun delete-check(t0: rbtree<int,int>)
+//     val k = random-int() % r
+//     println(k)
+//     val t1 = t0.td/remove(k)
+//     println(t1)
+//     check-valid(t1)
+//     if t1.is-leaf then ()
+//     else delete-check(t1)
+//   delete-check(t)
+//   println("All tests passed")
+
+fun test-cases()
+  val t1 = Node(Black, Node(Black, Leaf, 2, 2, Leaf), 3, 3, Node(Red, Node(Black, Leaf, 4, 4, Leaf), 5, 5, Node(Black, Leaf, 9, 9, Leaf)))
+  t1.show.trace
+  trace("  ")
+  val t2 = t1.bu/remove(3)
+  t2.show.trace
+  t2.check-valid()
+  ()

@@ -13,6 +13,14 @@ import std/core/exn
 extern import 
   c file "inline/core-extras"
 
+pub fun pretend-not-reachable(?kk-file-line: string): b
+  trace("Reached supposedly unreachable code " ++ ?kk-file-line)
+  pretend-no-div
+    not-reachable(?kk-file-line)
+
+pub fun not-reachable(a: a): div b
+  not-reachable(a)
+
 // String ordering
 pub inline fun str/order2( ^x : string, ^y : string ) : order2<string>
   if x < y then Lt2(x,y) 
