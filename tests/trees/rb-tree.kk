@@ -10,6 +10,7 @@ import td = std/data/rbtree-td
 import std/num/random
 import std/num/int32
 import std/test
+import std/core/unsafe
 
 // --------------------------------------------------------
 // Show latex for a tree
@@ -171,21 +172,134 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     t.td/set(random-int() % r, 0)
 
 fun main()
-  val r = 10
-  val t = bu/random-tree(10, r)
-  println(t)
-  check-valid(t)
-  println("Start delete")
-  fun delete-check(t0:rbtree<int,int>)
-    val k = random-int() % r
-    val t1 = t0.bu/remove(k)
-    println("\n\n\n")
-    println(t1)
-    check-valid(t1)
-    if t1.is-leaf then ()
-    else delete-check(t1)
-  delete-check(t)
-  println("All tests passed")
+  for(1) fn(i)
+    val i = 4
+    trace(i.show)
+    with pseudo-random(i)
+    val r = 15
+    val t = bu/random-tree(15, r)
+    println(t)
+    check-valid(t)
+    println("Start delete")
+    fun delete-check(t0:rbtree<int,int>)
+      val k = random-int() % r
+      if t0.contains(k) then 
+        val t1 = t0.bu/remove(k)
+        println("\n\n\n")
+        println(t1)
+        check-valid(t1)
+        if t1.is-leaf then ()
+        else delete-check(t1)
+      else 
+        delete-check(t0)
+    delete-check(t)
+    println("All tests passed")
+
+
+val t1 : rbtree<int,int> = Node(Black, 
+    Node(Black, Leaf, 0, 0, Leaf), 
+    4,
+    4,
+    Node(Black, 
+      Node(Red, Leaf, 5, 5, Leaf),
+      6,
+      6,
+      Node(Red, Leaf, 9, 9, Leaf)
+    )
+  )
+
+val t1' : rbtree<int,int> = Node(Black, 
+    Node(Black, Leaf, 0, 0, Leaf), 
+    5,
+    5,
+    Node(Black, 
+      Leaf,
+      6,
+      6,
+      Node(Red, Leaf, 9, 9, Leaf)
+    )
+  )
+
+val t1'' : rbtree<int,int> = Node(Black, 
+    Node(Black, Leaf, 0, 0, Leaf), 
+    6,
+    6,
+    Node(Black, Leaf, 9, 9, Leaf)
+  )
+
+fun test-delete1()
+  val res = t1.bu/remove(4) 
+  (res == t1').show.println
+  res.check-valid()
+
+  val res' = t1'.bu/remove(5)
+  (res' == t1'').show.println
+  res'.println
+  res'.check-valid()
+
+val t2 = Node(Black, 
+    Node(Black,
+      Node(Red, Leaf, 1, 1, Leaf),
+      4, 4,
+      Node(Red, Leaf,5, 5, Leaf)),
+    6, 6,
+    Node(Black, 
+      Node(Red, Leaf, 7, 7, Leaf),
+      9, 9,
+      Leaf
+    )
+  )
+
+
+
+fun test-remove2x()
+  val t2' = t2.bu/remove(6)
+  println(t2')
+  val res = t2'.bu/remove(7)
+  println(res)
+  res.check-valid()
+
+val t3 = Node(Black, 
+    Node(Red,
+      Node(Black, Leaf, 0, 0, Node(Red, Leaf, 1, 1, Leaf)),
+      2, 2,
+      Node(Black, Leaf,3, 3, Leaf)),
+    4, 4,
+    Node(Black, 
+      Leaf,
+      6, 6,
+      Node(Red, Leaf, 8, 8, Leaf)
+    )
+  )
+
+
+fun test-remove3x()
+  println(t3)
+  val res = t3.bu/remove(2)
+  println(res)
+  res.check-valid()
+
+
+val t4 = Node(Black, 
+    Node(Black,
+      Node(Black, Leaf, 1, 1, Leaf),
+      2, 2,
+      Node(Black, Leaf, 4, 4, Leaf)),
+    9, 9,
+    Node(Black, 
+      Node(Black, Leaf, 10, 10, Node(Red, Leaf, 11, 11, Leaf)),
+      12, 12,
+      Node(Red, Leaf, 13, 13, Leaf)
+    )
+  )
+
+fun test-remove4x()
+  println(t4)
+  val res = t4.bu/remove(4)
+  println(res)
+  res.check-valid()
+
+
 // fun main()
 //   val r = 10
 //   val t = td/random-tree(10, r)

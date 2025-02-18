@@ -99,12 +99,12 @@ pub fbip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,
 
 pub inline fun db-balance(t: rbtree<k,v>, is-double-black: bool): rbtree<k,v>
   if is-double-black then
-    match t
+    match t // BB cases
       Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d) ->
         Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
-      Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d) ->
+      Node(_, a, x, vx, Node(Red, Node(Red, b, y, vy, c), z, vz, d)) ->
         Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
-      _ -> db-balance(t.pretend-decreasing, False)
+      t' -> t' // TODO: Fix this, needs rotate / balance after ascending one link
   else
     match t
       Node(Black, Node(Red, Node(Red, a, x, vx, b), y, vy, c), z, vz, d)
@@ -115,7 +115,11 @@ pub inline fun db-balance(t: rbtree<k,v>, is-double-black: bool): rbtree<k,v>
         -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
       Node(Black, a, x, vx, Node(Red, b, y, vy, Node(Red, c, z, vz, d)))
         -> Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d))
-      _ -> t
+      t' -> t'
+
+// pub fun db-rotate-node(t : rbtree<k,v>, right-bb: bool, ?k/show: (k) -> string, ?v/show: (v) -> string): rbtree<k,v>
+  
+
 
 // TODO: the zipper needs to rerotate?
 pub fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>, is-double-black: bool, ?k/show: (k) -> string, ?v/show: (v) -> string): rbtree<k,v>
@@ -124,28 +128,36 @@ pub fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>, is-double-black: bool, ?k/show
     ZNodeL(Red, z', y, vy, Node(Black, c, kz, vz, d)) | is-double-black ->
       trace("Firsta")
       val x' = Node(Black, Node(Red, t, y, vy, c), kz, vz, d)
-      trace(x'.show)
+      // trace(x'.show)
       val balanced = db-balance(x', False)
-      trace(balanced.show)
-      z'.rebuild(balanced)
+      // trace(balanced.show)
+      z'.rebuild-no-set(balanced)
     ZNodeR(Red, Node(Black, a, x, vx, b), y, vy, z') | is-double-black ->
       trace("Firstb")
-      z'.rebuild(db-balance(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), False))
+      val node = Node(Black, a, x, vx, Node(Red, b, y, vy, t))
+      // trace(node.show)
+      val balanced = db-balance(node, False)
+      // trace(balanced.show)
+      val res = z'.rebuild-no-set(balanced)
+      // trace(res.show)
+      res
     // Second case Figure 7, t is x, z is y
     ZNodeL(Black, z', y, vy, Node(Black, c, kz, vz, d)) | is-double-black ->
       trace("Seconda")
-      z'.rebuild(db-balance(Node(Black, Node(Red, t, y, vy, c), kz, vz, d), True))
+      z'.rebuild-no-set(db-balance(Node(Black, Node(Red, t, y, vy, c), kz, vz, d), True))
     ZNodeR(Black, Node(Black, a, x, vx, b), y, vy, z') | is-double-black ->
       trace("Secondb")
-      z'.rebuild(db-balance(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), True))
+      z'.rebuild-no-set(db-balance(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), True))
     // Third case Figure 9, t is w, z is x
     ZNodeL(Black, z', x, vx, Node(Red, Node(Black, c, y, vy, d), kz, vz, e)) ->
       trace("Thirda")
-      z'.rebuild(Node(Black, db-balance(Node(Black, Node(Red, t, x, vx, c), y, vy, d), False), kz, vz, e))
+      z'.rebuild-no-set(Node(Black, db-balance(Node(Black, Node(Red, t, x, vx, c), y, vy, d), False), kz, vz, e))
     ZNodeR(Black, Node(Red, a, w, vw, Node(Black, b, x, vx, c)), y, vy, z') ->
       trace("Thirdb")
-      z'.rebuild(Node(Black, a, w, vw, db-balance(Node(Black, b, x, vx, Node(Red, c, y, vy, t)), False)))
-    _ -> z.rebuild(t)
+      z'.rebuild-no-set(Node(Black, a, w, vw, db-balance(Node(Black, b, x, vx, Node(Red, c, y, vy, t)), False)))
+    z' -> 
+      trace("Noa")
+      z'.rebuild-no-set(t)
 
 
 pub fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>, ?k/show: (k) -> string, ?v/show: (v) -> string): rbtree<k,v>
@@ -153,14 +165,16 @@ pub fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>, ?k/s
     if r.is-leaf then 
       // No children (just replace with leaf)
       //  - if the node to delete was red this doesn't change the black height
-      if c.is-red then rebuild(z, Leaf) // Figure 4
+      if c.is-red then rebuild-no-set(z, Leaf) // Figure 4
       //  - if the node to delete was black we need to rebalance
       else 
         db-rotate(z, Leaf, True) // Deletion curse of RB tree
-    else rebuild(z, r.set-black) // Figure 4: Only has one child, so we set the child to black, and rebuild from here
+    else rebuild-no-set(z, r.set-black) // Figure 4: Only has one child, so we set the child to black, and rebuild from here
   elif r.is-leaf then
-    rebuild(z, l.set-black) // Figure 4: One child
+    rebuild-no-set(z, l.set-black) // Figure 4: One child
   else
+    trace("remove inorder")
+    trace(c.showc)
     do-remove-inorder(c, z, l, r, Done)
 
 pub fip fun rebuild-root(z : zipper<k,v>, t : root<k,v>): root<k,v>
@@ -180,16 +194,41 @@ pub fun root(t: rbtree<k,v>): root<k,v>
 
 pub fun do-remove-inorder(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>, rz: zipper<k,v>, ?k/show: (k) -> string, ?v/show: (v) -> string): rbtree<k,v>
   match r
-    Node(rc, Leaf, k, v, rr) -> // Inorder found
-      if rc.is-red then 
-        trace("Red inorder")
-        rebuild(z, rebuild(rz, Node(c, l, k, v, rr)))
-      else 
-        trace("Black inorder")
-        trace(r.show)
-        balance(z, db-rotate(rz, Node(c, l, k, v, rr), True).root)
+    // Second case
+    Node(Red, Leaf, k, v, Leaf) ->
+      trace("2nd case")
+      // trace(rz.rebuild-no-set(Leaf).show)
+      // Replace the inorder successor with a leaf, and move it's key / value to the deleted node.
+      rebuild-no-set(z, Node(c, l, k, v, rz.rebuild-no-set(Leaf)))
+    // Third case
+    Node(Black, Leaf, k, v, Node(Red, rl, kr, vr, rr)) ->
+      trace("3rd case")
+      // Replace the inorder successor with it's right child - setting it to black, and move it's key / value to the deleted node.
+      rebuild-no-set(z, Node(c, l, k, v, rz.rebuild-no-set(Node(Black, rl, kr, vr, rr))))
+    // Double black case
+    Node(Black, Leaf, k, v, rr) -> // Inorder found
+      trace("Black inorder")
+      // trace(r.show ++ "\n")
+      // trace(l.show ++ "\n")
+      // trace(rz.rebuild(Leaf).show ++ "\n")
+      // trace(z.rebuild(Leaf).show ++ "\n")
+      // trace(Node(c, l, k, v, rr).show ++ "\n")
+      // trace(db-rotate(rz, rr, True).show ++ "\n")
+      match db-rotate(rz, rr, True)
+        Leaf -> 
+          trace("Here: ")
+          // TODO: WE need a db balance
+          val res = db-rotate(ZNodeR(c, l, k, v, Done), Leaf, True)
+          trace(res.show)
+          balance(z, res.root)
+        r' ->
+          trace("Here") 
+          balance(z, Node(c, l, k, v, r').root)
+    // Recur case
     Node(rc, rl, k, v, rr) -> // Inorder search 
+      trace("recur inorder " ++ rc.showc ++ " " ++ k.show)
       do-remove-inorder(c, z, l, rl, ZNodeL(rc, rz, k, v, rr))
+    // First case
     Leaf -> Leaf // Should never be reached due to invariants
 
 pub fip(1) fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>, ?k/show: (k) -> string, ?v/show: (v) -> string) : exn rbtree<k,v>
