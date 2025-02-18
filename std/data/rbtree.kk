@@ -31,6 +31,13 @@ pub type dtree<k,v>
 pub reference type dhole   // define as a reference type so the derivative tree constructors can reuse with Node's
   Hole
 
+// TODO: Keep an inline size
+pub fun tree/(==)(t1: rbtree<k,v>, t2: rbtree<k,v>, ?order2: (k, k) -> order2<k>, ?(==): (v, v) -> bool) : bool
+  t1.list.length == t2.list.length && t1.list.all fn((k, v)) 
+    match t2.lookup(k)
+      Nothing -> False 
+      Just(v') -> v == v'
+
 // Common functionality
 // TODO: Optimize
 pub fun list(t: rbtree<k,v>) : list<(k,v)>
@@ -93,6 +100,12 @@ pub fip fun rebuild(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
     ZNodeL(c, z1, k, v, r) -> rebuild(z1, Node(c, t, k, v, r))
     Done -> t.set-black
 
+
+pub fip fun rebuild-no-set(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
+  match z
+    ZNodeR(c, l, k, v, z1) -> rebuild-no-set(z1, Node(c, l, k, v, t))
+    ZNodeL(c, z1, k, v, r) -> rebuild-no-set(z1, Node(c, t, k, v, r))
+    Done -> t
 
 // append a `dtree<k,v>` to a context `acc`.
 pub inline fip fun (++)( acc : ctx<rbtree<k,v>>, t : dtree<k,v> ) : ctx<rbtree<k,v>>
