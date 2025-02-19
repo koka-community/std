@@ -172,28 +172,28 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     t.td/set(random-int() % r, 0)
 
 fun main()
-  for(1) fn(i)
-    val i = 4
-    trace(i.show)
+  for(1000) fn(i)
+    // val i = 95
+    // trace(i.show)
     with pseudo-random(i)
-    val r = 15
-    val t = bu/random-tree(15, r)
-    println(t)
+    val r = 1000
+    val t = bu/random-tree(1000, r)
+    // println(t)
     check-valid(t)
-    println("Start delete")
+    // println("Start delete")
     fun delete-check(t0:rbtree<int,int>)
       val k = random-int() % r
       if t0.contains(k) then 
         val t1 = t0.bu/remove(k)
-        println("\n\n\n")
-        println(t1)
+        // println("\n\n\n")
+        // println(t1)
         check-valid(t1)
         if t1.is-leaf then ()
         else delete-check(t1)
       else 
         delete-check(t0)
     delete-check(t)
-    println("All tests passed")
+    // println("All tests passed")
 
 
 val t1 : rbtree<int,int> = Node(Black, 
@@ -226,6 +226,7 @@ val t1'' : rbtree<int,int> = Node(Black,
     6,
     Node(Black, Leaf, 9, 9, Leaf)
   )
+
 
 fun test-delete1()
   val res = t1.bu/remove(4) 
@@ -289,7 +290,7 @@ val t4 = Node(Black,
     Node(Black, 
       Node(Black, Leaf, 10, 10, Node(Red, Leaf, 11, 11, Leaf)),
       12, 12,
-      Node(Red, Leaf, 13, 13, Leaf)
+      Node(Black, Leaf, 13, 13, Leaf)
     )
   )
 
@@ -299,7 +300,41 @@ fun test-remove4x()
   println(res)
   res.check-valid()
 
+val t5 = Node(Black, 
+    Node(Black,
+      Node(Black, Leaf, 0, 0, Leaf),
+      2, 2,
+      Node(Black, Leaf, 7, 7, Leaf)),
+    9, 9,
+    Node(Black, 
+      Node(Black, Leaf, 11, 11, Leaf),
+      12, 12,
+      Node(Black, Leaf, 13, 13, Leaf)
+    )
+  )
 
+fun test-remove5x()
+  println(t5)
+  val res = t5.bu/remove(2)
+  println(res)
+  res.check-valid()
+
+
+val t6 = Node(Black, 
+    Node(Black, Leaf, 0, 0, Node(Red, Leaf, 2, 2, Leaf)),
+    6, 6,
+    Node(Red, 
+      Node(Black, Leaf, 8, 8, Leaf),
+      9, 9,
+      Node(Black, Leaf, 12, 12, Leaf)
+    )
+  )
+
+fun test-remove6x()
+  println(t6)
+  val res = t6.bu/remove(6)
+  println(res)
+  res.check-valid()
 // fun main()
 //   val r = 10
 //   val t = td/random-tree(10, r)

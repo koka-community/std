@@ -125,7 +125,7 @@ pub fun basic/scope(name: string, f: () -> <test-scope,console|e> (), is-test: b
     return(x)
       if !anyfail then println(infomsg ++ " passed!")
       else println(infomsg ++ " failed!")
-  f()
+  mask<local>{f()}
 
 // A subgroup of tests
 pub fun subgroup(name: string, f: () -> <test-scope,console|e> (), is-test: bool = False, ?kk-module: string, ?kk-line: string): <test-scope,console|e> ()
