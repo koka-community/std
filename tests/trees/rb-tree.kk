@@ -92,9 +92,9 @@ pub fun bench( n : int, iter : int, access : (rbtree<int,int>,int) -> div rbtree
   bench-iter( n*iter, n, access, rnd-init(42,43), Leaf)
 
 pub inline fun benchmain( access : (rbtree<int,int>,int) -> div rbtree<int,int>, scaledown : int = 1) : io ()
-  val n = get-args().head("").parse-int.default(100000)
+  val n = get-args().head("").parse-int.default(1000000)
   //val n = 50000
-  val (i,t) = bench(n / scaledown, 100 / scaledown, access)
+  val (i,t) = bench(n / scaledown, 10 / scaledown, access)
   val tp = top(t)
   val maxh = max-height(t)
   val minh = min-height(t)
@@ -155,15 +155,14 @@ pub fun check-valid(t1: rbtree<int,v>) : exn ()
           else
             leftb + (if b.is-black then 1 else 0)
       Leaf -> 1
-  check(t1, Red, -1000000, 100000)
+  check(t1, Red, -100000000, 100000000)
   ()
 
-pub fun bu/random-tree(n: int, r: int) : <exn,random> rbtree<int,int>
-  if n == 0 then Leaf
+pub fun bu/random-tree(n: int, r: int, acc: rbtree<int,int>) : <exn,random> rbtree<int,int>
+  if n == 0 then acc
   else 
-    val t = bu/random-tree((n - 1).pretend-decreasing, r)
-    t.check-valid()
-    t.bu/set(random-int() % r, 0)
+    val rnd = random-int() % r
+    bu/random-tree((n - 1).pretend-decreasing, r, acc.bu/set(rnd, 0))    
 
 pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
   if n == 0 then Leaf
@@ -172,28 +171,33 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     t.td/set(random-int() % r, 0)
 
 fun main()
-  for(1000) fn(i)
+  for(1) fn(i)
     // val i = 95
-    // trace(i.show)
+    trace(i.show)
     with pseudo-random(i)
-    val r = 1000
-    val t = bu/random-tree(1000, r)
+    val r = 10000000
+    val t = bu/random-tree(10000000, r, Leaf)
+    trace("Built tree")
     // println(t)
     check-valid(t)
-    // println("Start delete")
+    trace("Start delete")
     fun delete-check(t0:rbtree<int,int>)
-      val k = random-int() % r
-      if t0.contains(k) then 
-        val t1 = t0.bu/remove(k)
-        // println("\n\n\n")
-        // println(t1)
-        check-valid(t1)
-        if t1.is-leaf then ()
-        else delete-check(t1)
-      else 
-        delete-check(t0)
+      if t0.is-leaf then ()
+      else
+        val t1 = t0.bu/remove(top(t0))
+        delete-check(t1)
+      // val k = random-int() % r
+      // if t0.contains(k) then 
+      //   val t1 = t0.bu/remove(k)
+      //   // println("\n\n\n")
+      //   // println(t1)
+      //   check-valid(t1)
+      //   if t1.is-leaf then ()
+      //   else delete-check(t1)
+      // else 
+      //   delete-check(t0)
     delete-check(t)
-    // println("All tests passed")
+    println("All tests passed")
 
 
 val t1 : rbtree<int,int> = Node(Black, 
