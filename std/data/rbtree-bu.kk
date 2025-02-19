@@ -75,11 +75,11 @@ pub fbip(1) fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,
         Eq2(_) -> do-remove(c, z, l, r) // Actually do the removing
     Leaf -> rebuild(z, Leaf) // Not found - Figure 3
 
-pub fip(1) fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>) : exn rbtree<k,v>
+pub fbip(1) fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>) : exn rbtree<k,v>
   t.remove(key, Done)
 
 // Balance final zipper
-pub inline fun db-balance-rebuild(zip : zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
+pub inline fip fun db-balance-rebuild(zip : zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
   match t
     Node(Black, Node(Red, Node(Red, a, x, vx, b), y, vy, c), z, vz, d)
       -> zip.rebuild(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)))
@@ -92,8 +92,8 @@ pub inline fun db-balance-rebuild(zip : zipper<k,v>, t: rbtree<k,v>): rbtree<k,v
     t' -> zip.rebuild(t')
 
 // Double black rotation (final zipper)
-pub fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
-  fun db-balance-rotate-build(zip, t')
+pub fbip(1) fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
+  fbip fun db-balance-rotate-build(zip, t')
     match t' // BB cases
       Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z', vz, d) ->
         zip.rebuild(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d)))
@@ -121,50 +121,55 @@ pub fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
     ZNodeL(c, z1, k, v, r) -> db-rotate(z1, Node(c, t, k, v, r))
     Done -> t.set-black // Error to get here with still being double black
 
+pub fip fun rebuild-no-set2(z : zipper<k,v>, t : rbtree<k,v>, ^f: (rbtree<k,v>, bool) -> rbtree<k,v>): rbtree<k,v>
+  match z
+    ZNodeR(c, l, k, v, z1) -> rebuild-no-set2(z1, Node(c, l, k, v, t), f)
+    ZNodeL(c, z1, k, v, r) -> rebuild-no-set2(z1, Node(c, t, k, v, r), f)
+    Done -> f(t, False)
+
 // Balance inner zipper
-pub inline fun db-balance-rebuild-no-set(zip : zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
+pub inline fip fun db-balance-rebuild-no-set(zip : zipper<k,v>, t: rbtree<k,v>, ^f: (rbtree<k,v>, bool) -> rbtree<k,v>): rbtree<k,v>
   match t
     Node(Black, Node(Red, Node(Red, a, x, vx, b), y, vy, c), z, vz, d)
-      -> zip.rebuild-no-set(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)))
+      -> zip.rebuild-no-set2(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)), f)
     Node(Black, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z, vz, d)
-      -> zip.rebuild-no-set(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)))
+      -> zip.rebuild-no-set2(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)), f)
     Node(Black, a, x, vx, Node(Red, Node(Red, b, y, vy, c), z, vz, d))
-      -> zip.rebuild-no-set(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)))
+      -> zip.rebuild-no-set2(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)), f)
     Node(Black, a, x, vx, Node(Red, b, y, vy, Node(Red, c, z, vz, d)))
-      -> zip.rebuild-no-set(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)))
-    t' -> zip.rebuild-no-set(t')
+      -> zip.rebuild-no-set2(Node(Red, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z, vz, d)), f)
+    t' -> zip.rebuild-no-set2(t', f)
 
-pub fun db-rotate-done(z: zipper<k,v>, t: rbtree<k,v>, f: (rbtree<k,v>, bool) -> rbtree<k,v>): rbtree<k,v>
-  fun db-balance-rotate-done(zip, t')
+pub fbip fun db-rotate-done(z: zipper<k,v>, t: rbtree<k,v>, ^f: (rbtree<k,v>, bool) -> rbtree<k,v>): rbtree<k,v>
+  fbip fun db-balance-rotate-done(zip, t', ^f1)
     match t' // BB cases
       Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z', vz, d) ->
-        f(zip.rebuild-no-set(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d))), False)
+        zip.rebuild-no-set2(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d)), f1)
       Node(_, a, x, vx, Node(Red, Node(Red, b, y, vy, c), z', vz, d)) ->
-        f(zip.rebuild-no-set(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d))), False)
-      t'' -> 
-        db-rotate-done(zip.pretend-decreasing, t'', f)
+        zip.rebuild-no-set2(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d)), f1)
+      t'' -> db-rotate-done(zip.pretend-decreasing, t'', f1)
   match z
     // First case Figure 6, t is x, z is y, double black is discharged and we can just rebuild normally
     ZNodeL(Red, z', y, vy, Node(Black, c, kz, vz, d)) ->
-      f(z'.db-balance-rebuild-no-set(Node(Black, Node(Red, t, y, vy, c), kz, vz, d)), False)
+      z'.db-balance-rebuild-no-set(Node(Black, Node(Red, t, y, vy, c), kz, vz, d), f)
     ZNodeR(Red, Node(Black, a, x, vx, b), y, vy, z') ->
-      f(z'.db-balance-rebuild-no-set(Node(Black, a, x, vx, Node(Red, b, y, vy, t))), False)
+      z'.db-balance-rebuild-no-set(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), f)
     // Second case Figure 7, t is x, z is y
     ZNodeL(Black, z', y, vy, Node(Black, c, kz, vz, d)) ->
-      z'.db-balance-rotate-done(Node(Black, Node(Red, t, y, vy, c), kz, vz, d))
+      z'.db-balance-rotate-done(Node(Black, Node(Red, t, y, vy, c), kz, vz, d), f)
     ZNodeR(Black, Node(Black, a, x, vx, b), y, vy, z') ->
-      z'.db-balance-rotate-done(Node(Black, a, x, vx, Node(Red, b, y, vy, t)))
+      z'.db-balance-rotate-done(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), f)
     // Third case Figure 9, t is w, z is x
     ZNodeL(Black, z', x, vx, Node(Red, Node(Black, c, y, vy, d), kz, vz, e)) ->
-      f(ZNodeL(Black, z', kz, vz, e).db-balance-rebuild-no-set(Node(Black, Node(Red, t, x, vx, c), y, vy, d)), False)
+      ZNodeL(Black, z', kz, vz, e).db-balance-rebuild-no-set(Node(Black, Node(Red, t, x, vx, c), y, vy, d), f)
     ZNodeR(Black, Node(Red, a, w, vw, Node(Black, b, x, vx, c)), y, vy, z') ->
-      f(ZNodeR(Black, a, w, vw, z').db-balance-rebuild-no-set(Node(Black, b, x, vx, Node(Red, c, y, vy, t))), False)
+      ZNodeR(Black, a, w, vw, z').db-balance-rebuild-no-set(Node(Black, b, x, vx, Node(Red, c, y, vy, t)), f)
     // Rebuild one step then rebalance
     ZNodeR(c, l, k, v, z1) -> db-rotate-done(z1, Node(c, l, k, v, t), f)
     ZNodeL(c, z1, k, v, r) -> db-rotate-done(z1, Node(c, t, k, v, r), f)
     Done -> f(t, True)
 
-pub fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbtree<k,v>
+pub fbip(1) fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbtree<k,v>
   if l.is-leaf then 
     if r.is-leaf then // No children (just replace with leaf)
       if c.is-red then //  - if the node to delete was red this doesn't change the black height
@@ -178,7 +183,7 @@ pub fun do-remove(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>): rbt
     // Otherwise we have a tree of children, replace with inorder successor, deleting the inorder successor as you go
     do-remove-inorder(c, z, l, r, Done)
 
-pub fun do-remove-inorder(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>, rz: zipper<k,v>): rbtree<k,v>
+pub fbip(1) fun do-remove-inorder(c: color, z: zipper<k,v>, l: rbtree<k,v>, r: rbtree<k,v>, rz: zipper<k,v>): rbtree<k,v>
   match r
     // Replace the inorder successor with a leaf, and move it's key / value to the deleted node.
     Node(Red, Leaf, k, v, Leaf) -> 
