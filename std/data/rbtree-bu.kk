@@ -92,9 +92,10 @@ pub inline fip fun db-balance-rebuild(zip : zipper<k,v>, t: rbtree<k,v>): rbtree
     t' -> zip.rebuild(t')
 
 // Double black rotation (final zipper)
-pub fbip(1) fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
+pub fip(1) fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
   fbip fun db-balance-rotate-build(zip, t')
     match t' // BB cases
+      // Node(Black,  a = Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z' =x, vz= vx, d =Node(Red, b, y, vy, t))
       Node(_, Node(Red, a, x, vx, Node(Red, b, y, vy, c)), z', vz, d) ->
         zip.rebuild(Node(Black, Node(Black, a, x, vx, b), y, vy, Node(Black, c, z', vz, d)))
       Node(_, a, x, vx, Node(Red, Node(Red, b, y, vy, c), z', vz, d)) ->
@@ -108,8 +109,23 @@ pub fbip(1) fun db-rotate(z: zipper<k,v>, t: rbtree<k,v>): rbtree<k,v>
       db-balance-rebuild(z', Node(Black, a, x, vx, Node(Red, b, y, vy, t)))
     // Second case Figure 7, t is x, z is y
     ZNodeL(Black, z', y, vy, Node(Black, c, kz, vz, d)) ->
+      // match c // Try to inline & specialize db-balance-rotate-build
+      //   Node(Red, b', y', vy', c') -> z'.rebuild(Node(Black, Node(Black, t, y, vy, b'), y', vy', Node(Black, c', kz, vz, d)))
+      //   c' -> 
+      //     match d
+      //       Node(Red, Node(Red, b', y', vy', c''), z'', vz', d') ->
+      //         z'.rebuild(Node(Black, Node(Black, Node(Red, t, y, vy, c'), kz, vz, b'), y', vy', Node(Black, c'', z'', vz', d')))
+      //       d' -> db-rotate(z'.pretend-decreasing, Node(Black, Node(Red, t, y, vy, c'), kz, vz, d'))
       z'.db-balance-rotate-build(Node(Black, Node(Red, t, y, vy, c), kz, vz, d))
     ZNodeR(Black, Node(Black, a, x, vx, b), y, vy, z') ->
+      // match b // Try to inline & specialize db-balance-rotate-build
+      //   Node(Red, b', y', vy', c') ->
+      //     z'.rebuild(Node(Black, Node(Black, a, x, vx, b'), y', vy', Node(Black, c', y, vy, t)))
+      //   b' ->
+      //     match a
+      //       Node(Red, a', x', vx', Node(Red, b'', y', vy', c')) ->
+      //         z'.rebuild(Node(Black, Node(Black, a', x', vx', b''), y', vy', Node(Black, c', x, vx, Node(Red, b', y, vy, t))))
+      //       a' -> db-rotate(z'.pretend-decreasing, Node(Black, a', x, vx, Node(Red, b', y, vy, t)))
       z'.db-balance-rotate-build(Node(Black, a, x, vx, Node(Red, b, y, vy, t)))
     // Third case Figure 9, t is w, z is x
     ZNodeL(Black, z', x, vx, Node(Red, Node(Black, c, y, vy, d), kz, vz, e)) ->
@@ -156,8 +172,23 @@ pub fbip fun db-rotate-done(z: zipper<k,v>, t: rbtree<k,v>, ^f: (rbtree<k,v>, bo
       z'.db-balance-rebuild-no-set(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), f)
     // Second case Figure 7, t is x, z is y
     ZNodeL(Black, z', y, vy, Node(Black, c, kz, vz, d)) ->
+      // match c // Try to inline & specialize db-balance-rotate-done
+      //   Node(Red, b', y', vy', c') -> z'.rebuild-no-set2(Node(Black, Node(Black, t, y, vy, b'), y', vy', Node(Black, c', kz, vz, d)), f)
+      //   c' -> 
+      //     match d
+      //       Node(Red, Node(Red, b', y', vy', c''), z'', vz', d') ->
+      //         z'.rebuild-no-set2(Node(Black, Node(Black, Node(Red, t, y, vy, c'), kz, vz, b'), y', vy', Node(Black, c'', z'', vz', d')), f)
+      //       d' -> db-rotate-done(z'.pretend-decreasing, Node(Black, Node(Red, t, y, vy, c'), kz, vz, d'), f)
       z'.db-balance-rotate-done(Node(Black, Node(Red, t, y, vy, c), kz, vz, d), f)
     ZNodeR(Black, Node(Black, a, x, vx, b), y, vy, z') ->
+      // match b // Try to inline & specialize db-balance-rotate-done
+      //   Node(Red, b', y', vy', c') ->
+      //     z'.rebuild-no-set2(Node(Black, Node(Black, a, x, vx, b'), y', vy', Node(Black, c', y, vy, t)), f)
+      //   b' ->
+      //     match a
+      //       Node(Red, a', x', vx', Node(Red, b'', y', vy', c')) ->
+      //         z'.rebuild-no-set2(Node(Black, Node(Black, a', x', vx', b''), y', vy', Node(Black, c', x, vx, Node(Red, b', y, vy, t))), f)
+      //       a' -> db-rotate-done(z'.pretend-decreasing, Node(Black, a', x, vx, Node(Red, b', y, vy, t)), f)
       z'.db-balance-rotate-done(Node(Black, a, x, vx, Node(Red, b, y, vy, t)), f)
     // Third case Figure 9, t is w, z is x
     ZNodeL(Black, z', x, vx, Node(Red, Node(Black, c, y, vy, d), kz, vz, e)) ->
