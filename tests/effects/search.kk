@@ -43,12 +43,10 @@ fun tests()
   dfs/collect(program).println
   bfs/find(program).println
   dfs/find(program).println
-  val best = fn(i1, i2) min(i1, i2)
-  bfs/find-best(program).println
-  dfs/find-best(program).println
-  val best = fn(i1, i2) max(i1, i2)
-  bfs/find-best(program).println
-  dfs/find-best(program).println
+  bfs/find-best(program, ?best = min).println
+  dfs/find-best(program, ?best = min).println
+  bfs/find-best(program, ?best = max).println
+  dfs/find-best(program, ?best = max).println
 
 
     
