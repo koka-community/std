@@ -11,6 +11,7 @@ pub import std/time/duration
 pub import std/time/timestamp
 import std/num/ddouble
 import std/num/int64
+import std/num/int32
 
 extern import
   js file "inline/timer.js"
@@ -20,13 +21,13 @@ abstract struct timer (
 )
 
 // Sets a timeout for libuv / wasm / javscript / C# event loops
-pub extern set-timeout( cb : () -> io-noexn (), ms : int32 ) : io-noexn any
+pub extern raw/set-timeout( cb : () -> io-noexn (), ms : int32 ) : io-noexn any
   cs "_Async.SetTimeout"
   js "setTimeout"
   c "kk_set_timeout"
 
 // Clears a timeout for libuv / wasm / javscript / C# event loops
-pub extern clear-timeout( tid : any) : io-noexn ()
+pub extern raw/clear-timeout( tid : any) : io-noexn ()
   cs "_Async.ClearTimeout"
   js "clearTimeout"
   c "kk_clear_timeout"
