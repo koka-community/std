@@ -352,7 +352,7 @@ fun interleavedn( n : int, xs : list<() -> <async-exn|e> a> ) : <async|e> list<e
         cr.fst > 0    
       fun strand-done(idx,res) 
         cr := (cr.fst - 1, cr.snd.insert(idx,res)) 
-    interleaved-div(xs)  
+    mask<local>{interleaved-div(xs)}
 
 
 inline extern unsafe-no-ndet-div-cast : forall<a,e> (() -> <ndet,div|e> a) -> (() -> e a) 
