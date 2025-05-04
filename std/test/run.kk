@@ -7,6 +7,7 @@
 ----------------------------------------------------------------------------*/
 module std/test/run
 import std/test/test
+import std/test/report
 import std/os/env
 import std/os/flags
 
@@ -62,6 +63,7 @@ fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> 
       summary := summary.execute(test)
     else
       report-skipped(tid)
+      summary := summary(skipped = summary.skipped + 1)
   report-summary(summary)
   if summary.any-failures then
     exit(1)

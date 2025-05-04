@@ -5,53 +5,9 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-module test/test
+module std/test/test
 
-// The toplevel `test` effect for defining test groups and cases
-pub effect test
-  val current-scope: maybe<scope>
-  fun register-test(test-identity: test-identity, body: () -> <expect,io> ()): ()
-
-// The effect available within a test, for making expectations / assertions
-pub effect expect
-  ctl test-expect(v: expect-value<a>): a
-  fun test-hint(hint: string): ()
-
-value struct location
-  mod: string
-  line: string
-  
-fun location/show(l: location): string
-  l.mod ++ ":" ++ l.line
-
-struct scope
-  scope-id: int
-  parent: maybe<scope>
-  scope-name: string
-  location: location
-
-fun scope/show(s: scope): div string
-  "Scope("++s.scope-id.show ++", "++s.parent.show ++ ", " ++ s.scope-name++")"
-
-// A test, possibly within group / scopes
-abstract struct test-identity
-  test-id: int
-  scope: maybe<scope>
-  name: string
-  location: location
-  
-pub fun test-identity/show(t: test-identity): div string
-  "Test-identity("++t.test-id.show ++", "++t.scope.show ++ ", " ++ t.name ++ ")"
-
-abstract value struct suite-summary
-  failures: int
-  successes: int
-
-pub fun suite-summary(): suite-summary
-  Suite-summary(0, 0)
-
-pub fun summary/any-failures(summary: suite-summary): bool
-  summary.failures > 0
+pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
 
 pub effect test-report
   fun report-skipped<a>(test: test-identity): ()
@@ -61,144 +17,75 @@ pub effect test-report
   fun report-end<a>(test: test-identity, failures: int): ()
   fun report-summary<a>(summary: suite-summary): ()
 
-fun indentation(scope: maybe<scope>): div string
+// The toplevel `test` effect for defining test groups and cases
+pub effect test
+  val current-scope: maybe<test-scope>
+  fun register-test(test-identity: test-identity, body: () -> <expect,io> ()): ()
+
+// The effect available within a test, for making expectations / assertions
+pub effect expect
+  ctl test-expect(v: expect-value<a>): a
+  fun test-hint(hint: string): ()
+
+abstract value struct location
+  mod: string
+  line: string
+  
+pub fun location/show(l: location): string
+  l.mod ++ ":" ++ l.line
+
+pub struct test-scope
+  scope-id: int
+  parent: maybe<test-scope>
+  scope-name: string
+  location: location
+
+fun scope/show(s: test-scope): div string
+  "Scope("++s.scope-id.show ++", "++s.parent.show ++ ", " ++ s.scope-name++")"
+
+// A test, possibly within group / scopes
+pub struct test-identity
+  test-id: int
+  scope: maybe<test-scope>
+  name: string
+  location: location
+  
+pub fun test-identity/show(t: test-identity): div string
+  "Test-identity("++t.test-id.show ++", "++t.scope.show ++ ", " ++ t.name ++ ")"
+
+pub value struct suite-summary
+  failures: int
+  successes: int
+  skipped: int
+
+pub fun suite-summary(): suite-summary
+  Suite-summary(0, 0, 0)
+
+pub fun summary/any-failures(summary: suite-summary): bool
+  summary.failures > 0
+
+pub fun indentation(scope: maybe<test-scope>): div string
   scope.map(fn(s) s.parent.indentation ++ "  ").default("")
 
-fun scope/full-name(scope: scope): div string
+pub fun scope/full-name(scope: test-scope): div string
   scope.parent.map(fn(p) p.full-name ++ " ").default("") ++ scope.scope-name
 
 pub fun test/full-name(test: test-identity): div string
   test.scope.map(fn(s) s.full-name ++ " ").default("") ++ test.name
 
-fun report-scope-once(reported-scopes: ref<global, list<int>>, scope: maybe<scope>, report: (scope) -> <st<global>,div|e> ()): <st<global>,div|e> ()
-  match scope
-    Nothing -> ()
-    Just(scope) ->
-      report-scope-once(reported-scopes, scope.parent, report)
-      val reported = !reported-scopes
-      if reported.find(fn(id) -> id == scope.scope-id).is-nothing then
-        reported-scopes := Cons(scope.scope-id, reported)
-        report(scope)
-
-pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
-  var current-failures := 0
-  val reported-scopes = ref([])
-
-  with handler <test-report>
-    fun report-skipped(test)
-      ()
-
-    fun report-start(test)
-      current-failures := 0
-      val infomsg = test.scope.indentation ++ test.name
-      report-scope-once(reported-scopes, test.scope) fn(scope)
-        println(scope.parent.indentation ++ scope.scope-name ++ ":")
-      println(infomsg ++ "(" ++ test.location.show ++ ")...")
-
-    fun report-hint(test, hint)
-      println(test.scope.indentation ++ hint)
-
-    fun report-end(test, failures: int)
-      val infomsg = test.scope.indentation ++ test.name ++ "(" ++ test.location.show ++ "):"
-      val result = if failures == 0 then "OK" else "FAIL"
-      println(infomsg ++ " " ++ result)
-
-    fun report-failure(test: test-identity, failed-expectation)
-      current-failures := current-failures + 1
-      val b = failed-expectation.expectation
-      val location = failed-expectation.location
-      val showa = failed-expectation.show
-      val err = failed-expectation.details
-      match failed-expectation.run-value
-        Error(e) ->
-          println(test.scope.indentation() ++ "  Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": threw an exception: " ++ e.exn/show ++ err.map(fn(e1) "\n    Details: " ++ e1).default(""))
-        Ok(a) ->
-          println(test.scope.indentation() ++ "  Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": but got: " ++ a.showa ++ err.map(fn(e) "\n    Details: " ++ e).default(""))
-
-    fun report-summary(summary: suite-summary)
-      println(summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes")
-
-  mask<local>(action)
-
-pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
-
-pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
-  var total-successes := 0
-  var total-skipped := 0
-  val reported-scopes = ref([])
-  val green = "\u001b[0;32m"
-  val cyan = "\u001b[0;36m"
-  val red = "\u001b[0;31m"
-  val yellow = "\u001b[0;33m"
-  val reset = "\u001b[0m"
-  var failed-test-names := []
-  var hint-buffer-rev := []
-
-  with handler <test-report>
-    fun report-skipped(test)
-      total-skipped := total-skipped + 1
-
-    fun report-start(test)
-      hint-buffer-rev := []
-      report-scope-once(reported-scopes, test.scope) fn(scope)
-        println(scope.parent.indentation ++ cyan ++ scope.scope-name ++ ":" ++ reset)
-      println(cyan ++ test.scope.indentation ++ test.name ++ "(" ++ test.location.show ++ ")..." ++ reset)
-
-    fun report-hint(test, hint)
-      // accumulate and only output on failure
-      hint-buffer-rev := Cons(hint, hint-buffer-rev)
-
-    fun report-end(test, failures: int)
-      if failures == 0 then
-        println(test.scope.indentation ++ green ++ "- ok" ++ reset)
-      else
-        hint-buffer-rev.reverse.foreach fn(hint)
-          println(test.scope.indentation ++ yellow ++ hint ++ reset)
-
-        println(test.scope.indentation ++ red ++ "- failed\n" ++ reset)
-        failed-test-names := Cons(test.full-name, failed-test-names)
-
-    fun report-failure(test: test-identity, failed-expectation)
-      val b = failed-expectation.expectation
-      val location = failed-expectation.location
-      val showa = failed-expectation.show
-      val err = failed-expectation.details
-      match failed-expectation.run-value
-        Error(e) ->
-          println(red ++ test.scope.indentation() ++ "Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": threw an exception: " ++ e.exn/show ++ err.map(fn(e1) "\n    Details: " ++ e1).default("") ++ reset)
-        Ok(a) ->
-          println(red ++ test.scope.indentation() ++ "Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": but got: " ++ a.showa ++ err.map(fn(e) "\n    Details: " ++ e).default("") ++ reset)
-
-    fun report-summary(summary: suite-summary)
-      val color = if summary.failures > 0 then red else green
-      println(
-        color ++
-        summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes"
-        ++ (if total-skipped > 0 then " (" ++ total-skipped.show ++ " skipped)" else "")
-        ++ reset
-        )
-
-      if summary.failures > 0 then
-        println(red ++ "\nFailed tests:")
-        failed-test-names.foreach fn(name)
-          println(" - " ++ name)
-        println(reset)
-
-  mask<local>(action)
-
-value type expectation<a>
+pub value type expectation<a>
   ExpectedValue(a: a)
   ExpectedError(str: string)
   ExpectedAssertion(str: string)
 
-fun show(a: expectation<a>, ?show: a -> div string): div string
+pub fun show(a: expectation<a>, ?show: a -> div string): div string
   match a
     ExpectedValue(a) -> a.show
     ExpectedError(a) -> "error: " ++ a
     ExpectedAssertion(a) -> "assertion: " ++ a
 
 // An expected value for a test
-struct expect-value<a>
+abstract struct expect-value<a>
   run-value: error<a> // The value of the computation when run
   expectation: expectation<a> // The expected value
   details: maybe<string> // An additional error message providing context of the expectation
@@ -206,6 +93,18 @@ struct expect-value<a>
   location: string // The line where the expectation was made
   eq: (a,a) -> div bool // The equality function for the value
   show: (a) -> div string; // The show function for the value
+
+pub fun show-failed(failed: expect-value<a>): div string
+  val b = failed.expectation
+  val location = failed.location
+  val showa = failed.show
+  val err = failed.details
+  val actual = match failed.run-value
+    Error(e) ->
+      "threw an exception: " ++ e.exn/show
+    Ok(a) ->
+      "but got: " ++ a.showa
+  "Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": " ++ actual ++ err.map(fn(e) "\nDetails: " ++ e).default("")
 
 // Expects a computation to return a value
 //
@@ -259,7 +158,7 @@ fun gen-id(): st<global> int
 
 // group of tests, requires (and overrides) test-scope
 pub fun group(name: string, f: () -> <test,io|e> (), ?kk-module: string, ?kk-line: string): <test,io|e> ()
-  val scope = Scope(
+  val scope = Test-scope(
     scope-id = gen-id(),
     parent = current-scope,
     scope-name = name,
