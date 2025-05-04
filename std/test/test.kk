@@ -28,7 +28,6 @@ struct scope
   scope-id: int
   parent: maybe<scope>
   scope-name: string
-  scope-indent: string
   location: location
 
 fun scope/show(s: scope): div string
@@ -62,8 +61,8 @@ pub effect test-report
   fun report-end<a>(test: test-identity, failures: int): ()
   fun report-summary<a>(summary: suite-summary): ()
 
-fun indentation(scope: maybe<scope>): total string
-  scope.map(fn(s) s.scope-indent).default("")
+fun indentation(scope: maybe<scope>): div string
+  scope.map(fn(s) s.parent.indentation ++ "  ").default("")
 
 fun scope/full-name(scope: scope): div string
   scope.parent.map(fn(p) p.full-name ++ " ").default("") ++ scope.scope-name
@@ -264,7 +263,6 @@ pub fun group(name: string, f: () -> <test,io|e> (), ?kk-module: string, ?kk-lin
     scope-id = gen-id(),
     parent = current-scope,
     scope-name = name,
-    scope-indent = current-scope.indentation() ++ "  ",
     location = Location(?kk-module, ?kk-line)
   )
   with override<test>
