@@ -8,3 +8,5 @@
 module std/test
 pub import std/test/test
 pub import std/test/bench
+pub import std/test/report
+pub import std/test/run
