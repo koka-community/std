@@ -44,9 +44,15 @@ abstract struct test-identity
 pub fun test-identity/show(t: test-identity): div string
   "Test-identity("++t.test-id.show ++", "++t.scope.show ++ ", " ++ t.name ++ ")"
 
-value struct suite-summary
+abstract value struct suite-summary
   failures: int
   successes: int
+
+pub fun suite-summary(): suite-summary
+  Suite-summary(0, 0)
+
+pub fun summary/any-failures(summary: suite-summary): bool
+  summary.failures > 0
 
 pub effect test-report
   fun report-skipped<a>(test: test-identity): ()
@@ -54,6 +60,7 @@ pub effect test-report
   fun report-hint<a>(test: test-identity, hint: string): ()
   fun report-failure<a>(test: test-identity, expectation: expect-value<a>): ()
   fun report-end<a>(test: test-identity, failures: int): ()
+  fun report-summary<a>(summary: suite-summary): ()
 
 fun indentation(scope: maybe<scope>): total string
   scope.map(fn(s) s.scope-indent).default("")
@@ -75,8 +82,6 @@ fun report-scope-once(reported-scopes: ref<global, list<int>>, scope: maybe<scop
         report(scope)
 
 pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
-  var total-failures := 0
-  var total-successes := 0
   var current-failures := 0
   val reported-scopes = ref([])
 
@@ -95,10 +100,6 @@ pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
       println(test.scope.indentation ++ hint)
 
     fun report-end(test, failures: int)
-      if current-failures == 0 then
-        total-successes := total-successes + 1
-      else
-        total-failures := total-failures + current-failures
       val infomsg = test.scope.indentation ++ test.name ++ "(" ++ test.location.show ++ "):"
       val result = if failures == 0 then "OK" else "FAIL"
       println(infomsg ++ " " ++ result)
@@ -115,16 +116,14 @@ pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
         Ok(a) ->
           println(test.scope.indentation() ++ "  Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": but got: " ++ a.showa ++ err.map(fn(e) "\n    Details: " ++ e).default(""))
 
+    fun report-summary(summary: suite-summary)
+      println(summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes")
+
   mask<local>(action)
-  println(total-failures.show ++ " failures, " ++ total-successes.show ++ " successes")
-  if total-failures > 0 then
-    throw("Tests failed") // TODO exit(1) without raising?
-  ()
 
 pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
 
 pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
-  var total-failures := 0
   var total-successes := 0
   var total-skipped := 0
   val reported-scopes = ref([])
@@ -152,10 +151,6 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
 
     fun report-end(test, failures: int)
       if failures == 0 then
-        total-successes := total-successes + 1
-      else
-        total-failures := total-failures + failures
-      if failures == 0 then
         println(test.scope.indentation ++ green ++ "- ok" ++ reset)
       else
         hint-buffer-rev.reverse.foreach fn(hint)
@@ -175,22 +170,22 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
         Ok(a) ->
           println(red ++ test.scope.indentation() ++ "Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": but got: " ++ a.showa ++ err.map(fn(e) "\n    Details: " ++ e).default("") ++ reset)
 
-  mask<local>(action)
-  val color = if total-failures > 0 then red else green
-  println(
-    color ++
-    total-failures.show ++ " failures, " ++ total-successes.show ++ " successes"
-    ++ (if total-skipped > 0 then " (" ++ total-skipped.show ++ " skipped)" else "")
-    ++ reset
-    )
+    fun report-summary(summary: suite-summary)
+      val color = if summary.failures > 0 then red else green
+      println(
+        color ++
+        summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes"
+        ++ (if total-skipped > 0 then " (" ++ total-skipped.show ++ " skipped)" else "")
+        ++ reset
+        )
 
-  if total-failures > 0 then
-    println(red ++ "\nFailed tests:")
-    failed-test-names.foreach fn(name)
-      println(" - " ++ name)
-    println(reset)
-    throw("Tests failed")
-  ()
+      if summary.failures > 0 then
+        println(red ++ "\nFailed tests:")
+        failed-test-names.foreach fn(name)
+          println(" - " ++ name)
+        println(reset)
+
+  mask<local>(action)
 
 value type expectation<a>
   ExpectedValue(a: a)
@@ -301,11 +296,18 @@ pub fun collect-tests(f: () -> <test,io> ()): io list<test-case<io>>
   }
   tests-rev.reverse
 
-pub fun test/execute(test: test-case<io>): <test-report,io> ()
+// Executes a single test. Returns an updated suite summary
+pub fun execute(summary: suite-summary, test: test-case<io>): <test-report,io> suite-summary
   val tid = test.identity
   report-start(tid)
-  var failures := 0
-  with finally { report-end(tid, failures) }
+  var fail-count := 0
+  fun result()
+    if fail-count == 0 then
+      summary(successes = summary.successes + 1)
+    else
+      summary(failures = summary.failures + fail-count)
+
+  with finally { report-end(tid, fail-count) }
   with handler<expect> {
     fun test-hint(v)
       report-hint(tid, v)
@@ -315,13 +317,13 @@ pub fun test/execute(test: test-case<io>): <test-report,io> ()
       val b = v.expectation
       match a
         Error(_) ->
-          failures := failures + 1
+          fail-count := fail-count + 1
           report-failure(tid, v)
           if v.continue-on-error then
             match b
               ExpectedValue(b') -> resume(b')
-              _ -> ()
-          else ()
+              _ -> result()
+          else result()
         Ok(a') ->
           val good = match b
             ExpectedValue(b') -> (v.eq)(a', b')
@@ -330,13 +332,14 @@ pub fun test/execute(test: test-case<io>): <test-report,io> ()
           if good then
             resume(a')
           else
-            failures := failures + 1
+            fail-count := fail-count + 1
             report-failure(tid, v)
             if v.continue-on-error then
               match b
                 ExpectedValue(b') -> resume(b')
-                _ -> ()
-            else ()
+                _ -> result()
+            else result()
   }
   with mask<test-report>
   (test.body)()
+  result()

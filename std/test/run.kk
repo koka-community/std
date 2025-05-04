@@ -5,8 +5,8 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-module test/run
-import test/test
+module std/test/run
+import std/test/test
 import std/os/env
 import std/os/flags
 
@@ -48,15 +48,23 @@ fun testopts/should-include(opts: testopts, test: test-identity)
       patterns.any fn(pattern)
         test.full-name.contains(pattern)
 
-fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> ()
-  tests.foreach fn(test)
-    // TODO: run async tests in parallel
-    val tid = test.identity
-    if not(opts.should-include(tid)) then
-      report-skipped(tid)
-      return ()
-    test.execute()
 
+// TODO: use core/std/exit after https://github.com/koka-lang/koka/pull/703 is released
+extern exit(i: int): io-noexn ()
+  c inline "exit(kk_integer_clamp32(#1, kk_context()))"
+  js inline "throw(`Exited with code: ${#1}`)"
+
+fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> ()
+  var summary := suite-summary()
+  tests.foreach fn(test)
+    val tid = test.identity
+    if opts.should-include(tid) then
+      summary := summary.execute(test)
+    else
+      report-skipped(tid)
+  report-summary(summary)
+  if summary.any-failures then
+    exit(1)
 
 // Parse commandline arguments
 pub fun parse-opts(args = get-args()): io testopts
@@ -73,7 +81,8 @@ pub fun parse-opts(args = get-args()): io testopts
     throw("Invalid options")
   opts(includes = filter-from(remainder))
 
-// Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests
+// Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
+// Exits the process with a nonzero exit code if any tests fail.
 // TODO: extend this to discover tests across multiple files
 pub fun run-tests(f: () -> <test,io> (), reporter: test-reporter<io> = color-reporter): io ()
   val opts = parse-opts()
@@ -88,29 +97,3 @@ pub fun run-tests(f: () -> <test,io> (), reporter: test-reporter<io> = color-rep
         println(t.identity.full-name)
 
 // Some simple examples
-fun main(): io ()
-  // custom reporter
-  run-tests(reporter = plain-reporter)
-    test("OK")
-      ()
-  println("----")
-
-  // default color-reporter
-  with run-tests()
-  group("Basics")
-    with group("A subgroup")
-    test("Returns continue tests")
-      val res = expect-result(1)
-                  2
-      hint("Continued!")
-      expect(2)
-        1 + res
-      expect(2)
-        1
-  group("Other")
-    test("Wrong expect")
-      expect(1)
-        2
-    test("Additional info")
-      expect(1, details="Really expected 1!")
-        throw("Some error somewhere")
