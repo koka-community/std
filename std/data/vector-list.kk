@@ -166,6 +166,7 @@ pub fun vlist/hash( v : vector-list<a>, ?hasher: (a, int64) -> int, ?seed : int6
 
 reference struct something {i: int}
 fun test-vlist()  
+  with run-tests
   group("vlist")
     test("push")
       val vec = unit/vector-list() 

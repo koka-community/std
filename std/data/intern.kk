@@ -31,7 +31,7 @@ fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<int
       // Weak map, when the interned values are dropped, the concrete value will also be dropped, but unfortunately not the vector memory
       a.unsafe-box-drop 
       Interned(vec.size - 1, a)
-  action(r)
+  mask<local>{action(r)}
 
 fun (==)(x: intern-ref<a>, y: intern-ref<a>): bool
   x.idx == y.idx

@@ -8,7 +8,7 @@
 // This module provides a simple deque using a circular vector
 module std/data/deque
 import std/core-extras
-import std/test/test
+import std/test
 import std/core/unsafe
 
 pub value struct deque<a>
@@ -218,7 +218,8 @@ fun item/(==)(i: maybe<int>, j: maybe<int>) : bool
     (Just(x), Just(y)) -> x == y
     _ -> False
 
-fun test-deque(): <console,pure> () 
+fun test-deque(): io () 
+  with run-tests
   group("Deque")
     test("push-front")
       val deq = unit/deque()

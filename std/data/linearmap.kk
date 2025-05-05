@@ -117,6 +117,7 @@ pub fun foreach(m: linearMap<k,v>, f: (k, v) -> e ()): e ()
   m.internal.foreach(fn((k,v)) f(k,v))
   
 fun test-map()
+  with run-tests
   group("add")
     test("add already present")
       expect(LinearMap([(1, "a"), (2, "b")]))

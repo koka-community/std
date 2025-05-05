@@ -202,6 +202,7 @@ pub fun foreach( hs : hash-set<v>, f : (v) -> e () ) : e ()
 
 
 fun test-hash-set()
+  with run-tests
   group("hash-set")
     test("insert")
       val hs = thread/hash-set(1)

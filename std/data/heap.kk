@@ -377,6 +377,7 @@ fun mb/(==)(a: maybe<int>, b: maybe<int>)
     _ -> False
 
 fun test-heap()  
+  with run-tests
   group("heap")
     test("heap min ordered")
       expect(Just(1))
@@ -441,6 +442,7 @@ fun test-heap()
         val heap = list/heap( [ 7, 1, 4, 2, 12, 3] ).update-key( 5, 17 )
         heap.max
     test("heap stress test")
+      with pseudo-random(0)
       var heap := heap()
       expect(True)
         for(50000) fn (i)

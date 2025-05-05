@@ -170,24 +170,29 @@ pub fun foreach( hs : hash-set-mut<v>, f : (v) -> e () ) : e ()
 
 
 fun test-hash-set-mut()
+  with run-tests
   group("hash-set-mut")
     test("insert")
+      with pseudo-random(0)
       val hs = random/hash-set-mut(1)
       expect(True)
         val hs' = hs.insert(2)
         hs'.contains(2)
     test("remove")
+      with pseudo-random(0)
       val hs = random/hash-set-mut(1)
       val hs' = hs.insert(2)
       expect(0)
         hs'.remove(2).length
     test("stress test")
+      with pseudo-random(0)
       var hs := random/hash-set-mut(1)
       expect(True)
         for(50000) fn (i)
           hs := hs.insert(i)
         True
     test("clear")
+      with pseudo-random(0)
       var hs := random/hash-set-mut(1)
       for(50) fn (i)
         hs := hs.insert(i)
@@ -195,6 +200,7 @@ fun test-hash-set-mut()
         hs := hs.clear
         hs.length
     test("clear then fill")
+      with pseudo-random(0)
       var hs := random/hash-set-mut(1)
       for(50) fn (i)
         hs := hs.insert(i)

@@ -91,6 +91,7 @@ pub fun list(l: linearSet<v>): e list<v>
   l.internal
 
 pub fun test-set()
+  with run-tests
   group("linearset")
     test("Basics")
       val s = linear-set([1, 2, 3])

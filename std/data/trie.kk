@@ -83,7 +83,8 @@ fun trie/show(t: trie): div string
   match t
     Trie(p, pcount, v, full, m) -> "Trie(" ++ p.show ++ ", " ++ pcount.show ++ ", " ++ v.show ++ ", " ++ full.show ++ " " ++ m.show ++ ")"
 
-fun test-trie()
+fun test-trie() 
+  with run-tests
   val t = trie/empty().add("Hello")
   val t1 = t.add("World").add("Worship")
   group("trie")

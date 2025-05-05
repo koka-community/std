@@ -543,6 +543,7 @@ pub fun spaces(n: int): string
 val default-width = 512
 
 pub fun test-pretty()
+  with run-tests
   group("Pretty Printing")
     test("Basic Combinators")
       expect("test hello") fn()
