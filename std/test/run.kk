@@ -35,9 +35,11 @@ fun filter-from(args: list<string>)
   else
     Include(args)
 
-value struct testopts
+reference struct testopts
   includes: test-filter = All
   action: test-action = Run
+  sample-count: int = 100
+  seed: maybe<int> = Nothing
 
 pub fun testopts/show(opts: testopts) : string
   "Testopts("++opts.includes.show ++ ", " ++ opts.action.show ++ ")"
@@ -60,7 +62,7 @@ fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> 
   tests.foreach fn(test)
     val tid = test.identity
     if opts.should-include(tid) then
-      summary := summary.execute(test)
+      summary := summary.execute(test, seed = opts.seed)
     else
       report-skipped(tid)
       summary := summary(skipped = summary.skipped + 1)
@@ -73,10 +75,25 @@ pub fun parse-opts(args = get-args()): io testopts
   fun set-list(opts: testopts, do-list)
     val action = if do-list then List else Run
     opts(action = action)
+  
+  fun set-sample-count(opts: testopts, c: maybe<string>)
+    val count = match c
+      Just(s) -> s.parse-int().maybe/default(opts.sample-count)
+      Nothing -> opts.sample-count
+
+    opts(sample-count = count)
+
+  fun set-seed(opts: testopts, s: maybe<string>)
+    match s
+      Just(str) -> opts(seed = str.parse-int())
+      Nothing -> opts
 
   val flags = [
-    Flag("l", ["list"], Bool(set-list), "list test names" )
+    Flag("l", ["list"], Bool(set-list), "list test names" ),
+    Flag("", ["samples"], Opt(set-sample-count, "COUNT"), "set default sample count for prop-tests" ),
+    Flag("", ["seed"], Opt(set-seed, "INT"), "set RNG seed (for each test; only use to reproduce failures)" ),
   ]
+
   val (opts, remainder, errs) = parse(Testopts(), flags, get-args())
   if not(errs.is-nil) then
     println(errs.join("\n") ++ "\n" ++ flags.usage)
@@ -88,7 +105,7 @@ pub fun parse-opts(args = get-args()): io testopts
 // TODO: extend this to discover tests across multiple files
 pub fun run-tests(f: () -> <test,io> (), reporter: test-reporter<io> = color-reporter): io ()
   val opts = parse-opts()
-  val tests = collect-tests(f)
+  val tests = collect-tests(opts.sample-count, f)
 
   match opts.action()
     Run ->
@@ -97,5 +114,3 @@ pub fun run-tests(f: () -> <test,io> (), reporter: test-reporter<io> = color-rep
     List ->
       tests.foreach fn(t)
         println(t.identity.full-name)
-
-// Some simple examples
