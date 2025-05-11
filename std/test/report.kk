@@ -58,7 +58,7 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
       hint-buffer-rev := []
       report-scope-once(reported-scopes, test.scope) fn(scope)
         println-colored(scope.parent.indentation ++ scope.scope-name ++ ":", Cyan)
-      println-colored(test.scope.indentation ++ test.name ++ "(" ++ test.location.show ++ ")...", Cyan)
+      println-colored(test.scope.indentation ++ test.name, Cyan)
 
     fun report-hint(test, hint)
       // accumulate and only output on failure
@@ -74,7 +74,7 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
         hint-buffer-rev.reverse.foreach fn(hint)
           println-colored(test.scope.indentation ++ hint, Yellow)
 
-        println-colored(test.scope.indentation ++ "- failed\n", Red)
+        println-colored(test.scope.indentation ++ "- failed\n    # " ++ test.location.show ++ "\n", Red)
         failed-test-names := Cons(test.full-name, failed-test-names)
 
     fun report-failure(test: test-identity, failed-expectation)

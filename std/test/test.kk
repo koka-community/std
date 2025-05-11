@@ -199,15 +199,18 @@ pub fun test(name: string, f: () -> <expect,io> (), ?kk-module: string, ?kk-line
 pub fun prop-test(
   name,
   action: () -> <random,expect,io> (),
-  count: int = default-sample-count
+  count: int = default-sample-count,
+  ?kk-module: string,
+  ?kk-line: string
 ): <test,io> ()
-  test(name)
+  fun run(): <expect,io> ()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
     for(0, count) fn(i)
       test-iteration()
       hint("Property test iteration " ++ i.show ++ ", --seed=" ++ seed-value.show)
       action()
+  test(name, run)
 
 // Provide the `random` effect within a test, useful for generating arbitrary data.
 // See also `prop-test` which runs a test multiple times for many different inputs.
