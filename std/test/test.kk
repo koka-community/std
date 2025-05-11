@@ -6,6 +6,15 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/test/test
+import std/time/timer
+import std/time/duration
+import std/num/random
+import std/num/ddouble
+import std/num/float64
+import std/num/int64
+
+// TODO put this somewhere in core
+fun unit/(==)(a: (), b: ()): bool { True }
 
 pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
 
@@ -13,6 +22,7 @@ pub effect test-report
   fun report-skipped<a>(test: test-identity): ()
   fun report-start<a>(test: test-identity): ()
   fun report-hint<a>(test: test-identity, hint: string): ()
+  fun report-iteration(test: test-identity): ()
   fun report-failure<a>(test: test-identity, expectation: expect-value<a>): ()
   fun report-end<a>(test: test-identity, failures: int): ()
   fun report-summary<a>(summary: suite-summary): ()
@@ -21,11 +31,16 @@ pub effect test-report
 pub effect test
   val current-scope: maybe<test-scope>
   fun register-test(test-identity: test-identity, body: () -> <expect,io> ()): ()
+  val default-sample-count: int // used for property tests
 
 // The effect available within a test, for making expectations / assertions
 pub effect expect
   ctl test-expect(v: expect-value<a>): a
   fun test-hint(hint: string): ()
+
+  // utilities for property tests
+  fun next-seed(): int
+  fun test-iteration(): () // declare a new iteration
 
 abstract value struct location
   mod: string
@@ -165,6 +180,7 @@ pub fun group(name: string, f: () -> <test,io|e> (), ?kk-module: string, ?kk-lin
     location = Location(?kk-module, ?kk-line)
   )
   with override<test>
+    val default-sample-count = default-sample-count
     val current-scope = Just(scope)
     fun register-test(test-identity, body)
       register-test(test-identity, body)
@@ -176,16 +192,38 @@ pub fun hint(value: string): expect ()
 pub fun test(name: string, f: () -> <expect,io> (), ?kk-module: string, ?kk-line: string): <test,io> ()
   register-test(Test-identity(gen-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
 
+// Property test:
+// creates a test case that runs the body many times on random inputs,
+// ensuring it passes each time.
+// When a case fails, the seed is printed (this can be passed as the `--seed` commandline argument to reproduce).
+pub fun prop-test(
+  name,
+  action: () -> <random,expect,io> (),
+  count: int = default-sample-count
+): <test,io> ()
+  test(name)
+    val seed-value = next-seed()
+    with pseudo-random(seed-value)
+    for(0, count) fn(i)
+      test-iteration()
+      hint("Property test iteration " ++ i.show ++ ", --seed=" ++ seed-value.show)
+      action()
+
+// Provide the `random` effect within a test, useful for generating arbitrary data.
+// See also `prop-test` which runs a test multiple times for many different inputs.
+pub fun arbitrary(action: () -> <random|e> a): e a
+  pseudo-random(0, action)
+
 pub value struct test-case<e>
   identity: test-identity
   body: () -> <expect|e> ()
 
-// run at the top level to execute tests, requires a reporter
 // TODO lazy stream instead of an eager list
-pub fun collect-tests(f: () -> <test,io> ()): io list<test-case<io>>
+pub fun collect-tests(default-sample-count: int, f: () -> <test,io> ()): io list<test-case<io>>
   var tests-rev := []
   handle<test>(f) {
     val current-scope = Nothing
+    val default-sample-count = default-sample-count
 
     fun register-test(test, body) {
       tests-rev := Cons(Test-case(test, body), tests-rev)
@@ -194,7 +232,7 @@ pub fun collect-tests(f: () -> <test,io> ()): io list<test-case<io>>
   tests-rev.reverse
 
 // Executes a single test. Returns an updated suite summary
-pub fun execute(summary: suite-summary, test: test-case<io>): <test-report,io> suite-summary
+pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): <test-report,io> suite-summary
   val tid = test.identity
   report-start(tid)
   var fail-count := 0
@@ -204,10 +242,17 @@ pub fun execute(summary: suite-summary, test: test-case<io>): <test-report,io> s
     else
       summary(failures = summary.failures + fail-count)
 
+  with pseudo-random(timer/ticks().fraction.float64-to-bits.int)
   with finally { report-end(tid, fail-count) }
   with handler<expect> {
+    fun next-seed()
+      seed.default(random-int())
+
     fun test-hint(v)
       report-hint(tid, v)
+
+    fun test-iteration()
+      report-iteration(tid)
 
     ctl test-expect(v)
       val a = v.run-value
@@ -238,5 +283,5 @@ pub fun execute(summary: suite-summary, test: test-case<io>): <test-report,io> s
             else result()
   }
   with mask<test-report>
-  (test.body)()
+  expect(()) { (test.body)() }
   result()

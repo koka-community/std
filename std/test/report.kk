@@ -19,6 +19,9 @@ pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
     fun report-skipped(test)
       ()
 
+    fun report-iteration(test)
+      ()
+
     fun report-start(test)
       val infomsg = test.scope.indentation ++ test.name
       report-scope-once(reported-scopes, test.scope) fn(scope)
@@ -60,6 +63,9 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
     fun report-hint(test, hint)
       // accumulate and only output on failure
       hint-buffer-rev := Cons(hint, hint-buffer-rev)
+
+    fun report-iteration(test)
+      hint-buffer-rev := []
 
     fun report-end(test, failures: int)
       if failures == 0 then
