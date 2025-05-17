@@ -12,9 +12,7 @@ import std/num/random
 import std/num/ddouble
 import std/num/float64
 import std/num/int64
-
-// TODO put this somewhere in core
-fun unit/(==)(a: (), b: ()): bool { True }
+import std/core-extras
 
 pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
 
@@ -118,8 +116,8 @@ pub fun show-failed(failed: expect-value<a>): div string
     Error(e) ->
       "threw an exception: " ++ e.exn/show
     Ok(a) ->
-      "but got: " ++ a.showa
-  "Expect(" ++ location ++ ") == " ++ b.show(?show=showa) ++ ": " ++ actual ++ err.map(fn(e) "\nDetails: " ++ e).default("")
+      "     got: " ++ a.showa
+  "Expectation failed ("++ location ++ ")\nexpected: " ++ b.show(?show=showa) ++ "\n" ++ actual ++ err.map(fn(e) "\nDetails: " ++ e).default("")
 
 // Expects a computation to return a value
 //
