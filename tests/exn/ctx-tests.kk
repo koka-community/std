@@ -7,8 +7,9 @@ fun expect-ex(expected: string, action: () -> exn ()): <exn,expect> ()
 
 fun raise() { throw("File not found") }
 
-fun main()
-  with run-tests
+fun main() { run-tests(suite) }
+
+pub fun suite()
   fun multi-context()
     val config-file = "~/.some-config"
     with error-ctx("Program failed")

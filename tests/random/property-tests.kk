@@ -2,8 +2,9 @@ import std/test
 import std/data/random
 import std/num/random
 
-fun main()
-  with run-tests()
+fun main() { run-tests(suite) }
+
+fun suite()
   prop-test("sample")
     val n = random-int()
     expect((n % 3) >= 0, details = n.show ++ " % 3 = " ++ (n%3).show) { True }
