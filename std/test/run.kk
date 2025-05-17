@@ -37,6 +37,7 @@ fun filter-from(args: list<string>)
     Include(args)
 
 reference struct testopts
+  help: bool = False
   includes: test-filter = All
   action: test-action = Run
   sample-count: int = 100
@@ -76,6 +77,8 @@ pub fun parse-opts(args = get-args()): io testopts
   fun set-list(opts: testopts, do-list)
     val action = if do-list then List else Run
     opts(action = action)
+
+  fun set-help(opts: testopts, _) { opts(help = True) }
   
   fun set-sample-count(opts: testopts, c: maybe<string>)
     val count = match c
@@ -90,15 +93,19 @@ pub fun parse-opts(args = get-args()): io testopts
       Nothing -> opts
 
   val flags = [
+    Flag("h", ["help"], Bool(set-help), "print usage" ),
     Flag("l", ["list"], Bool(set-list), "list test names" ),
     Flag("", ["samples"], Opt(set-sample-count, "COUNT"), "set default sample count for prop-tests" ),
     Flag("", ["seed"], Opt(set-seed, "INT"), "set RNG seed (for each test; only use to reproduce failures)" ),
   ]
 
   val (opts, remainder, errs) = parse(Testopts(), flags, get-args())
-  if not(errs.is-nil) then
+  if opts.help || not(errs.is-nil) then
     println(errs.join("\n") ++ "\n" ++ flags.usage)
-    throw("Invalid options")
+    if opts.help then
+      core-extras/exit(0)
+    else
+      throw("Invalid options")
   opts(includes = filter-from(remainder))
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
