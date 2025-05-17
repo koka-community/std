@@ -10,6 +10,7 @@ import std/test/test
 import std/test/report
 import std/os/env
 import std/os/flags
+import std/core-extras
 
 type test-action
   Run
@@ -68,7 +69,7 @@ fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> 
       summary := summary(skipped = summary.skipped + 1)
   report-summary(summary)
   if summary.any-failures then
-    exit(1)
+    core-extras/exit(1)
 
 // Parse commandline arguments
 pub fun parse-opts(args = get-args()): io testopts
