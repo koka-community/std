@@ -4,8 +4,8 @@ import std/data/rbtree
 import std/data/tree-common
 import std/os/env
 
-import bu = std/data/rbtree-bu
-import td = std/data/rbtree-td
+import std/data/rbtree-bu
+import std/data/rbtree-td
 
 import std/num/random
 import std/num/int32
@@ -171,33 +171,32 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     t.td/set(random-int() % r, 0)
 
 fun main()
-  for(1) fn(i)
+  for(100) fn(i)
     // val i = 95
     trace(i.show)
     with pseudo-random(i)
-    val r = 10000000
-    val t = bu/random-tree(10000000, r, Leaf)
+    val r = 10000
+    val t = bu/random-tree(10000, r, Leaf)
     trace("Built tree")
-    // println(t)
     check-valid(t)
-    trace("Start delete")
+    // println(t)
     fun delete-check(t0:rbtree<int,int>)
       if t0.is-leaf then ()
       else
-        val t1 = t0.bu/remove(top(t0))
-        delete-check(t1)
-      // val k = random-int() % r
-      // if t0.contains(k) then 
-      //   val t1 = t0.bu/remove(k)
-      //   // println("\n\n\n")
-      //   // println(t1)
-      //   check-valid(t1)
-      //   if t1.is-leaf then ()
-      //   else delete-check(t1)
-      // else 
-      //   delete-check(t0)
+        val k = random-int() % r
+        if t0.contains(k) then 
+          val t1 = t0.bu/remove(k)
+          // println("\n\n\n")
+          // println(t1)
+          check-valid(t1)
+          if t1.is-leaf then ()
+          else delete-check(t1)
+        else 
+          delete-check(t0)    
+          
+    trace("Start delete")
     delete-check(t)
-    println("All tests passed")
+  println("All tests passed")
 
 
 val t1 : rbtree<int,int> = Node(Black, 
