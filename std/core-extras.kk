@@ -12,28 +12,26 @@ import std/core/undiv
 extern import 
   c file "inline/core-extras"
 
-fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
-  match (m1, m2)
-    (Just(m1'), Just(m2')) -> m1' == m2'
-    (Nothing, Nothing) -> True
+// List Utilities
+pub fun eql/(==)(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
+  match (l1, l2)
+    (Nil, Nil) -> True
+    (Cons(s1, l1'), Cons(s2, l2')) -> s1 == s2 && eql/(==)(l1'.pretend-decreasing, l2')
     _ -> False
 
-fun list/and(l: list<bool>): bool
+pub fun list/and(l: list<bool>): bool
   match l
     Nil -> True
     Cons(True, l') -> l'.and
     Cons(False) -> False
 
-fun string/is-prefix-of(s1: string, s2: string): bool
-  s2.starts-with(s1).bool
-
-fun list/is-prefix-of(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
+pub fun list/is-prefix-of(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
   match (l1, l2)
     (Nil, _) -> True
     (_, Nil) -> False
     (Cons(h1, t1), Cons(h2, t2)) -> h1 == h2 && t1.pretend-decreasing.is-prefix-of(t2)
 
-fun list/maximum-by(l0: list<a>, cmp0: (a, a) -> e order): e maybe<a>
+pub fun list/maximum-by(l0: list<a>, cmp0: (a, a) -> e order): e maybe<a>
   fun loop(l: list<a>, acc: maybe<a>, cmp: (a, a) -> e order): e maybe<a>
     match l
       Nil -> acc
@@ -46,13 +44,17 @@ fun list/maximum-by(l0: list<a>, cmp0: (a, a) -> e order): e maybe<a>
               _ -> loop(t, acc, cmp)
   loop(l0, Nothing, cmp0)
 
-fun to-upper(c: char): char
+// String and char utilities
+pub fun string/is-prefix-of(s1: string, s2: string): bool
+  s2.starts-with(s1).bool
+
+pub fun to-upper(c: char): char
   c.string.to-upper.head-char.default(c)
   
-fun to-lower(c: char): char
+pub fun to-lower(c: char): char
   c.string.to-lower.head-char.default(c)
 
-fun split-by(s: string, pred: (char) -> bool): list<string>
+pub fun split-by(s: string, pred: (char) -> bool): list<string>
   fun loop(sl: sslice, numchars: int, acc: ctx<list<string>>): list<string>
     match sl.next
       Nothing -> acc ++. Nil
@@ -62,16 +64,25 @@ fun split-by(s: string, pred: (char) -> bool): list<string>
           else loop(sl'.pretend-decreasing, numchars + 1, acc)
   loop(s.slice, 0, ctx _)
 
+
+// Maybe utilities
 pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
   match item
     Just(x) -> x
     Nothing -> Nothing
+
+pub fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
+  match (m1, m2)
+    (Just(m1'), Just(m2')) -> m1' == m2'
+    (Nothing, Nothing) -> True
+    _ -> False
 
 pub fun expect-unjust( m : maybe<a>, msg: string ) : exn a
   match m
     Just(a) -> a
     Nothing -> throw("expect-unjust: " ++ msg)
 
+// Vector utilities
 pub fun vector-init-list( ^n: int, xs: list<(int, a)>): vector<a>
   val v = unsafe-vector(n.ssize_t) 
   fun assigns(xs': some<a> list<(int,a)>) : total ()
