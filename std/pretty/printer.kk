@@ -386,7 +386,7 @@ pub fun html-escape(s: string): string
   r.join
 
 /// Test of printer features
-fun test(): <console, exn, fsys, ndet> ()
+fun example(): <console, exn, fsys, ndet> ()
   with console-printer
   "hi\xFF".write-ln() // Will not print unicode on Windows
   with mono-printer

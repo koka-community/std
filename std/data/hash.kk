@@ -9,7 +9,6 @@
 // The hash function used is xxhash64, while not cryptographically secure, it should be fast and avoid collisions.
 module std/data/hash
 import std/num/int64
-import std/test
 import std/core-extras
 
 extern import 
@@ -94,5 +93,5 @@ pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher 
   hash-vector-int64( vec, seed )
 
 
-fun test-hash()
+fun example()
   seed.println

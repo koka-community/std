@@ -31,7 +31,7 @@ fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<int
       // Weak map, when the interned values are dropped, the concrete value will also be dropped, but unfortunately not the vector memory
       a.unsafe-box-drop 
       Interned(vec.size - 1, a)
-  mask<local>{action(r)}
+  action(r)
 
 fun (==)(x: intern-ref<a>, y: intern-ref<a>): bool
   x.idx == y.idx
@@ -41,7 +41,7 @@ val strs : some<s> delayed<<pure,interner<s>>,ev<intern<s,string>>> = delay({int
 fun s-intern(s: string): <pure,interner<s>> intern-ref<string>
   strs.force.intern(s)
 
-fun test()
+fun example()
   with intern-creator
   
   val a = s-intern("a")

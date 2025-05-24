@@ -73,7 +73,7 @@ inline fun (>=)(x: istring, y: istring): bool
 inline fun (==)(x: istring, y: istring): bool
   unsafe-ptr-eq(x.str, y.str)
 
-fun test-string-pool()
+fun example()
   val a = intern("A quick brown fox jumps over the lazy dog")
   val a2 = intern("A quick brown fox jumps over the lazy dog")
   println(a)
