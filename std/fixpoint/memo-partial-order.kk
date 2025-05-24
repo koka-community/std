@@ -23,7 +23,7 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
   f()
 
 // r = result, c = change, e = effect
-struct cache-entry<r,e>
+value struct cache-entry<r,e>
   cache: r
   deps: list<(r -> <pure|e> ())>
 
@@ -84,7 +84,7 @@ fun fact(n: int)
 
 val int/bottom = 0
 
-fun test-fact()
+fun example-fact()
   val res = 
     with cache
     fact(10)

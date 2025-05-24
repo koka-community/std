@@ -59,13 +59,13 @@ fun fib(n: int)
   else
     int/(+)(fib(n - 1), fib(n - 2))
 
-fun test-fact()
+fun example-fact()
   val res = 
     with cache
     fact(10)
   res.show.println
 
-fun test-fib()
+fun example-fib()
   val res = 
     with cache
     fib(10)

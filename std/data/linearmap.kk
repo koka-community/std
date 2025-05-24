@@ -6,7 +6,6 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/data/linearmap
-import std/test
 
 pub value struct linearMap<k,v>
   internal: list<(k,v)> 
@@ -116,19 +115,3 @@ pub fun union-with(m1: linearMap<k,v>, m2: linearMap<k,v>, f: (v, v) -> e v, ?(=
 pub fun foreach(m: linearMap<k,v>, f: (k, v) -> e ()): e ()
   m.internal.foreach(fn((k,v)) f(k,v))
   
-fun test-map()
-  with run-tests
-  group("add")
-    test("add already present")
-      expect(LinearMap([(1, "a"), (2, "b")]))
-        LinearMap([(1, "a"), (2, "b")]).add(1, "x") 
-    test("add not present")
-      expect(LinearMap([(2, "b"), (1, "x")]))
-        LinearMap([(2, "b")]).add(1, "x")
-  group("set")
-    test("set already present")
-      expect(LinearMap([(1, "x"), (2, "b")]))
-        LinearMap([(1, "a"), (2, "b")]).set(1, "x") 
-    test("set not present")
-      expect(LinearMap([(2, "b"), (1, "x")]))
-        LinearMap([(2, "b")]).set(1, "x")

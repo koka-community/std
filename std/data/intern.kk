@@ -23,14 +23,15 @@ fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<int
     fun intern(a: some<a> a)
       with find
       val v = vec
-      v.foreach-indexed fn(i,x)
-        if eq(a,x) then found(Interned(i,x))
-        else ()
+      mask<local>
+        v.foreach-indexed fn(i,x)
+          if eq(a,x) then found(Interned(i,x))
+          else ()
       vec := v.push(a)
       // Weak map, when the interned values are dropped, the concrete value will also be dropped, but unfortunately not the vector memory
       a.unsafe-box-drop 
       Interned(vec.size - 1, a)
-  mask<local>{action(r)}
+  action(r)
 
 fun (==)(x: intern-ref<a>, y: intern-ref<a>): bool
   x.idx == y.idx
@@ -40,7 +41,7 @@ val strs : some<s> delayed<<pure,interner<s>>,ev<intern<s,string>>> = delay({int
 fun s-intern(s: string): <pure,interner<s>> intern-ref<string>
   strs.force.intern(s)
 
-fun test()
+fun example()
   with intern-creator
   
   val a = s-intern("a")

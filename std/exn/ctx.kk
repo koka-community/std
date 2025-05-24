@@ -85,7 +85,7 @@ pub fun error-ctx-handler(action: () -> <io|e> ()): <io-noexn|e> ()
     exit(-1)
 
 // demonstrate trace-handler
-fun main()
+fun example()
   with error-ctx-handler
   with error-ctx("outer")
   throw("inner")

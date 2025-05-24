@@ -21,7 +21,7 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
   f()
 
 // r = result, c = change, e = effect
-struct cache-entry<r,c,e>
+value struct cache-entry<r,c,e>
   cache: r
   deps: list<(c -> <pure|e> ())>
 
@@ -71,7 +71,7 @@ fun memo(key: k, func: () -> <cache<k,r>|e> r): <cache<k,r>|e> r
       add-result(key, res)
       res
 
-fun test-fact()
+fun example-fact()
   fun fact(n: int)
     with memo(n) 
     trace("Calculating fact of " ++ n.show)

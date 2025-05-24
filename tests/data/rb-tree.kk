@@ -170,7 +170,7 @@ pub fun td/random-tree(n: int, r: int) : random rbtree<int,int>
     val t = td/random-tree((n - 1).pretend-decreasing, r)
     t.td/set(random-int() % r, 0)
 
-fun main()
+fun test-delete-many()
   for(100) fn(i)
     // val i = 95
     trace(i.show)
@@ -361,3 +361,13 @@ fun test-cases()
   t2.show.trace
   t2.check-valid()
   ()
+
+fun test()
+  test-cases()
+  test-delete1()
+  test-remove2x()
+  test-remove3x()
+  test-remove4x()
+  test-remove5x()
+  test-remove6x()
+  test-delete-many()

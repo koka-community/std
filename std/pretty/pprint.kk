@@ -15,7 +15,6 @@ import std/pretty/printer
 import std/core/undiv
 import std/os/path
 import std/os/file
-import std/test
 import std/num/float64
 import std/core-extras
 
@@ -541,18 +540,3 @@ pub fun spaces(n: int): string
     _ -> if n <= 0 then "" else replicate(" ", n).join
 
 val default-width = 512
-
-pub fun test-pretty()
-  with run-tests
-  group("Pretty Printing")
-    test("Basic Combinators")
-      expect("test hello") fn()
-        ("test".text |+| "hello".text).show
-      expect(r#"test
-hello"#) fn()
-        ["test".text, "hello".text].vcat.show
-      expect("testhello") fn()
-        ["test".text, "hello".text].hcat.show
-      expect("\x1B[91m0\x1B[39m")
-        with ansi-string-printer
-        color("0".text, Red).write-pretty

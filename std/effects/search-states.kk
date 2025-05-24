@@ -76,7 +76,7 @@ fun bfs/collect<s>(init : s, action: () -> nondet<s> a): div list<(a,s)>
       [(x, local)]
   action()
 
-fun tests()
+fun example()
   bfs/collect(())
     try([{fail()}, {1}]) + try([{fail()}, {2}, {3}])
     

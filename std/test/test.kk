@@ -236,15 +236,15 @@ pub fun collect-tests(default-sample-count: int, f: () -> <test,io> ()): io list
 pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): <test-report,io> suite-summary
   val tid = test.identity
   report-start(tid)
-  var fail-count := 0
-  fun result()
-    if fail-count == 0 then
+  val fail-count = ref(0)
+  fun result(): _ suite-summary
+    if !fail-count == 0 then
       summary(successes = summary.successes + 1)
     else
-      summary(failures = summary.failures + fail-count)
+      summary(failures = summary.failures + !fail-count)
 
   with pseudo-random(timer/ticks().fraction.float64-to-bits.int)
-  with finally { report-end(tid, fail-count) }
+  with finally { report-end(tid, !fail-count) }
   with handler<expect> {
     fun next-seed()
       seed.default(random-int())
@@ -260,7 +260,7 @@ pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): 
       val b = v.expectation
       match a
         Error(_) ->
-          fail-count := fail-count + 1
+          fail-count := !fail-count + 1
           report-failure(tid, v)
           if v.continue-on-error then
             match b
@@ -275,7 +275,7 @@ pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): 
           if good then
             resume(a')
           else
-            fail-count := fail-count + 1
+            fail-count := !fail-count + 1
             report-failure(tid, v)
             if v.continue-on-error then
               match b
