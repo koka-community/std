@@ -37,7 +37,7 @@ fun main()
   exit(status)
 
 fun is-test-path(p: path)
-  p.basename.ends-with("-tests.kk").is-just && p.is-file
+  p.basename.ends-with("-test.kk").is-just && p.is-file
 
 fun import-path(p: path)
   p.dirparts.join("/").trim-right(".kk")
@@ -50,11 +50,14 @@ fun generate-test-runner()
   var import-lines := []
   var test-lines := []
 
-  val test-files = path("tests")
+  val test-files = path("test")
     .list-directory-recursive
     .filter(is-test-path)
     .map(import-path)
     .sort
+
+  if test-files.is-empty then
+    throw("No test files found!")
 
   test-files.foreach fn(f)
     import-lines := Cons("import " ++ f.module-name ++ " = " ++ f, import-lines)
