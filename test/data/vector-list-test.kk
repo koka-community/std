@@ -3,8 +3,8 @@ import std/test
 import std/core/unsafe
 
 reference struct something {i: int}
-fun test-vlist()  
-  with run-tests
+
+fun suite(): <io,test> ()
   group("vlist")
     test("push")
       val vec = unit/vector-list() 

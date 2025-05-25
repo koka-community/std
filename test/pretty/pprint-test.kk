@@ -2,8 +2,7 @@ import std/pretty/pprint
 import std/pretty/printer
 import std/test
 
-pub fun test-pretty()
-  with run-tests
+pub fun suite()
   group("Pretty Printing")
     test("Basic Combinators")
       expect("test hello") fn()

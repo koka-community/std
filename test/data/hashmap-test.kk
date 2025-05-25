@@ -8,11 +8,11 @@ fun mb/(==)(a: maybe<int>, b: maybe<int>)
     (Just(x), Just(y)) -> x == y
     _ -> False
 
-fun test(): io ()
+
+fun suite(): <io,test> ()
   fun hash-map()
     arbitrary { random/hash-map(1) }
 
-  with run-tests
   group("hash-map")
     test("insert")
       val hm = hash-map()

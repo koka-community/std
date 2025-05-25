@@ -1,8 +1,8 @@
 import std/data/linearset
 import std/test
 
-pub fun test()
-  with run-tests
+
+fun suite(): <io,test> ()
   group("linearset")
     test("Basics")
       val s = linear-set([1, 2, 3])

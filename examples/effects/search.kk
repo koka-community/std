@@ -35,7 +35,7 @@ fun add-chain(t: tree)
       v + try([{add-chain(l)}, {add-chain(r)}])
     Leaf -> 0
 
-fun tests()
+fun example()
   val t = make-tree({build(3)})
   t.println
   val program = fn() add-chain(t)

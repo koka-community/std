@@ -6,7 +6,7 @@ fun swap(a: int, b: int)
   trace("Calculating fact of " ++ a.show ++ " " ++ b.show)
   each([{(b,a)}, {swap(b,a)}])
 
-fun test-swap()
+fun example-swap()
   val res: rbmap<(int, int), list<(int, int)>> = 
     with cache
     swap(0, 1)

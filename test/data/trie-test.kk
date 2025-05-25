@@ -1,8 +1,7 @@
 import std/data/trie
 import std/test
 
-fun test() 
-  with run-tests
+fun suite(): <io,test> ()
   val t = trie/empty().add("Hello")
   val t1 = t.add("World").add("Worship")
   group("trie")

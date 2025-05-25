@@ -10,8 +10,7 @@ fun item/(==)(i: maybe<int>, j: maybe<int>) : bool
     (Just(x), Just(y)) -> x == y
     _ -> False
 
-fun test(): io () 
-  with run-tests
+fun suite(): <io,test> ()
   group("Deque")
     test("push-front")
       val deq = unit/deque()

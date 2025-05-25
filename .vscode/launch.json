@@ -16,5 +16,11 @@
       "externalConsole": false,
       "MIMode": "lldb"
     },
+    {
+      "type": "koka",
+      "request": "launch",
+      "program": "${workspaceFolder}/std/test/detect.kk",
+      "name": "test",
+    }
   ]
 }
