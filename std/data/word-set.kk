@@ -1,6 +1,7 @@
 import std/data/trie
 import std/data/intern
 import std/core/unsafe
+import std/core/undiv
 
 alias word-set = trie
 
@@ -79,3 +80,7 @@ fun example()
   println(a)
   println(a2)
   (a == a2).println
+
+fun example-x()
+  val pool = string-pool().add-all(["infix", "infixr", "infixl", "in"])
+  pool.is-interned("infixr").println

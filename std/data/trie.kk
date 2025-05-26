@@ -69,7 +69,7 @@ fun internal/bind(t: trie, k: sslice, original: string, kcount: int): div trie
           (Just((chark, k'')), Nothing) ->
             bind-map(m, full, p, v, chark, k'', original, pcount, kcount - pcount)
           (Nothing, Just((charp, p''))) ->
-            bind-map(m, full, k.string, original, charp, p'', v, kcount, pcount - kcount)
+            Trie(k.string, kcount, original, True, LinearMap([(charp, Trie(p''.string, pcount - kcount - 1, v, True, m))]))
           (Nothing, Nothing) -> Trie(p, pcount, v, True, m)
           _ -> unsafe/not-reachable()
       common-prefix(k, p.slice, k.truncate, 0)
