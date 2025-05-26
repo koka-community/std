@@ -2,14 +2,10 @@ import std/data/hashmap
 import std/data/hash
 import std/test
 
-fun mb/(==)(a: maybe<int>, b: maybe<int>)
-  match (a, b)
-    (Nothing, Nothing) -> True
-    (Just(x), Just(y)) -> x == y
-    _ -> False
+pub fun main()
+  run-tests(suite)
 
-
-fun suite(): <io,test> ()
+pub fun suite(): <io,test> ()
   fun hash-map()
     arbitrary { random/hash-map(1) }
 
