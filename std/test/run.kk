@@ -11,6 +11,7 @@ import std/test/report
 import std/os/env
 import std/os/flags
 import std/core-extras
+import std/num/random
 
 type test-action
   Run
@@ -59,12 +60,13 @@ extern exit(i: int): io-noexn ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
   js inline "throw(`Exited with code: ${#1}`)"
 
-fun execute-tests(opts: testopts, tests: list<test-case<io>>): <test-report,io> ()
+fun execute-tests<e>(opts: testopts, tests: list<test-case<<io,random|e>>>): <test-report,io-noexn|e> ()
   var summary := suite-summary()
   tests.foreach fn(test)
     val tid = test.identity
     if opts.should-include(tid) then
-      summary := summary.execute(test, seed = opts.seed)
+      val s = summary
+      summary := mask<local> { s.execute(test, seed=opts.seed) }
     else
       report-skipped(tid)
       summary := summary(skipped = summary.skipped + 1)
@@ -110,8 +112,7 @@ pub fun parse-opts(args = get-args()): io testopts
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
 // Exits the process with a nonzero exit code if any tests fail.
-// TODO: extend this to discover tests across multiple files
-pub fun run-tests(f: () -> <test,io> (), reporter: test-reporter<io> = color-reporter): io ()
+pub fun run-tests(f: () -> <test<<io,random,exn|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io|e> ()
   val opts = parse-opts()
   val tests = collect-tests(opts.sample-count, f)
 
