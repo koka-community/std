@@ -26,9 +26,9 @@ pub effect test-report
   fun report-summary<a>(summary: suite-summary): ()
 
 // The toplevel `test` effect for defining test groups and cases
-pub effect test
+pub effect test<e>
   val current-scope: maybe<test-scope>
-  fun register-test(test-identity: test-identity, body: () -> <expect,io> ()): ()
+  fun register-test(test-identity: test-identity, body: () -> <expect|e> ()): ()
   val default-sample-count: int // used for property tests
 
 // The effect available within a test, for making expectations / assertions
@@ -163,21 +163,18 @@ pub fun expect(expected: a, run: () -> <exn,expect|e> a, details: string = "", c
   ()
 
 val next-id-ref: delayed<st<global>, ref<global,int>> = delay { ref(0) }
-fun gen-id(): st<global> int
-  next-id-ref.force.modify fn(r)
-    val id = r
-    r := r + 1
-    id
+fun gen-id(): ndet int
+  unique()
 
 // group of tests, requires (and overrides) test-scope
-pub fun group(name: string, f: () -> <test,io|e> (), ?kk-module: string, ?kk-line: string): <test,io|e> ()
+pub fun group(name: string, f: () -> <test<<ndet|e>>,ndet|e> (), ?kk-module: string, ?kk-line: string): <ndet,test<<ndet|e>>|e> ()
   val scope = Test-scope(
     scope-id = gen-id(),
     parent = current-scope,
     scope-name = name,
     location = Location(?kk-module, ?kk-line)
   )
-  with override<test>
+  with override<some<e> test<e>>
     val default-sample-count = default-sample-count
     val current-scope = Just(scope)
     fun register-test(test-identity, body)
@@ -187,7 +184,7 @@ pub fun group(name: string, f: () -> <test,io|e> (), ?kk-module: string, ?kk-lin
 pub fun hint(value: string): expect ()
   test-hint(value)
 
-pub fun test(name: string, f: () -> <expect,io> (), ?kk-module: string, ?kk-line: string): <test,io> ()
+pub fun test(name: string, f: () -> <expect,ndet|e> (), ?kk-module: string, ?kk-line: string): <ndet,test<<ndet|e>>|e> ()
   register-test(Test-identity(gen-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
 
 // Property test:
@@ -196,12 +193,12 @@ pub fun test(name: string, f: () -> <expect,io> (), ?kk-module: string, ?kk-line
 // When a case fails, the seed is printed (this can be passed as the `--seed` commandline argument to reproduce).
 pub fun prop-test(
   name,
-  action: () -> <random,expect,io> (),
+  action: () -> <random,expect,io|e> (),
   count: int = default-sample-count,
   ?kk-module: string,
   ?kk-line: string
-): <test,io> ()
-  fun run(): <expect,io> ()
+): <test<<io|e>>,io|e> ()
+  fun run(): <expect,io|_> ()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
     for(0, count) fn(i)
@@ -220,9 +217,9 @@ pub value struct test-case<e>
   body: () -> <expect|e> ()
 
 // TODO lazy stream instead of an eager list
-pub fun collect-tests(default-sample-count: int, f: () -> <test,io> ()): io list<test-case<io>>
+pub fun collect-tests(default-sample-count: int, f: () -> <test<<io,random|e>>,io-noexn|e> ()): <io-noexn|e> list<test-case<<io,random|e>>>
   var tests-rev := []
-  handle<test>(f) {
+  handle<test<_>>(f) {
     val current-scope = Nothing
     val default-sample-count = default-sample-count
 
@@ -233,7 +230,7 @@ pub fun collect-tests(default-sample-count: int, f: () -> <test,io> ()): io list
   tests-rev.reverse
 
 // Executes a single test. Returns an updated suite summary
-pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): <test-report,io> suite-summary
+pub fun execute(summary: suite-summary, test: test-case<<random,io|e>>, seed: maybe<int>): <test-report,io-noexn|e> suite-summary
   val tid = test.identity
   report-start(tid)
   val fail-count = ref(0)
@@ -284,5 +281,7 @@ pub fun execute(summary: suite-summary, test: test-case<io>, seed: maybe<int>): 
             else result()
   }
   with mask<test-report>
-  expect((), ?kk-line=tid.location.line, ?kk-module=tid.location.mod) { (test.body)() }
+  expect((), ?kk-line=tid.location.line, ?kk-module=tid.location.mod)
+    with mask<local>
+    (test.body)()
   result()
