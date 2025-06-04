@@ -111,7 +111,13 @@ pub fun parse-opts(args = get-args()): io testopts
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
 // Exits the process with a nonzero exit code if any tests fail.
-pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io|e> ()
+pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io-noexn|e> ()
+  // convert exceptions to exit(), for consistency (and so this function can be io-noexn)
+  with fn(action)
+    try(action) fn(e)
+      println(e.message)
+      core-extras/exit(1)
+
   val opts = parse-opts()
   val tests = collect-tests(opts.sample-count, f)
 
