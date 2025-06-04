@@ -28,8 +28,9 @@ pub effect test-report
 // The toplevel `test` effect for defining test groups and cases
 pub effect test<e>
   val current-scope: maybe<test-scope>
-  fun register-test(test-identity: test-identity, body: () -> <expect|e> ()): ()
+  fun register-test(test-identity: test-identity, body: () -> <expect,random|e> ()): ()
   val default-sample-count: int // used for property tests
+  fun gen-test-id(): int
 
 // The effect available within a test, for making expectations / assertions
 pub effect expect
@@ -162,14 +163,10 @@ pub fun expect(expected: a, run: () -> <exn,expect|e> a, details: string = "", c
   expect-result(expected, run, details, continue-on-error)
   ()
 
-val next-id-ref: delayed<st<global>, ref<global,int>> = delay { ref(0) }
-fun gen-id(): ndet int
-  unique()
-
 // group of tests, requires (and overrides) test-scope
-pub fun group(name: string, f: () -> <test<<ndet|e>>,ndet|e> (), ?kk-module: string, ?kk-line: string): <ndet,test<<ndet|e>>|e> ()
+pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-module: string, ?kk-line: string): <test<e>|e> ()
   val scope = Test-scope(
-    scope-id = gen-id(),
+    scope-id = gen-test-id(),
     parent = current-scope,
     scope-name = name,
     location = Location(?kk-module, ?kk-line)
@@ -177,6 +174,7 @@ pub fun group(name: string, f: () -> <test<<ndet|e>>,ndet|e> (), ?kk-module: str
   with override<some<e> test<e>>
     val default-sample-count = default-sample-count
     val current-scope = Just(scope)
+    fun gen-test-id() gen-test-id()
     fun register-test(test-identity, body)
       register-test(test-identity, body)
   f()
@@ -184,8 +182,16 @@ pub fun group(name: string, f: () -> <test<<ndet|e>>,ndet|e> (), ?kk-module: str
 pub fun hint(value: string): expect ()
   test-hint(value)
 
-pub fun test(name: string, f: () -> <expect,ndet|e> (), ?kk-module: string, ?kk-line: string): <ndet,test<<ndet|e>>|e> ()
-  register-test(Test-identity(gen-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
+// `effectful-test` is experimental, it allows the test body to rely on effects provided externally to test.
+// To avoid confusion, you should ensure the same handler for extra effects is used for both test definition
+// (the call to `effectful-test`) and test execution (the call to `run-tests`).
+//
+// Use `test` function where possible, as it ensures that the test body doesn't accidentally make use of an inherited effect.
+pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-module: string, ?kk-line: string): <test<<io|e>>|e> ()
+  register-test(Test-identity(gen-test-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
+
+pub fun test(name: string, f: () -> <expect,io,random> (), ?kk-module: string, ?kk-line: string): test<io> ()
+  effectful-test(name, f)
 
 // Property test:
 // creates a test case that runs the body many times on random inputs,
@@ -193,12 +199,12 @@ pub fun test(name: string, f: () -> <expect,ndet|e> (), ?kk-module: string, ?kk-
 // When a case fails, the seed is printed (this can be passed as the `--seed` commandline argument to reproduce).
 pub fun prop-test(
   name,
-  action: () -> <random,expect,io|e> (),
+  action: () -> <random,expect,io> (),
   count: int = default-sample-count,
   ?kk-module: string,
   ?kk-line: string
-): <test<<io|e>>,io|e> ()
-  fun run(): <expect,io|_> ()
+): <test<<io>>,io> ()
+  fun run()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
     for(0, count) fn(i)
@@ -214,15 +220,16 @@ pub fun arbitrary(action: () -> <random|e> a): e a
 
 pub value struct test-case<e>
   identity: test-identity
-  body: () -> <expect|e> ()
+  body: () -> <expect,random|e> ()
 
 // TODO lazy stream instead of an eager list
-pub fun collect-tests(default-sample-count: int, f: () -> <test<<io,random|e>>,io-noexn|e> ()): <io-noexn|e> list<test-case<<io,random|e>>>
+pub fun collect-tests(default-sample-count: int, f: () -> <test<<io|e>>,io|e> ()): <io|e> list<test-case<<io|e>>>
   var tests-rev := []
   handle<test<_>>(f) {
     val current-scope = Nothing
     val default-sample-count = default-sample-count
 
+    fun gen-test-id() unique()
     fun register-test(test, body) {
       tests-rev := Cons(Test-case(test, body), tests-rev)
     }
@@ -230,7 +237,7 @@ pub fun collect-tests(default-sample-count: int, f: () -> <test<<io,random|e>>,i
   tests-rev.reverse
 
 // Executes a single test. Returns an updated suite summary
-pub fun execute(summary: suite-summary, test: test-case<<random,io|e>>, seed: maybe<int>): <test-report,io-noexn|e> suite-summary
+pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int>): <test-report,io-noexn|e> suite-summary
   val tid = test.identity
   report-start(tid)
   val fail-count = ref(0)

@@ -11,7 +11,6 @@ import std/test/report
 import std/os/env
 import std/os/flags
 import std/core-extras
-import std/num/random
 
 type test-action
   Run
@@ -60,7 +59,7 @@ extern exit(i: int): io-noexn ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
   js inline "throw(`Exited with code: ${#1}`)"
 
-fun execute-tests<e>(opts: testopts, tests: list<test-case<<io,random|e>>>): <test-report,io-noexn|e> ()
+fun execute-tests<e>(opts: testopts, tests: list<test-case<<io|e>>>): <test-report,io-noexn|e> ()
   var summary := suite-summary()
   tests.foreach fn(test)
     val tid = test.identity
@@ -112,13 +111,14 @@ pub fun parse-opts(args = get-args()): io testopts
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
 // Exits the process with a nonzero exit code if any tests fail.
-pub fun run-tests(f: () -> <test<<io,random,exn|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io|e> ()
+pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io|e> ()
   val opts = parse-opts()
   val tests = collect-tests(opts.sample-count, f)
 
   match opts.action()
     Run ->
       with reporter
+      with mask<exn>
       execute-tests(opts, tests)
     List ->
       tests.foreach fn(t)
