@@ -32,7 +32,7 @@ kk_integer_t kk_hash_vector_int64(kk_vector_t v, int64_t seed, kk_context_t* ctx
 
     kk_ssize_t length;
     kk_box_t* buf = kk_vector_buf_borrow(v, &length, ctx);
-    uint8_t* input_ptr = malloc(sizeof(uint64_t) * length);
+    uint8_t* input_ptr = (uint8_t*)malloc(sizeof(uint64_t) * length);
     for (kk_ssize_t i = 0; i < length; i++) {
         ((int64_t*)input_ptr)[i] =  kk_int64_unbox(buf[i], KK_OWNED, ctx);
     }
