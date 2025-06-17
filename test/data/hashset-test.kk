@@ -3,7 +3,7 @@ import std/data/hash
 import std/test
 
 
-fun suite(): <io,test> ()
+fun suite()
   group("hash-set")
     test("insert")
       val hs = thread/hash-set(1)

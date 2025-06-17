@@ -2,7 +2,7 @@ import std/data/linearset
 import std/test
 
 
-fun suite(): <io,test> ()
+fun suite()
   group("linearset")
     test("Basics")
       val s = linear-set([1, 2, 3])

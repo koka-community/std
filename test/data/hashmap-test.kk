@@ -5,7 +5,7 @@ import std/test
 pub fun main()
   run-tests(suite)
 
-pub fun suite(): <io,test> ()
+pub fun suite()
   fun hash-map()
     arbitrary { random/hash-map(1) }
 
