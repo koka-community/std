@@ -32,37 +32,37 @@ kk_unit_t kk_vector_clear_at(kk_vector_t v, kk_ssize_t pos, kk_context_t* ctx) {
     return kk_Unit;
 }
 
-kk_vector_t kk_vector_from_cint32array(int32_t* carray, ssize_t len, kk_context_t* ctx) {
+kk_vector_t kk_vector_from_cint32array(int32_t* carray, kk_ssize_t len, kk_context_t* ctx) {
     kk_box_t* array;
     kk_vector_t vec = kk_vector_alloc_uninit(len, &array, ctx);
-    for (ssize_t i = 0; i < len; i++){
+    for (kk_ssize_t i = 0; i < len; i++){
         array[i] = kk_integer_box(kk_integer_from_int32(carray[i], ctx), ctx);
     }
     return vec;
 }
 
-kk_vector_t kk_vector_from_cint64array(int64_t* carray, ssize_t len, kk_context_t* ctx) {
+kk_vector_t kk_vector_from_cint64array(int64_t* carray, kk_ssize_t len, kk_context_t* ctx) {
     kk_box_t* array;
     kk_vector_t vec = kk_vector_alloc_uninit(len, &array, ctx);
-    for (ssize_t i = 0; i < len; i++){
+    for (kk_ssize_t i = 0; i < len; i++){
         array[i] = kk_integer_box(kk_integer_from_int64(carray[i], ctx), ctx);
     }
     return vec;
 }
 
-kk_vector_t kk_vector_from_cintarray(kk_intx_t* carray, ssize_t len, kk_context_t* ctx) {
+kk_vector_t kk_vector_from_cintarray(kk_intx_t* carray, kk_ssize_t len, kk_context_t* ctx) {
     kk_box_t* array;
     kk_vector_t vec = kk_vector_alloc_uninit(len, &array, ctx);
-    for (ssize_t i = 0; i < len; i++){
+    for (kk_ssize_t i = 0; i < len; i++){
         array[i] = kk_integer_box(kk_integer_from_int(carray[i], ctx), ctx);
     }
     return vec;
 }
 
-kk_vector_t kk_int8_vector_from_uint8array(unsigned char* carray, ssize_t len, kk_context_t* ctx) {
+kk_vector_t kk_int8_vector_from_uint8array(unsigned char* carray, kk_ssize_t len, kk_context_t* ctx) {
     kk_box_t* array;
     kk_vector_t vec = kk_vector_alloc_uninit(len, &array, ctx);
-    for (ssize_t i = 0; i < len; i++){
+    for (kk_ssize_t i = 0; i < len; i++){
         array[i] = kk_int8_box(carray[i], ctx);
     }
     return vec;
