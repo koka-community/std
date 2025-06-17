@@ -2,7 +2,7 @@ import std/data/linearmap
 import std/test
 
 
-fun suite(): <io,test> ()
+fun suite()
   group("add")
     test("add already present")
       expect(LinearMap([(1, "a"), (2, "b")]))

@@ -4,7 +4,7 @@ import std/core/unsafe
 
 reference struct something {i: int}
 
-fun suite(): <io,test> ()
+fun suite()
   group("vlist")
     test("push")
       val vec = unit/vector-list() 

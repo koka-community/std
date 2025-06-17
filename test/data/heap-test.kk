@@ -8,7 +8,7 @@ fun mb/(==)(a: maybe<int>, b: maybe<int>)
     (Just(x), Just(y)) -> x == y
     _ -> False
 
-fun suite(): <io,test> ()
+fun suite()
   group("heap")
     test("heap min ordered")
       expect(Just(1))
