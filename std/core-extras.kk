@@ -107,6 +107,9 @@ pub fun list/maximum-by(l0: list<a>, cmp0: (a, a) -> e order): e maybe<a>
 pub fun string/is-prefix-of(s1: string, s2: string): bool
   s2.starts-with(s1).bool
 
+pub fun string/reverse(s: string): string
+  s.list.reverse.string
+
 pub fun to-upper(c: char): char
   c.string.to-upper.head-char.default(c)
   
