@@ -297,7 +297,7 @@ pub fun doc-starts-withT(l: list<string>, pre: string, n: int)
 
 // TODO: Optimize a bunch of this
 pub fun doc-ends-with(d: doc, s: string): bool
-  doc-ends-withT(d.rtexts, s.list.reverse.string, s.count)
+  doc-ends-withT(d.rtexts, s.reverse, s.count)
 
 pub fun doc-ends-withT(l:list<string>, rpost: string, n:int)
   match l
@@ -327,7 +327,7 @@ pub fun rtexts(d: doc): list<string> // reversed text fragments
   match d
     Empty -> []
     Char(c) -> [c.show-char]
-    Text(s) -> [s.list.reverse.string]
+    Text(s) -> [s.reverse]
     Line(br) -> if br then [] else ["\n"]
     Union(x, _) -> x.rtexts
     Cat(x, y) -> x.rtexts ++ y.rtexts
