@@ -139,6 +139,11 @@ pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
     Just(x) -> x
     Nothing -> Nothing
 
+pub fun maybe/foreach(v: maybe<a>, f: (a) -> e ()): e ()
+  match v
+    Just(x) -> f(x)
+    Nothing -> ()
+
 pub fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
