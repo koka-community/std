@@ -304,7 +304,7 @@ pub extern read-byte-file(path: string): vector<int8>
 // TODO: use core/std/exit after https://github.com/koka-lang/koka/pull/703 is released
 pub extern exit(i: int): io-noexn ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
-  js inline "throw(`Exited with code: ${#1}`)"
+  js inline "(function(){throw(`Exited with code: ${#1}`)})()"
 
 // Compare unit values. Useful to build composite equality for structures containing a unit (e.g. either<string, ()>)
 pub fun unit/(==)(a: (), b: ()): bool { True }
