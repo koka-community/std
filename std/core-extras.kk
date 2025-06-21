@@ -139,6 +139,11 @@ pub inline fun flatten( item : maybe<maybe<a>> ) : maybe<a>
     Just(x) -> x
     Nothing -> Nothing
 
+pub fun maybe/foreach(v: maybe<a>, f: (a) -> e ()): e ()
+  match v
+    Just(x) -> f(x)
+    Nothing -> ()
+
 pub fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
@@ -304,7 +309,7 @@ pub extern read-byte-file(path: string): vector<int8>
 // TODO: use core/std/exit after https://github.com/koka-lang/koka/pull/703 is released
 pub extern exit(i: int): io-noexn ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
-  js inline "throw(`Exited with code: ${#1}`)"
+  js inline "(function(){throw(`Exited with code: ${#1}`)})()"
 
 // Compare unit values. Useful to build composite equality for structures containing a unit (e.g. either<string, ()>)
 pub fun unit/(==)(a: (), b: ()): bool { True }

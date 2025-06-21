@@ -42,9 +42,16 @@ reference struct testopts
   action: test-action = Run
   sample-count: int = 100
   seed: maybe<int> = Nothing
+  fail-fast: bool = False
 
 pub fun testopts/show(opts: testopts) : string
-  "Testopts("++opts.includes.show ++ ", " ++ opts.action.show ++ ")"
+  "Testopts(" ++
+    "includes=" ++ opts.includes.show ++
+    ", action=" ++ opts.action.show ++
+    ", sample-count=" ++ opts.sample-count.show ++
+    ", seed=" ++ opts.seed.show ++
+    ", fail-fast=" ++ opts.fail-fast.show ++
+  ")"
 
 fun testopts/should-include(opts: testopts, test: test-identity)
   match opts.includes
@@ -54,14 +61,10 @@ fun testopts/should-include(opts: testopts, test: test-identity)
         test.full-name.contains(pattern)
 
 
-// TODO: use core/std/exit after https://github.com/koka-lang/koka/pull/703 is released
-extern exit(i: int): io-noexn ()
-  c inline "exit(kk_integer_clamp32(#1, kk_context()))"
-  js inline "throw(`Exited with code: ${#1}`)"
-
 fun execute-tests<e>(opts: testopts, tests: list<test-case<<io|e>>>): <test-report,io-noexn|e> ()
   var summary := suite-summary()
   tests.foreach fn(test)
+    if opts.fail-fast && summary.any-failures then return ()
     val tid = test.identity
     if opts.should-include(tid) then
       val s = summary
@@ -79,8 +82,6 @@ pub fun parse-opts(args = get-args()): io testopts
     val action = if do-list then List else Run
     opts(action = action)
 
-  fun set-help(opts: testopts, _) { opts(help = True) }
-  
   fun set-sample-count(opts: testopts, c: maybe<string>)
     val count = match c
       Just(s) -> s.parse-int().maybe/default(opts.sample-count)
@@ -94,8 +95,9 @@ pub fun parse-opts(args = get-args()): io testopts
       Nothing -> opts
 
   val flags = [
-    Flag("h", ["help"], Bool(set-help), "print usage" ),
+    Flag("h", ["help"], Bool(fn(opts: testopts, v) opts(help=True)), "print usage" ),
     Flag("l", ["list"], Bool(set-list), "list test names" ),
+    Flag("f", ["fail-fast"], Bool(fn(opts,v) opts(fail-fast=v)), "stop on first failure" ),
     Flag("", ["samples"], Opt(set-sample-count, "COUNT"), "set default sample count for prop-tests" ),
     Flag("", ["seed"], Opt(set-seed, "INT"), "set RNG seed (for each test; only use to reproduce failures)" ),
   ]
@@ -111,7 +113,13 @@ pub fun parse-opts(args = get-args()): io testopts
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
 // Exits the process with a nonzero exit code if any tests fail.
-pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io|e> ()
+pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io-noexn|e> ()
+  // convert exceptions to exit(), for consistency (and so this function can be io-noexn)
+  with fn(action)
+    try(action) fn(e)
+      println(e.message)
+      core-extras/exit(1)
+
   val opts = parse-opts()
   val tests = collect-tests(opts.sample-count, f)
 
