@@ -20,40 +20,38 @@ fun cache(comp: () -> <pure,cache<k,r>|e> d, ?order2: (k, k) -> pure order2<k>,
         // trace("Updating " ++ resumes.length.show ++ " deps for " ++ s.show ++ " with " ++ c.c/show)
         resumes.list/foreach(fn(resumption) {resumption(change); ()})
       Nothing -> ()
-  val do = 
-    with handler
-      fun add-result(key, change)
-        // trace("Adding result for " ++ s.s/show ++ " " ++ c.c/show)
-        match cache.lookup(key)
-          Just(r') ->
-            val (changed, r'') = join(r', change)
-            if changed then 
-              cache := cache.set(key, r'')
-              update(key, change)
-            else ()
-          Nothing -> 
-            cache := cache.set(key, bottom.join(change).snd)
+  handle(comp)
+    fun add-result(key, change)
+      // trace("Adding result for " ++ s.s/show ++ " " ++ c.c/show)
+      match cache.lookup(key)
+        Just(r') ->
+          val (changed, r'') = join(r', change)
+          if changed then 
+            cache := cache.set(key, r'')
             update(key, change)
-      fun is-cached(key)
-        if cache.contains(key) || deps.contains(key) then True
-        else
-          cache := cache.set(key, bottom)
-          deps := deps.set(key, Nil)
-          False
-      ctl depend(key)
-        // trace("Adding dep for " ++ s.s/show)
-        match deps.lookup(key)
-          Just(resumes) ->
-            val ress = Cons(fn(r) resume(r), resumes)
-            deps := deps.set(key, ress)
-        match cache.lookup(key)
-          Just(r) -> r.changes.foreach(fn(change) resume(change))
-      ctl do-each(ss)
-        ss.foreach(fn(s) resume(s))
-      final ctl none()
-        ()
-      return(x) ()
-    comp()
+          else ()
+        Nothing -> 
+          cache := cache.set(key, bottom.join(change).snd)
+          update(key, change)
+    fun is-cached(key)
+      if cache.contains(key) || deps.contains(key) then True
+      else
+        cache := cache.set(key, bottom)
+        deps := deps.set(key, Nil)
+        False
+    ctl depend(key)
+      // trace("Adding dep for " ++ s.s/show)
+      match deps.lookup(key)
+        Just(resumes) ->
+          val ress = Cons(fn(r) resume(r), resumes)
+          deps := deps.set(key, ress)
+      match cache.lookup(key)
+        Just(r) -> r.changes.foreach(fn(change) resume(change))
+    ctl do-each(ss)
+      ss.foreach(fn(s) resume(s))
+    final ctl none()
+      ()
+    return(x) ()
   cache
 
 // Inserts a memoization point at a recursive invocation
