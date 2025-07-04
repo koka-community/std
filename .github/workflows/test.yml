@@ -1,10 +1,13 @@
-name: Clone Repository
+name: Test
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  clone:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
