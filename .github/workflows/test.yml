@@ -1,0 +1,16 @@
+name: Clone Repository
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Koka
+        uses: koka-community/setup-koka@v1
+        with: 
+          packages: ""
+          run_tests: true

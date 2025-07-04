@@ -49,7 +49,7 @@ pub inline fun kstruct/set-xint(^s: kstructo, x: int32): ()
 pub inline fun kstructb/set-xint(^s: kstructb<s>, x: int32): ()
   s.with-ptr(set-xintf(x))
 
-fun main()
+fun test()
   val s = kstructo()
   set-xint(s, 42.int32)
   println(xint(s))
