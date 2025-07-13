@@ -72,10 +72,10 @@ pub tail fun list/order2(l1: list<a>, l2: list<a>, ?order2: (a, a) -> e order2<a
 
 
 // List Utilities
-pub fun eql/(==)(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
+pub fun eql/(==~)(l1: list<a>, l2: list<a>, ?(==): (a, a) -> e bool): e bool
   match (l1, l2)
     (Nil, Nil) -> True
-    (Cons(s1, l1'), Cons(s2, l2')) -> s1 == s2 && eql/(==)(l1'.pretend-decreasing, l2')
+    (Cons(s1, l1'), Cons(s2, l2')) -> s1 == s2 && l1'.pretend-decreasing ==~ l2'
     _ -> False
 
 pub fun list/and(l: list<bool>): bool
@@ -144,7 +144,7 @@ pub fun maybe/foreach(v: maybe<a>, f: (a) -> e ()): e ()
     Just(x) -> f(x)
     Nothing -> ()
 
-pub fun maybe/(==)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
+pub fun maybe/(==~)(m1: maybe<a>, m2: maybe<a>, ?(==): (a, a) -> e bool): e bool
   match (m1, m2)
     (Just(m1'), Just(m2')) -> m1' == m2'
     (Nothing, Nothing) -> True

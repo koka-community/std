@@ -2,12 +2,6 @@ import std/data/heap
 import std/test
 import std/num/random
 
-fun mb/(==)(a: maybe<int>, b: maybe<int>)
-  match (a, b)
-    (Nothing, Nothing) -> True
-    (Just(x), Just(y)) -> x == y
-    _ -> False
-
 fun suite()
   group("heap")
     test("heap min ordered")

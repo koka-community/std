@@ -5,16 +5,11 @@ import std/core/unsafe
 
 reference struct something {i: int}
 
-fun item/(==)(i: maybe<int>, j: maybe<int>) : bool
-  match (i, j)
-    (Just(x), Just(y)) -> x == y
-    _ -> False
-
 fun suite()
   group("Deque")
     test("push-front")
       val deq = unit/deque()
-      expect(Just(2)) 
+      expect(Just(2))
         val deq' = deq.push-front(2)
         deq'.at(0)
     test("push-back")
