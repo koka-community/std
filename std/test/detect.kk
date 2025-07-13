@@ -22,7 +22,7 @@ import std/os/file
 import std/os/process
 import std/core-extras
 
-pub fun main()
+fun main()
   val test-path = generate-test-runner()
 
   // run the generated tests, passing through any arguments
@@ -46,7 +46,7 @@ fun import-path(p: path)
 fun module-name(path: string)
   path.replace-all("/","-").replace-all(".","-")
 
-fun generate-test-runner()
+pub fun generate-test-runner()
   var import-lines := []
   var test-lines := []
 
