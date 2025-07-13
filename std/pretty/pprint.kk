@@ -174,9 +174,9 @@ pub fun tuple/pretty((a,b): (a, b), ?a/pretty: a -> e doc, ?b/pretty: b -> e doc
 pub fun triple/pretty((a,b,c): (a, b, c), ?a/pretty: a -> e doc, ?b/pretty: b -> e doc, ?c/pretty: c -> e doc): e doc
   tupled([a.pretty, b.pretty, c.pretty])
 
-pub fun maybe/pretty(a: maybe<a>, ?pretty: a -> e doc): e doc
+pub fun maybe/pretty(a: maybe<a>, prefix-space: bool = False, ?pretty: a -> e doc): e doc
   match a
-    Just(x) -> x.pretty
+    Just(x) -> if prefix-space then " ".text |.| x.pretty else x.pretty
     Nothing -> empty
 
 // Semi primitive: fill and fill-break
