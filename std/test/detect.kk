@@ -22,7 +22,7 @@ import std/os/file
 import std/os/process
 import std/core-extras
 
-fun main()
+pub fun main()
   val test-path = generate-test-runner()
 
   // run the generated tests, passing through any arguments

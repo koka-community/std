@@ -17,13 +17,25 @@
       "MIMode": "lldb"
     },
     {
+      "name": "lexer",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/test_syntax_lexer__main",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    },
+    {
       "name": "parser",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/../std/.koka/v3.1.3-vscode/clang-drelease-79b378/test_syntax_lexer__main",
+      "program": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/test_syntax_parse__main",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/../std/.koka/v3.1.3-vscode/clang-drelease-79b378/",
+      "cwd": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb"
