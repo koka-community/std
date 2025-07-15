@@ -60,9 +60,9 @@ pub fun split-by(s: string, pred: (char) -> bool): list<string>
       Nothing -> acc ++. Nil
       Just((c, sl')) -> 
         if pred(c)
-          then loop(sl'.pretend-decreasing, 0, acc ++ ctx Cons(sl'.advance(0 - numchars).truncate.extend(numchars).string, _))
+          then loop(sl'.pretend-decreasing, 0, acc ++ ctx Cons(sl'.advance(0 - numchars).truncate.extend(numchars).string, hole))
           else loop(sl'.pretend-decreasing, numchars + 1, acc)
-  loop(s.slice, 0, ctx _)
+  loop(s.slice, 0, ctx hole)
 
 pub effect find<a>
   final ctl found(a: a): b

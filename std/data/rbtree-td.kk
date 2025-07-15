@@ -94,11 +94,11 @@ fip fun done( t : rbtree<k,v>, p : dtree<k,v>, g : dtree<k,v>, acc : ctx<rbtree<
 
 pub tail fun td/set(t : rbtree<k,v>, k : k, w : v, ^?order2: (k, k) -> order2<k>) : rbtree<k,v>
   pretend-no-div
-    dtree/set(t, k, w, NodeNone, NodeNone, ctx _)
+    dtree/set(t, k, w, NodeNone, NodeNone, ctx hole)
 
 // pub fip(1) fun td/remove(t : rbtree<k,v>, k : k, ^?order2: (k, k) -> order2<k>) : exn rbtree<k,v>
 //   pretend-no-div
-//     dtree/remove(t, k, NodeNone, NodeNone, ctx _).set-black
+//     dtree/remove(t, k, NodeNone, NodeNone, ctx hole).set-black
 
 // type rbbtree<k, v>
 //   BNode(color : color, lchild : rbtree<k,v>, key : k, value : v, rchild : rbtree<k,v>)

@@ -8,8 +8,8 @@ pub fun list/suffixes(l: list<a>): list<list<a>>
   fun loop(l': list<a>, acc: ctx<list<list<a>>>): list<list<a>>
     match l'
       Nil -> acc ++. Cons(Nil, Nil)
-      Cons(_, t) -> loop(t, acc ++ ctx Cons(l', _))
-  loop(l, ctx _)
+      Cons(_, t) -> loop(t, acc ++ ctx Cons(l', hole))
+  loop(l, ctx hole)
 
 fun test-suffixes()
   with run-tests
