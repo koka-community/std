@@ -220,7 +220,7 @@ pub fun float/wait( secs : float64, ?set-timeout: (unit-cb, int32) -> io-noexn a
 // Wait (asynchronously) for optional `secs` seconds `:duration` (`= 0.seconds`).
 // Use `yield()` to yield generally to other asynchronous operations.
 pub fun duration/wait( secs : duration = zero, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : asyncx ()
-  if secs <= zero then return yield()
+  if secs <= duration/zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
     val tid = async/set-timeout( fn(){ cb(Ok(())) }, msecs )

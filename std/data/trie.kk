@@ -36,16 +36,6 @@ pub fun add(t: trie, s: string): trie
   with pretend-no-div
   bind(t, s.slice, s, s.slice.count)
 
-fun unsafe1/not-reachable(): div a
-  unsafe2/not-reachable()
-
-fun unsafe2/not-reachable(): div a
-  unsafe1/not-reachable()
-
-fun unsafe/not-reachable(): a
-  with pretend-no-div
-  unsafe1/not-reachable()
-
 inline fun bind-map(m: linearMap<char,trie>, full: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, pcount: int, kcount': int): div trie
   val sub = m.lookup(kchar)
   match sub
@@ -71,7 +61,7 @@ fun internal/bind(t: trie, k: sslice, original: string, kcount: int): div trie
           (Nothing, Just((charp, p''))) ->
             Trie(k.string, kcount, original, True, LinearMap([(charp, Trie(p''.string, pcount - kcount - 1, v, True, m))]))
           (Nothing, Nothing) -> Trie(p, pcount, v, True, m)
-          _ -> unsafe/not-reachable()
+          _ -> impossible()
       common-prefix(k, p.slice, k.truncate, 0)
 
 fun is-prefixed-by(a: sslice, b: sslice, acount: int, bcount: int): bool
