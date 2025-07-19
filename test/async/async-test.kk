@@ -6,6 +6,7 @@ import std/async/timer
 import std/time/duration
 import std/core-extras
 import std/core/unsafe
+import std/data/linearset
 
 // workaround for https://github.com/koka-community/std/issues/30
 fun list/expect(x: list<a>, f: () -> <exn,expect|e> list<a>, ?(==): (a, a) -> bool, ?show: (a) -> string): <expect|e> ()
@@ -24,16 +25,8 @@ fun listref/push(lr: ref<_, list<a>>, item: a, ?show: (a) -> string)
 val short-pause = 1.milli-seconds
 val long-pause = 100.milli-seconds
 
-// rbset doesn't have remove, and hashset doesn't work in JS
-fun listset/add(l: list<v>, v: v, ?(==): (v, v) -> bool): list<v>
-  if l.find(fn(i) i == v).is-just then l
-  else Cons(v,l)
-
-fun listset/remove(l: list<v>, v: v, ?(==): (v, v) -> bool): list<v>
-  l.list/remove(fn(i) i == v)
-
 fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
-  val pending: ref<global,list<(int, async/scope)>> = ref([])
+  val pending: ref<global,linearSet<(int, async/scope)>> = ref(linear-set([]))
 
   fun register(api, scope: async/scope)
     val id = unique()
@@ -72,7 +65,7 @@ fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
   with finally
     if ! (!pending).is-empty then
       // println("[track-leaks] pending=" ++ (!pending).map(fst).show)
-      throw("Test leaked " ++ (!pending).length.show ++ " async callbacks")
+      throw("Test leaked " ++ (!pending).size.show ++ " async callbacks")
   action()
 
 // for testing arbitrary effects that are't async-aware
