@@ -845,14 +845,10 @@ pub fun scope/show( s : scope ) : string
 // TODO make private?
 pub fun scope/cancel(s: scope)
   match s
-    // TODO: this matches even an empty scope!
-    // https://github.com/koka-lang/koka/issues/730
-    Scope(ids) ->
-      match ids
-        Cons(scope-id, _) -> cancel-scope(scope-id)
+    Scope(Cons(scope-id, _)) -> cancel-scope(scope-id)
 
-        // TODO: make it impossible by types to have an empty scope?
-        _ -> ()
+    // TODO: make it impossible by types to have an empty scope?
+    _ -> ()
 
 // execute an action, but observe whether it completed normally or
 // needs to instead run a finalizer (due to cancellation, exception, etc)
