@@ -47,7 +47,7 @@ fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
       pending := (!pending).remove(entry)
     done
 
-  with handler<async>
+  with override<async>
     fun do-await(setup, scope)
       val done = register("do-await", scope)
       val result = do-await(setup, scope)
@@ -69,12 +69,21 @@ fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
     val async-scope = async-scope
     fun discontinue() discontinue()
 
-  with mask behind<async>
   with finally
     if ! (!pending).is-empty then
       // println("[track-leaks] pending=" ++ (!pending).map(fst).show)
       throw("Test leaked " ++ (!pending).length.show ++ " async callbacks")
   action()
+
+// for testing arbitrary effects that are't async-aware
+effect can-abort
+  final ctl abort(): a
+
+fun can-abort(f: () -> <can-abort|e> ()): e ()
+  with handler
+    final ctl abort()
+      ()
+  f()
 
 effect audit<a>
   fun record(value: a): ()
@@ -346,6 +355,28 @@ fun main(): <io-noexn,async> ()
         record("after-defer")
       timeout(short-pause, interruptible)
       expect(["inner canceled", "after-inner"]) { records() }
+
+    noleak-test("cancelation and finalization both occur with aborting effect")
+      with audit
+      can-abort {
+        val _ = list/interleaved([
+          fn() {
+            with finally
+              record("finally")
+            with on-cancel
+              record("cancel")
+            wait(long-pause)
+            record("first-branch continue")
+          },
+          fn() {
+            wait(short-pause)
+            abort()
+            record("second-branch continue")
+          }
+        ])
+        ()
+      }
+      expect(["cancel", "finally"]) { records() }
 
     // TODO: this currently fails at runtime with `ev_10958.hnd._ctl_flip is not a function`
     // noleak-test("multiple resumption works within async")
