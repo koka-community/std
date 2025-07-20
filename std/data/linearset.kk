@@ -41,10 +41,12 @@ pub fun add(l: linearSet<v>, a: v, ?(==): (v, v) -> e bool): e linearSet<v>
     match l
       LinearSet(l') -> LinearSet(Cons(a, l'))
 
+pub fun remove(l: linearSet<v>, a: v, ?(==): (v, v) -> e bool): e linearSet<v>
+  val LinearSet(l') = l
+  LinearSet(l'.filter(fn(x) !(==)(x, a)))
+
 pub fun member/(+)(l: linearSet<v>, a: v, ?(==): (v, v) -> e bool): e linearSet<v>
-  if (l.member(a)) then l else 
-    val LinearSet(l') = l
-    LinearSet(Cons(a, l'))
+  l.add(a)
 
 pub fun set/(+)(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   l1.union(l2)
@@ -53,8 +55,7 @@ pub fun list/(+)(l1: linearSet<v>, l2: list<v>, ?(==): (v, v) -> e bool): e line
   l2.foldl(l1, fn(s, v) s + v)
 
 pub fun member/(-)(l: linearSet<v>, v: v, ?(==): (v, v) -> e bool): e linearSet<v>
-  val LinearSet(l') = l
-  LinearSet(l'.filter(fn(x) !(==)(x, v)))
+  l.remove(v)
 
 pub fun member-maybe/(-)(l: linearSet<v>, v: maybe<v>, ?(==): (v, v) -> e bool): e linearSet<v>
   match v
@@ -89,3 +90,6 @@ pub fun is-subset-of(l1: linearSet<v>, l2: linearSet<v>, ?(==): (v, v) -> e bool
 
 pub fun list(l: linearSet<v>): e list<v>
   l.internal
+
+pub fun length(l: linearSet<v>): int
+  l.internal.length
