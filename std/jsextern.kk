@@ -393,7 +393,7 @@ pub struct jspromise<t>
   internal: any;
 
 abstract extend type exception-info
-  con JSError(error: jsobject<any>)
+  pub con JSError(error: jsobject<any>)
 
 pub fun js-promise/wrap(promise: jspromise<t>): asyncx jsobject<t>
   setup/await fn(cb)
