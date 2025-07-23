@@ -13,6 +13,7 @@ import std/num/ddouble
 import std/num/float64
 import std/num/int64
 import std/core-extras
+import std/let
 
 pub alias test-reporter<e> = (action: () -> <test-report|e> ()) -> e ()
 
@@ -187,10 +188,12 @@ pub fun hint(value: string): expect ()
 // (the call to `effectful-test`) and test execution (the call to `run-tests`).
 //
 // Use `test` function where possible, as it ensures that the test body doesn't accidentally make use of an inherited effect.
-pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-module: string, ?kk-line: string): <test<<io|e>>|e> ()
-  register-test(Test-identity(gen-test-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
+pub fun effectful-test<e>(name: string, f: () -> <expect,let,random,io|e> (), ?kk-module: string, ?kk-line: string): <let,test<<let,io|e>>|e> ()
+  val apply-bindings = let/capture-bindings()
+  fun test-body() apply-bindings(f)
+  register-test(Test-identity(gen-test-id(), current-scope, name, Location(?kk-module, ?kk-line)), test-body)
 
-pub fun test(name: string, f: () -> <expect,io,random> (), ?kk-module: string, ?kk-line: string): test<io> ()
+pub fun test(name: string, f: () -> <expect,let,io,random> (), ?kk-module: string, ?kk-line: string): <let,test<<let,io>>> ()
   effectful-test(name, f)
 
 // Property test:
@@ -203,7 +206,7 @@ pub fun prop-test(
   count: int = default-sample-count,
   ?kk-module: string,
   ?kk-line: string
-): <test<<io>>,io> ()
+): <let,test<<let,io>>,io> ()
   fun run()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
