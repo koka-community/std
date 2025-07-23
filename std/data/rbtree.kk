@@ -110,8 +110,8 @@ pub fip fun rebuild-no-set(z : zipper<k,v>, t : rbtree<k,v>): rbtree<k,v>
 // append a `dtree<k,v>` to a context `acc`.
 pub inline fip fun (++)( acc : ctx<rbtree<k,v>>, t : dtree<k,v> ) : ctx<rbtree<k,v>>
   match t
-    DNodeR(c,l,x,v,_) -> acc ++ ctx Node(c,l,x,v,_)
-    DNodeL(c,_,x,v,r) -> acc ++ ctx Node(c,_,x,v,r)
+    DNodeR(c,l,x,v,_) -> acc ++ ctx Node(c,l,x,v,hole)
+    DNodeL(c,_,x,v,r) -> acc ++ ctx Node(c,hole,x,v,r)
     NodeNone         -> acc
 
 // plug an `rbtree<k,v>`` into a `dtree<k,v>`
