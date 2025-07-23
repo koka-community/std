@@ -233,9 +233,6 @@ pub extern exit(i: int): io-noexn ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
   js inline "(function(){throw(`Exited with code: ${#1}`)})()"
 
-// Compare unit values. Useful to build composite equality for structures containing a unit (e.g. either<string, ()>)
-pub fun unit/(==)(a: (), b: ()): bool { True }
-
 // Show instance for `error<t>`
 pub fun error/show(a: exn/error<t>, ?show: (t) -> e string): e string
   match (a)
