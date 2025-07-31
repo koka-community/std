@@ -8,8 +8,6 @@
 // A mutable hashset implementation
 module std/data/mutable/hashset-mut
 import std/num/int64
-import std/test
-import std/num/random
 import std/core-extras
 import std/data/hash
 
@@ -22,14 +20,7 @@ pub struct hash-set-mut<v>
 
 // Creates a hash-set-mut with a specified inital `capacity`.
 // If zero then the hash-set-mut will set capacity to 1.
-// Random effect is needed to initalize the seed.
-pub fun random/hash-set-mut( capacity : int = 1 ) : random hash-set-mut<v>
-  Hash-set-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, random-int64() )
-
-// Creates a hash-set-mut with a specified inital `capacity`.
-// If zero then the hash-set-mut will set capacity to 1.
-// The seed is initialized from the thread id.
-pub fun thread/hash-set-mut( capacity : int = 1 ) : hash-set-mut<v>
+pub fun hash-set-mut( capacity : int = 1 ) : hash-set-mut<v>
   Hash-set-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, thread/seed )
 
 // Creates a hash-set-mut with a specified inital `capacity` and a user defined `seed`.
@@ -38,14 +29,8 @@ pub fun hash-set-mut-seeded( seed : int64, capacity : int = 1 ) : hash-set-mut<v
   Hash-set-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-set-mut from a list `xs`. This hash-set-mut has the same capacity as the length of the list `xs`.
-// Random effect is needed to initalize the seed.
-pub fun random/list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : random hash-set-mut<v>
-  from-list-helper( random/hash-set-mut( xs.length ), xs )
-
-// Creates a hash-set-mut from a list `xs`. This hash-set-mut has the same capacity as the length of the list `xs`.
-// Random effect is needed to initalize the seed.
-pub fun thread/list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set-mut<v>
-  from-list-helper( thread/hash-set-mut( xs.length ), xs )
+pub fun list/hash-set-mut( xs : list<v>, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set-mut<v>
+  from-list-helper( hash-set-mut( xs.length ), xs )
 
 // Creates a hash-set-mut from a list `xs` and with a `seed`. This hash-set-mut has the same capacity as the length of the list `xs`.
 pub fun list/hash-set-mut-seeded( xs : list<v>, seed : int64, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : hash-set-mut<v>
@@ -167,46 +152,3 @@ pub fun foreach( hs : hash-set-mut<v>, f : (v) -> e () ) : e ()
   for( hs.data.length ) fn (i) 
     hs.data.unsafe-idx( i.ssize_t ).foreach fn (entry)
       f(entry)
-
-
-fun test-hash-set-mut()
-  with run-tests
-  group("hash-set-mut")
-    test("insert")
-      with pseudo-random(0)
-      val hs = random/hash-set-mut(1)
-      expect(True)
-        val hs' = hs.insert(2)
-        hs'.contains(2)
-    test("remove")
-      with pseudo-random(0)
-      val hs = random/hash-set-mut(1)
-      val hs' = hs.insert(2)
-      expect(0)
-        hs'.remove(2).length
-    test("stress test")
-      with pseudo-random(0)
-      var hs := random/hash-set-mut(1)
-      expect(True)
-        for(50000) fn (i)
-          hs := hs.insert(i)
-        True
-    test("clear")
-      with pseudo-random(0)
-      var hs := random/hash-set-mut(1)
-      for(50) fn (i)
-        hs := hs.insert(i)
-      expect(0)
-        hs := hs.clear
-        hs.length
-    test("clear then fill")
-      with pseudo-random(0)
-      var hs := random/hash-set-mut(1)
-      for(50) fn (i)
-        hs := hs.insert(i)
-      expect(50)
-        hs := hs.clear()
-        for(50) fn (i)
-          hs := hs.insert(i)
-        hs.length
-  
