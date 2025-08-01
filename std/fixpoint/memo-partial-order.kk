@@ -28,7 +28,7 @@ value struct cache-entry<r,e>
   deps: list<(r -> <pure|e> ())>
 
 fun remove-deps(m: rbmap<k,cache-entry<r,e>>): rbmap<k,r>
-  m.map(fn(k, v) v.cache)
+  m.map(fn(k, v: cache-entry<_,_>) v.cache)
 
 // A fixpoint cache handler
 fun cache(comp: () -> <pure,cache<k,r>,each|e> b, ?order2: (k, k) -> pure order2<k>, 
@@ -36,34 +36,33 @@ fun cache(comp: () -> <pure,cache<k,r>,each|e> b, ?order2: (k, k) -> pure order2
                                                 ?join: (r, r) -> (bool, r), 
                                                 ?s/show: k -> string, ?r/show: r -> string): <pure|e> rbmap<k,r>
   var cache : some<k,r,e> rbmap<k,cache-entry<r,e>> := empty()
-  val do = 
-    with handler
-      fun add-result(key, change)
-        // trace("Adding result for " ++ s.s/show ++ " " ++ r.r/show)
-        match cache.lookup(key)
-          Just(Cache-entry(result, deps)) ->
-            val (changed, new) = join(result, change)
-            if changed then 
-              cache := cache.set(key, Cache-entry(new, deps))
-              deps.foreach(fn(resumption) resumption(change))
-            else ()
-          Nothing -> 
-            cache := cache.set(key, Cache-entry(change, []))
-      fun is-cached(key)
-        if cache.contains(key) then True
-        else
-          cache := cache.set(key, Cache-entry(bottom, []))
-          False
-      ctl depend(key)
-        // trace("Adding dep for " ++ s.s/show)
-        match cache.lookup(key)
-          Just(Cache-entry(current, deps)) -> 
-            cache := cache.set(key, Cache-entry(current, Cons(fn(change) resume(change), deps)))
-            resume(current)
-      return(x) ()
-    with nondet
-    comp()
-  cache.remove-deps
+  with return(x) cache.remove-deps
+  with handler
+    fun add-result(key, change)
+      // trace("Adding result for " ++ s.s/show ++ " " ++ r.r/show)
+      match cache.lookup(key)
+        Just(Cache-entry(result, deps)) ->
+          val (changed, new) = join(result, change)
+          if changed then 
+            cache := cache.set(key, Cache-entry(new, deps))
+            deps.foreach(fn(resumption) resumption(change))
+          else ()
+        Nothing -> 
+          cache := cache.set(key, Cache-entry(change, []))
+    fun is-cached(key)
+      if cache.contains(key) then True
+      else
+        cache := cache.set(key, Cache-entry(bottom, []))
+        False
+    ctl depend(key)
+      // trace("Adding dep for " ++ s.s/show)
+      match cache.lookup(key)
+        Just(Cache-entry(current, deps)) -> 
+          cache := cache.set(key, Cache-entry(current, Cons(fn(change) resume(change), deps)))
+          resume(current)
+    return(x) ()
+  with nondet
+  comp()
 
 // Inserts a memoization point at a recursive invocation
 fun memo(key, func)
