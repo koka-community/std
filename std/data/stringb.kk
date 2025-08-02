@@ -24,7 +24,7 @@ pub infixr 60  (\-)
 // The string builder has some pretty-printing ability as well with newlines and indentation handled specially
 // Additionally spaces are handled specially so that they don't need to be materialized as values until the string is demanded.
 pub type stringb
-  SDone 
+  SDone(s : string)
   // Denotes a partially built string with the first part ready
   SStep( str: string, acc: stringb)
   SIndent( acc: stringb )
@@ -34,7 +34,7 @@ pub type stringb
   
   lazy SBuilderString(a: string, b : stringb) -> 
     match b
-      SDone -> SStep(a, SDone)
+      SDone(d) -> SStep(a, SDone(d))
       // TODO: Optimize so we allocate the right buffer for the strings, and then just do a low level copy of the data
       SStep(s1, acc) -> SStep(a, SStep(s1, acc))
       SIndent(acc) -> SStep(a, SIndent(acc))
@@ -46,7 +46,7 @@ pub type stringb
   // lazy fip SBuilderAny<a,e>( a: a, b: stringb, show: (a) -> <div|e> string) ->
   //   val x = a.show
   //   match b  // TODO: Split strings on newlines?
-  //     SDone -> SStep(x, SDone)
+  //     SDone(d) -> SStep(x, SDone(d))
   //     SStep(s1, acc) -> SStep(x, SStep(s1, acc))
   //     SIndent(acc) -> SStep(x, SIndent(acc))
   //     SUnindent(acc) -> SStep(x, SUnindent(acc))
@@ -56,7 +56,7 @@ pub type stringb
   // Delays the concatenation 
   lazy SBuilderConcat(str : stringb, str2: stringb) ->
     match str
-      SDone -> str2
+      SDone(d) -> SStep(d, str2)
       SIndent(acc) -> SIndent(SBuilderConcat(acc, str2))
       SUnindent(acc) -> SUnindent(SBuilderConcat(acc, str2))
       SNewline(acc) -> SNewline(SBuilderConcat(acc, str2))
@@ -129,67 +129,56 @@ pub inline fun default/(\-)(a: a, s: stringb, ?show: (a) -> string) : stringb
 
 // Creates an indented block starting and ending with a newline
 pub inline fun indented(s: stringb): stringb
-  SBuilderConcat(SIndent(SNewline(s)), SUnindent(SNewline(SDone)))
+  SBuilderConcat(SIndent(SNewline(s)), SUnindent(SNewline(SDone(""))))
 
 // Ends a string builder with a string
 pub inline fun string/build(a: string): stringb
-  SStep(a, SDone)
+  SDone(a)
 
 // Ends a string builder with a value
 // pub inline fun any/build(a: a, ?show: (a) -> string): stringb
 //   SBuilderAny(a, SDone, ?show)
 
 pub inline fun default/build(a: a, ?show: (a) -> string): stringb
-  SBuilderString(a.show, SDone)
+  SDone(a.show)
 
 // Ends a string builder with an empty value
 pub inline fun empty/build(): stringb
-  SDone
+  SDone("")
 
 // Show the string builder as a string
-pub fun stringb/show(s: stringb, indent: int = 0): div string
+pub fun stringb/show(s: stringb, ?indent: int): div string
   match s
     SDone -> ""
-    SIndent(acc) -> acc.pretend-decreasing.show(indent = indent + 2)
-    SNewline(acc) -> "\n" ++ " ".repeat(indent) ++ acc.pretend-decreasing.show(indent = indent)
-    SSpace(acc) -> " " ++ acc.pretend-decreasing.show(indent = indent)
-    SStep(str, acc) -> str ++ acc.pretend-decreasing.show(indent = indent)
-    SUnindent(acc) -> acc.pretend-decreasing.show(indent = max(0, indent - 2))
+    SIndent(acc) -> acc.show(indent + 2)
+    SNewline(acc) -> "\n" ++ " ".repeat(indent) ++ acc.show
+    SSpace(acc) -> " " ++ acc.show
+    SStep(str, acc) -> str ++ acc.show
+    SUnindent(acc) -> acc.show(max(0, indent - 2))
 
 // Print the string builder to the console
 pub fun stringb/println(s: stringb, indent: int = 0): <div,console> ()
-  match s
-    SDone -> "".println
-    SIndent(acc) -> 
-      acc.pretend-decreasing.println(indent = indent + 2)
-    SNewline(acc) -> 
-      "\n".print
-      " ".repeat(indent).print
-      acc.pretend-decreasing.println(indent = indent)
-    SSpace(acc) -> 
-      " ".print
-      acc.pretend-decreasing.println(indent = indent)
-    SStep(str, acc) -> 
-      str.print
-      acc.pretend-decreasing.println(indent = indent)
-    SUnindent(acc) -> 
-      acc.pretend-decreasing.println(indent = max(0, indent - 2))
+  s.printlnx(0)
+fun stringb/printlnx(s: stringb, ?indent: int): <div,console> ()
+  s.printx; println("")
 
 // Print the string builder to the console with no ending newline
 pub fun stringb/print(s: stringb, indent: int = 0): <div,console> ()
+  printx(s)
+fun stringb/printx(s: stringb, ?indent: int): <div,console> ()
   match s
     SDone -> "".print
-    SIndent(acc) -> 
-      acc.pretend-decreasing.print(indent = indent + 2)
+    SIndent(acc) -> acc.printx(indent + 2)
     SNewline(acc) ->
-      "\n".print
-      " ".repeat(indent).print
-      acc.pretend-decreasing.print(indent = indent)
+      match acc 
+        SDone -> "\n".print
+        _ ->
+          "\n".print
+          " ".repeat(indent).print
+          acc.printx
     SSpace(acc) ->
-      " ".print
-      acc.pretend-decreasing.print(indent = indent)
+      " ".print; acc.printx
     SStep(str, acc) -> 
-      str.print
-      acc.pretend-decreasing.print(indent = indent)
+      str.print; acc.printx
     SUnindent(acc) -> 
-      acc.pretend-decreasing.print(indent = max(0, indent - 2))
+      acc.printx(max(0, indent - 2))
