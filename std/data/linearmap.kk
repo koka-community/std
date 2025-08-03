@@ -11,7 +11,7 @@ pub value struct linearMap<k,v>
   internal: list<(k,v)> 
 
 pub fun show(l: linearMap<k,v>, ?key/show: (k) -> e string, ?value/show: (v) -> e string): e string
-  "{" ++ l.internal.map(fn((k,v)) key/show(k) ++ ": " ++ value/show(v)).join(",") ++ "}"
+  "{" ++ l.internal.map(fn((k,v)) k.show ++ ": " ++ v.show).join(",") ++ "}"
 
 pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool, ?value/(==): (v, v) -> e bool): e bool
   l1.internal.length == l2.internal.length && l1.internal.all fn(x) 
@@ -34,18 +34,16 @@ pub fun assoclist/update(l: list<(k,v)>, k: k, b: v, f: (v, v) -> e v, ?(==): (k
     Cons((kk, vv), rst) -> if k == kk then Cons((kk, f(vv, b)), rst) else Cons((kk, vv), rst.update(k, b, f))
     Nil -> Cons((k, b), Nil) 
 
-pub fun assoclist/get(l: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): <exn|e> v
-  match l
-    Cons((kk, vv), rst) -> if mask<exn>{kk == k} then vv else rst.get(k)
-    Nil -> throw("not found")
+pub fun list/lookup(m: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
+  match m
+    Cons((kk, vv), rst) -> if kk == k then Just(vv) else rst.lookup(k)
+    Nil -> Nothing
 
 pub fun map/lookup(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
-  val LinearMap(l) = m
-  catch({Just(l.get(k))}, fn(x) {Nothing})
+  m.internal.lookup(k)
 
-pub fun map/get(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): <exn|e> v  
-  val LinearMap(l) = m
-  l.get(k)
+pub fun map/get(m: linearMap<k,v>, k: k, ?(==): (k, k) -> <exn|e> bool, ?kk-file-line: string): <exn|e> v  
+  m.internal.lookup(k).unjust
 
 pub fun list/get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
   match l
@@ -53,8 +51,7 @@ pub fun list/get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e
     Nil -> v
 
 pub fun map/get-default(m: linearMap<k,v>, k: k, v: v, ?(==): (k, k) -> e bool): e v
-  val LinearMap(l) = m
-  l.get-default(k, v)
+  m.internal.get-default(k, v)
 
 /// Overwrite any existing key with value
 pub fun set(m: linearMap<k,v>, k: k, v: v, ?(==): (k, k) -> e bool): e linearMap<k,v>
