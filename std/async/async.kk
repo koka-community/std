@@ -196,7 +196,9 @@ fun finalize-strand(v: strand-result<a>): total ()
     Complete(_) -> ()
     Finalize(yield-info) -> unsafe-reyield(yield-info)
 
-alias maybe-dispose-fn = (maybe<() -> io-noexn ()>)
+alias dispose-fn = () -> io-noexn ()
+
+alias maybe-dispose-fn = (maybe<dispose-fn>)
 
 alias await-setup<a> = (cb : (await-result<a>, bool) -> io-noexn ()) -> io-noexn maybe-dispose-fn
 
@@ -473,11 +475,6 @@ fun async/clear-timeout( tid : timeout-id , ?clear-timeout: (any) -> io-noexn ()
 // ----------------------------------------------------------------------------
 // Interleaved strands of execution
 // ----------------------------------------------------------------------------
-
-fun impossible(msg): total ()
-  unsafe-total
-    println("IMPOSSIBLE: " ++ msg)
-    exit(1)
 
 // Interleave two actions around their asynchronous operations.
 pub fun two/interleaved( action1 : () -> <asyncx,io-noexn|e> a, action2 : () -> <asyncx,io-noexn|e> b ) : <asyncx,io-noexn|e> (a,b)
@@ -758,7 +755,7 @@ pub fun async/handle(action : () -> <async,io-noexn> a ) : io-noexn ()
     
     // `cancel-hook` is the event-system action which should happen
     // on cancellation, e.g. clearTimeout(...)
-    val cancel-hook = ref(noop)
+    val cancel-hook: ref<global, dispose-fn> = ref(noop)
 
     // TODO is there any code path where is-done is False?
     fun cb( res : await-result<_>, is-done : bool ): io-noexn ()

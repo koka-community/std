@@ -8,12 +8,6 @@ import std/core-extras
 import std/core/unsafe
 import std/data/linearset
 
-// workaround for https://github.com/koka-community/std/issues/30
-fun list/expect(x: list<a>, f: () -> <exn,expect|e> list<a>, ?(==): (a, a) -> bool, ?show: (a) -> string): <expect|e> ()
-  test/expect(x, f, ?(==)=list/(==))
-fun maybe/expect(x: maybe<a>, f: () -> <exn,expect|e> maybe<a>, ?(==): (a, a) -> bool, ?show: (a) -> string): <expect|e> ()
-  test/expect(x, f, ?(==)=maybe/(==))
-
 fun list/push(l, item)
   l ++ [item]
 
@@ -65,7 +59,7 @@ fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
   with finally
     if ! (!pending).is-empty then
       // println("[track-leaks] pending=" ++ (!pending).map(fst).show)
-      throw("Test leaked " ++ (!pending).size.show ++ " async callbacks")
+      throw("Test leaked " ++ (!pending).length.show ++ " async callbacks")
   action()
 
 // for testing arbitrary effects that are't async-aware
