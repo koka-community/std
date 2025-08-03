@@ -19,30 +19,28 @@ fun listref/push(lr: ref<_, list<a>>, item: a, ?show: (a) -> string)
 val short-pause = 1.milli-seconds
 val long-pause = 100.milli-seconds
 
+fun register(pending, api, scope: async/scope)
+  val id = unique()
+  val entry = (id, scope)
+  // println("[track-leaks " ++ api ++ "] -> [" ++ entry.show ++ "]")
+
+  pending := (!pending).add(entry)
+  fun done(result)
+    // unsafe-total
+    //   println("[track-leaks " ++ api ++ "] <- [" ++ entry.show ++ "] cancel=" ++ result.is-cancel.show)
+    pending := (!pending).remove(entry)
+  done
 fun noleaks(action: () -> <async,io|e> ()): <async,io|e> ()
   val pending: ref<global,linearSet<(int, async/scope)>> = ref(linear-set([]))
-
-  fun register(api, scope: async/scope)
-    val id = unique()
-    val entry = (id, scope)
-    // println("[track-leaks " ++ api ++ "] -> [" ++ entry.show ++ "]")
-
-    pending := (!pending).add(entry)
-    fun done(result)
-      // unsafe-total
-      //   println("[track-leaks " ++ api ++ "] <- [" ++ entry.show ++ "] cancel=" ++ result.is-cancel.show)
-      pending := (!pending).remove(entry)
-    done
-
   with override<async>
     fun do-await(setup, scope)
-      val done = register("do-await", scope)
+      val done = pending.register("do-await", scope)
       val result = do-await(setup, scope)
       done(result)
       result
 
     fun no-await(setup,scope,f)
-      val done = register("no-await", scope)
+      val done = pending.register("no-await", scope)
       no-await(setup, scope) fn(result)
         done(result)
         f(result)
@@ -129,14 +127,14 @@ fun main(): <io-noexn,async> ()
 
     noleak-test("interleaved singleton")
       expect([1])
-        fun action()
+        fun action(): <async,io> int
           wait(short-pause)
           1
         interleaved([action])
 
     noleak-test("interleaved singleton which throws")
       with audit
-      fun action()
+      fun action(): <async,audit<string>,io> int
         with finally
           record("finally")
         wait(short-pause)
@@ -251,7 +249,7 @@ fun main(): <io-noexn,async> ()
 
     noleak-test("finalization can be async")
       val log = ref([]: list<string>)
-      fun long-running()
+      fun long-running(): <async,io> string
         fun cleanup()
           wait(long-pause)
           log.push("cleanup")
@@ -262,7 +260,7 @@ fun main(): <io-noexn,async> ()
         log.push("wakeup")
         "long"
 
-      fun short-running()
+      fun short-running(): <async,io> string
         wait(short-pause)
         log.push("cancel")
         "short"
@@ -273,8 +271,7 @@ fun main(): <io-noexn,async> ()
       expect(["start", "cancel", "cleanup", "result: short"]) { !log }
 
     noleak-test("cancellation and try")
-      with audit
-      fun interruptible()
+      val interruptible = fn()
         with finally { record("finally") }
         try {
           record("start")
@@ -287,13 +284,14 @@ fun main(): <io-noexn,async> ()
         record("still running...")
         "result"
 
+      with audit
       expect(Nothing: maybe<string>)
         timeout(short-pause, interruptible)
 
       expect(["start", "finally"]) { records() }
 
     noleak-test("error in cancelation is raised")
-      fun interruptible()
+      val interruptible = fn()
         with finally { throw("finalization exn") }
         wait(long-pause)
         "result"
@@ -305,7 +303,7 @@ fun main(): <io-noexn,async> ()
         } fn(e) { e.message }
 
     noleak-test("exception in main code takes priority over error in cancelation")
-      fun interruptible()
+      val interruptible = fn()
         with finally { throw("finalization exn") }
         wait(long-pause)
         "main exn"
@@ -320,7 +318,7 @@ fun main(): <io-noexn,async> ()
 
     noleak-test("defer-cancelation defers cancelation signal until block is complete")
       val log = ref([]: list<string>)
-      fun interruptible()
+      val interruptible = fn()
         defer-cancelation
           wait(long-pause)
           log.push("in critical section")
@@ -331,9 +329,9 @@ fun main(): <io-noexn,async> ()
 
     noleak-test("a cancelable block within a defered-cancelation block is canceled immediately")
       with audit
-      fun interruptible()
+      val interruptible = fn()
         defer-cancelation()
-          fun inner()
+          val inner = fn()
             on-cancel { record("inner canceled") }
               wait(long-pause)
             record("inner still running after cancel")

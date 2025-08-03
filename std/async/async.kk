@@ -211,12 +211,12 @@ fun unsafe-override-cancel(on-cancel-hook: () -> <io-noexn> (), action: () -> <a
       Just(cb) -> async-iox { cb(Result(()), True) }
       Nothing -> ()
   }
-
   // within the outer scope, spawn a canary action
   // to capture cancelation triggered from above.
-  fun setup-cb(cb: ((await-result<()>, bool) -> io-noexn ())): io-noexn maybe-dispose-fn
-    dangling-cb.set(Just(cb))
-    return Just(on-cancel-hook) // cleanup fn
+  val setup-cb = fn(cb)
+      dangling-cb.set(Just(cb))
+      Just(on-cancel-hook) // cleanup fn
+  
   no-await(setup-cb, async-scope, fn(_) ())
 
   // create a new scope root, so that any callbacks registered
@@ -604,7 +604,7 @@ fun interleave-strands(xs : list<(scope) -> <asyncx|e> a> ) : <asyncx,strands<a>
 
   child-scope-without-auto-cancel fn(cid) // introduce a child scope which doesn't cancel-on-finalize
     inner-scope.set(Just(cid))
-    fun yield-on-await(action)
+    val yield-on-await = fn(action)
       (handler<async> {
         raw ctl do-await(setup,scope)
           // turn awaits into no-awaits, allowing other strands to execute
