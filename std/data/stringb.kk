@@ -149,7 +149,7 @@ pub inline fun empty/build(): stringb
 // Show the string builder as a string
 pub fun stringb/show(s: stringb, ?indent: int): div string
   match s
-    SDone -> ""
+    SDone(str) -> str
     SIndent(acc) -> acc.show(indent + 2)
     SNewline(acc) -> "\n" ++ " ".repeat(indent) ++ acc.show
     SSpace(acc) -> " " ++ acc.show
@@ -167,15 +167,12 @@ pub fun stringb/print(s: stringb, indent: int = 0): <div,console> ()
   printx(s)
 fun stringb/printx(s: stringb, ?indent: int): <div,console> ()
   match s
-    SDone -> "".print
+    SDone(str) -> str.print
     SIndent(acc) -> acc.printx(indent + 2)
     SNewline(acc) ->
-      match acc 
-        SDone -> "\n".print
-        _ ->
-          "\n".print
-          " ".repeat(indent).print
-          acc.printx
+      "\n".print
+      " ".repeat(indent).print
+      acc.printx
     SSpace(acc) ->
       " ".print; acc.printx
     SStep(str, acc) -> 
