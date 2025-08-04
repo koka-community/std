@@ -17,9 +17,9 @@ fun person/(==)(a: person, b: person)
 
 fun suite(): <test<<io>>,io> ()
   test("vars with default")
-    val name = let("adam")
-    val age = let(1)
-    val person = let(Person(name.get, age.get))
+    with name = let("adam")
+    with age = let(1)
+    with person = let(Person(name.get, age.get))
     expect(Person("adam", 1)) { person.get }
 
     with age.set(2)
@@ -30,7 +30,7 @@ fun suite(): <test<<io>>,io> ()
     expect(Person("ben", 3)) { person.get }
 
   test("undefined vars")
-    val tag = let(Nothing)
+    with tag = let(Nothing)
     val err = try { !tag }
     expect(True) { err.is-error }
  
@@ -40,11 +40,11 @@ fun suite(): <test<<io>>,io> ()
   test("type of letvar")
     // TODO: it's currently not possible to write the correct type, which should be:
     // val v: letvar<<let>, int> = let { 1 }
-    val v = let(1)
+    with v = let(1)
     expect(1) { v.get }
   
   group("nested scopes")
-    val scope = let("default")
+    with scope = let("default")
     test("test inherits from outer scope")
       expect("default") { scope.get }
 
@@ -59,11 +59,11 @@ fun suite(): <test<<io>>,io> ()
 
   group("documentation example")
     // NOTE: keep in sync with example in let.kk
-    val isbn = let("978-1-56619-909-4")
-    val title = let("The Best Book")
-    val author = let("Eric Carle")
-    val book = let(Book(isbn.get, author.get, title.get))
-    val books = let([book.get])
+    with isbn = let("978-1-56619-909-4")
+    with title = let("The Best Book")
+    with author = let("Eric Carle")
+    with book = let(Book(isbn.get, author.get, title.get))
+    with books = let([book.get])
     fun shelves() stack-shelves(books.get)
 
     group("a long title")

@@ -2,12 +2,11 @@ named effect let<a>
   fun get(): a
   fun set-internal(a: a): ()
 
-fun let(a: a): ev<let<a>>
+fun let(a: a, f: (ev<let<a>> -> e b)): e b
   var v := a
-  with x <- named handler 
+  named handle(f) 
     fun get() v 
     fun set-internal(new) v := new
-  x
 
 fun (!)(e : ev<let<maybe<a>>>, ?kk-file-line: string): pure a 
   match e.get
