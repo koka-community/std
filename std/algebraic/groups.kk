@@ -22,7 +22,7 @@ pub inline fun default/semigroup/repeat(x: t, n: int, .?semigroup: semigroup<t,e
 pub inline fun default/semigroup/concat-maybe(xs: list<t>, .?semigroup: semigroup<t,e>) : e maybe<t>
   match xs
     Nil -> Nothing
-    Cons(x, rst) -> Just(rst.foldl(x, fn(acc, v) acc ++ v))
+    Cons(x, rst) -> Just(rst.foldl(x, combine))
 // Joins a list of elements interspersed with `y` using the semigroup operator.
 // This does a `foldl` with the accumulated list on the left of the semigroup operator. 
 // This may or may not be most efficient depending on the semigroup operator.
