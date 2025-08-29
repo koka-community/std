@@ -30,7 +30,7 @@ fun main()
     // basic escaping effort, TODO a version of run-system that accepts a list of args
     "'" ++ arg ++ "'"
   .join(" ")
-  val cmd = "koka -e " ++ test-path.string ++ " -- " ++ args
+  val cmd = "koka -e " ++ test-path.string ++ " " ++ args
 
   println(" + " ++ cmd)
   val status = run-system(cmd)
