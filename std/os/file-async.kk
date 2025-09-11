@@ -9,7 +9,7 @@
 /// This module provides a set of functions for asynchronous file I/O.
 module std/os/file-async
 
-pub import std/async
+pub import std/async/async
 pub import uv/file
 import std/num/int64
 import std/os/path
