@@ -644,8 +644,8 @@ fun show( s : scope ) : string
 
 
 pub extend type exception-info // Ideally this is abstract but it causes issues with string definitions
-  con Cancel
-  con Finalize(yld:yield-info)
+  pub con Cancel
+  pub con Finalize(yld:yield-info)
 
 // Was this a cancelation exception?
 fun exn/is-cancel( exn : exception ) : bool
