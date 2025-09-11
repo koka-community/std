@@ -7,4 +7,3 @@
 ----------------------------------------------------------------------------*/
 
 pub import std/async/async
-pub import std/async/timer

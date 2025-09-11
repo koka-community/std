@@ -643,7 +643,7 @@ fun show( s : scope ) : string
 
 
 
-abstract extend type exception-info
+pub extend type exception-info // Ideally this is abstract but it causes issues with string definitions
   con Cancel
   con Finalize(yld:yield-info)
 
