@@ -5,9 +5,7 @@ import std/time/timestamp
 
 // In VSCode Cmd/Ctrl+Shift+P Then select Koka: Compilation target, and switch to nodejs, prior to running this
 fun main()
-  with default-event-loop
-  with @default-async
-  with err <- try
+  default-async-uv
     val x = ref(0)
     timer(1000.milli-seconds) fn(t)
       "Hello From Timer".println
@@ -17,4 +15,3 @@ fun main()
     "Before timeout".println
     wait(10.seconds)
     "Hello After Timeout".println
-  err.println  
