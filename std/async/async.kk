@@ -88,13 +88,20 @@ pub fun try-await( p : promise<a> ) : <async,ndet> maybe<a>
 // Resolve a promise to `value`. Raises an exception if the promise was already resolved.
 pub fun resolve( p : promise<a>, value : a ) : asyncx ()
   async-io
-    val r = p.state
-    match !r
-      Awaiting(listeners) ->
-        r := Resolved(value)
-        listeners.foreach fn(cbx)  // todo: through set-immediate?
-          cbx(value) // set-immediate1( cbx, value )
-      _ -> throw("Promise was already resolved")
+    if !try-resolve-io(p, value) then
+      throw("Promise was already resolved")
+
+// Resolve a promise to `value`. Returns False if the promise was already resolved.
+// TODO: make this io-noexn
+pub fun try-resolve-io( p : promise<a>, value : a ) : io bool
+  val r = p.state
+  match !r
+    Awaiting(listeners) ->
+      r := Resolved(value)
+      listeners.foreach fn(cbx)  // todo: through set-immediate?
+        cbx(value) // set-immediate1( cbx, value )
+      True
+    _ -> False
 
 // ----------------------------------------------------------------------------
 // Channels
