@@ -17,13 +17,25 @@
       "MIMode": "lldb"
     },
     {
+      "name": "string-pool",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/test_data_string_dash_pool__main",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    },
+    {
       "name": "lexer",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/test_syntax_lexer__main",
+      "program": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/test_syntax_lexer__main",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/",
+      "cwd": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb"
@@ -32,10 +44,10 @@
       "name": "parser",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/test_syntax_parse__main",
+      "program": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/test_syntax_parse__main",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/../std/.koka/v3.1.9-vscode/clang-debug-790a5d/",
+      "cwd": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-a7f2d7/",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb"
