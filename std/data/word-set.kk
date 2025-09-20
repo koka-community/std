@@ -37,7 +37,7 @@ fun string-pool(): <> ev<string-intern>
       match trie.lookup(a)
         Just(s) -> Istring(s)
         Nothing ->
-          trie := add(trie, a)
+          std/core/types/@byref(trie).update(fn(v) add(v, a))
           Istring(a)
     fun is-interned(a)
       trie.lookup(a).is-just
