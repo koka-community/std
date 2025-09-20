@@ -559,7 +559,7 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
       if ((!callbacks).contains(cscope)) then
         if is-done then
           callbacks := (!callbacks).remove(cscope)
-          if res.is-error then try(!dispose).default(())
+          if res.is-error || is-done then try(!dispose).default(())
         f(res)
 
     // trace("register: " + cscope.show)
