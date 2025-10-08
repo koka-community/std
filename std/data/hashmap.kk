@@ -12,7 +12,7 @@ import std/num/int64
 import std/data/hash
 
 
-pub value struct hash-map<k, v>
+pub struct hash-map<k, v>
   data : vector<list<(k,v)>>
   amount : int
   seed : int64
