@@ -9,7 +9,7 @@
 module std/data/hashmap
 import std/core-extras
 import std/num/int64
-import std/data/hash
+pub import std/data/hash
 
 
 pub struct hash-map<k, v>
@@ -99,17 +99,6 @@ fun helper/rehash( v : vector<list<(k, v)>>, buckets : list<(k, v)>, seed : int6
       val position = the-hash % v.length
       val new-v = v.unsafe-set( position, Cons( (key, value), v.unsafe-idx( position.ssize_t ) ) )
       helper/rehash( new-v, xs, seed )
-
-// Internal function that dictates when to resize the hash-map. This can be overridden with implicits.
-pub fun when-resize( table-size : int, item-count : int ) : bool
-  if 2 * table-size <= item-count then
-    True
-  else
-    False
-
-// Internal function that determines the new size of a hash-map when inserting. This can be overridden with implicits.
-pub fun resizer( table-size : int, item-count : int ) : int
-   item-count * 2
 
 // Inserts a `value` into the hash-map with a given `key`.
 pub fun insert( hm : hash-map<k,v>, key : k, value : v, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool, ?when-resize : (int, int) -> bool, ?resizer : (int, int) -> int ) : hash-map<k, v>

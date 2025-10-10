@@ -9,7 +9,7 @@
 module std/data/hashset
 import std/num/int64
 import std/core-extras
-import std/data/hash
+pub import std/data/hash
 
 val int-hash : (int, int64) -> int = int/hash
 val char-hash : (char, int64) -> int = char/hash
@@ -99,18 +99,6 @@ fun helper/rehash( v : vector<list<v>>, buckets : list<v>, seed : int64, ?hash :
       val position = the-hash % v.length
       val new-v = v.unsafe-set( position, Cons( value, v.unsafe-idx( position.ssize_t ) ) )
       helper/rehash( new-v, xs, seed )
-
-
-// Internal function that dictates when to resize the hash-set. This can be overridden with implicits.
-pub fun when-resize( table-size : int, item-count : int ) : bool
-  if 2 * table-size <= item-count then
-    True
-  else
-    False
-
-// Internal function that determines the new size of a hash-set when inserting. This can be overridden with implicits.
-pub fun resizer( table-size : int, item-count : int ) : int
-   item-count * 2
 
 // Inserts a `value` into the hash-set.
 pub fun insert( hs : hash-set<v>, value : v, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool, ?when-resize : (int, int) -> bool, ?resizer : (int, int) -> int ) : hash-set<v>

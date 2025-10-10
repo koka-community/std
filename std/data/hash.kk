@@ -93,5 +93,16 @@ pub fun either/hash( e : either<l, r>, ?l/hasher : (l, int64) -> int, ?r/hasher 
   hash-vector-int64( vec, seed )
 
 
+// Internal function that dictates when to resize the hash-set. This can be overridden with implicits.
+pub fun when-resize( table-size : int, item-count : int ) : bool
+  if 2 * table-size <= item-count then
+    True
+  else
+    False
+
+// Internal function that determines the new size of a hash-set when inserting. This can be overridden with implicits.
+pub fun resizer( table-size : int, item-count : int ) : int
+   item-count * 2
+
 fun example()
   seed.println
