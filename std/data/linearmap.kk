@@ -42,7 +42,8 @@ pub fun list/lookup(m: list<(k,v)>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
 pub fun map/lookup(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<v>
   m.internal.lookup(k)
 
-pub fun map/get(m: linearMap<k,v>, k: k, ?(==): (k, k) -> <exn|e> bool, ?kk-file-line: string): <exn|e> v  
+pub fun map/get(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool, ?kk-file-line: string): <exn|e> v  
+  val mask/(==) = fn(k1,k2) mask<exn>{?(==)(k1,k2)}
   m.internal.lookup(k).unjust
 
 pub fun list/get-default(l: list<(k,v)>, k: k, v: v, ?(==): (k, k) -> e bool): e v
@@ -74,7 +75,7 @@ pub fun map/map(m: linearMap<k,v>, f: (k, v) -> e v1): e linearMap<k,v1>
   val LinearMap(l) = m
   LinearMap(l.map(fn((k,v)) (k, f(k,v))))
 
-pub fun unions(l: list<linearMap<k,v>>, ?(==): (k, k) -> <exn|e> bool): <exn|e> linearMap<k,v>
+pub fun unions(l: list<linearMap<k,v>>, ?(==): (k, k) -> e bool): e linearMap<k,v>
   val fst = l.head.default(LinearMap([]))
   l.foldl(fst, fn(x, y) x.add-all(y.internal))
 
