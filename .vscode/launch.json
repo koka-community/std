@@ -65,6 +65,18 @@
       "MIMode": "lldb"
     },
     {
+      "name": "file",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/../std/.koka/v3.2.3-vscode/clang-debug-603bca/test_std_async_file_dash_test__main",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/../std/.koka/v3.2.3-vscode/clang-debug-603bca/",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    },
+    {
       "type": "koka",
       "request": "launch",
       "program": "${workspaceFolder}/std/test/detect.kk",
