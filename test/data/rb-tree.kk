@@ -40,7 +40,7 @@ fun tex-child( t : rbtree<k,v>, ?show: (k) -> string ) : div list<string>
 
 fun indent( lines : list<string>, i : int ) : list<string>
   val sp = spaces(i)
-  lines.map(fn(l) sp ++ l)
+  lines.map(sp ++ _)
 
 
 // --------------------------------------------------------------------------------------

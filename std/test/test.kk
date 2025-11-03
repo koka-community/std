@@ -79,13 +79,13 @@ pub fun summary/any-failures(summary: suite-summary): bool
   summary.failures > 0
 
 pub fun indentation(scope: maybe<test-scope>): div string
-  scope.map(fn(s) s.parent.indentation ++ "  ").default("")
+  scope.map(_.parent.indentation ++ "  ").default("")
 
 pub fun scope/full-name(scope: test-scope): div string
-  scope.parent.map(fn(p) p.full-name ++ " ").default("") ++ scope.scope-name
+  scope.parent.map(_.full-name ++ " ").default("") ++ scope.scope-name
 
 pub fun test/full-name(test: test-identity): div string
-  test.scope.map(fn(s) s.full-name ++ " ").default("") ++ test.name
+  test.scope.map(_.full-name ++ " ").default("") ++ test.name
 
 pub value type expectation<a>
   ExpectedValue(a: a)
@@ -118,7 +118,7 @@ pub fun show-failed(failed: expect-value<a>): div string
       "threw an exception: " ++ e.exn/show
     Ok(a) ->
       "     got: " ++ a.showa
-  "Expectation failed ("++ location ++ ")\nexpected: " ++ b.show(?show=showa) ++ "\n" ++ actual ++ err.map(fn(e) "\nDetails: " ++ e).default("")
+  "Expectation failed ("++ location ++ ")\nexpected: " ++ b.show(?show=showa) ++ "\n" ++ actual ++ err.map("\nDetails: " ++ _).default("")
 
 // Expects a computation to return a value
 //

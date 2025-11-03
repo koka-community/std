@@ -17,7 +17,7 @@ fun suite()
 
         val vec' = match vec.pop()
           Just((x, v)) -> 
-            expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
+            expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=_.i.show)
             v
           Nothing -> vec
         var after-pop := ""
@@ -42,7 +42,7 @@ fun suite()
         val vec2 = vec1.set(0, 100).unjust
         vec1.at(0).default(0) != vec2.at(0).default(0)
     test("doesn't copy when unique")
-      val vec1 = vector-list-init(10) fn(i) Something(i)
+      val vec1 = vector-list-init(10, Something)
       expect(False, details="Expected vec1 and vec10 to be the same")
         val vec10 = vec1.at(0).unjust
         val vec2 = vec1.set(9, Something(1)).unjust

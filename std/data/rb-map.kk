@@ -57,7 +57,7 @@ pub fun kvalue/map(s: rbmap<k,v>, f: (k, v) -> e x): e rbmap<k,x>
 
 pub fun value/map(s: rbmap<k,v>, f: (v) -> e x): e rbmap<k,x>
   val Rbmap(tree) = s 
-  Rbmap(tree.map(fn(v) f(v)))
+  Rbmap(tree.map(f(_)))
 
 pub fun (==)(s1: rbmap<k,v>, s2: rbmap<k,v>, ^?k/order2: (k,k) -> e order2<k>, ^?v/order2: (v,v) -> e order2<v>): e bool
   match order2(s1, s2)

@@ -61,7 +61,7 @@ pub fun hsep(l: list<doc>): doc
   l.fold((|+|))
 
 pub fun vsep(l: list<doc>): doc
-  l.filter(fn(x) !x.is-empty).fold((|--|))
+  l.filter(!_.is-empty).fold((|--|))
 
 pub fun cat(l: list<doc>): doc
   l.vcat.group
@@ -73,7 +73,7 @@ pub fun hcat(l: list<doc>): doc
   l.fold((|.|))
 
 pub fun vcat(l: list<doc>): doc
-  l.filter(fn(x) !x.is-empty).fold((|--|))
+  l.filter(!_.is-empty).fold((|--|))
 
 pub fun fold(l: list<doc>, f: (doc, doc) -> doc): doc
   match l
@@ -147,7 +147,7 @@ pub fun string/pretty(s: string): doc
     match s.starts-with("\n")
       Just(x) -> line |.| pretty(x.string.pretend-decreasing)
       _ -> 
-        val (xs, ys) = span(s.list, fn(c) c != '\n')
+        val (xs, ys) = span(s.list, _ != '\n')
         text(xs.string) |.| pretty(ys.string.pretend-decreasing)
 
 pub fun bool/pretty(b: bool): doc
@@ -491,10 +491,10 @@ pub fun display-pretty(w: int, simple: simpleDoc): <coloredPrinter,printer,div> 
         display(i, x)
       SColorOpen(f, c, x) ->
         if f then 
-          update-push-color-settings(fn(s) s(fcolor=c))
+          update-push-color-settings(_(fcolor=c))
           display(curCol, x)
         else
-          update-push-color-settings(fn(s) s(bcolor=c))
+          update-push-color-settings(_(bcolor=c))
           display(curCol, x)
       SColorClose(x) ->
         pop-color-settings()

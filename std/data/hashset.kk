@@ -132,7 +132,7 @@ pub fun remove( hs : hash-set<v>, value : v, ?hash : (v, int64) -> int, ?(==) : 
 pub fun contains( hs : hash-set<v>, value : v, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool ) : bool
   val the-hash = hash(value, hs.seed)
   val position = the-hash % hs.data.length
-  match hs.data.unsafe-idx( position.ssize_t ).filter( fn(x) x == value )
+  match hs.data.unsafe-idx( position.ssize_t ).filter( _ == value )
     Cons(_, _) -> True
     Nil -> False
 

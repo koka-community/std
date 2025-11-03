@@ -22,7 +22,7 @@ fun suite()
       expect("1 2 3 4 5 6 7 8 9 ")
         val deq' = match deq.pop-front()
           Just((x, v)) -> 
-            expect(Something(0), { x }, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
+            expect(Something(0), { x }, ?(==)= fn(a, b) a.i == b.i, ?show=_.i.show)
             v
           Nothing -> deq
         var after-pop := ""
@@ -34,7 +34,7 @@ fun suite()
       expect("0 1 2 3 4 5 6 7 8 ")
         val deq' = match deq.pop-back()
           Just((x, v)) -> 
-            expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=fn(a) a.i.show)
+            expect(x, {Something(9)}, ?(==)= fn(a, b) a.i == b.i, ?show=_.i.show)
             v
           Nothing -> deq
         var after-pop := ""
@@ -60,7 +60,7 @@ fun suite()
         deq1.at(0).default(0) != deq2.at(0).default(0)
     test("doesn't copy when unique")
       expect(False, details="Expected deq1 and deq10 to be the same")
-        val deq1 = deque-init(10) fn(i) Something(i)
+        val deq1 = deque-init(10, Something)
         val deq10 = deq1.at(0).unjust
         val deq2 = deq1.set(9, Something(1)).unjust
         unsafe-ptr-eq(deq10, deq2.at(4).unjust)

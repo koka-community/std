@@ -60,7 +60,7 @@ pub fun json/show(j: json): string
     JSString(s) -> "\"" ++ s.quote ++ "\""
     JSNum(s) -> s.show
     JSInt(i) -> i.show
-    JSList(l) -> l.show(?show=fn(s) s.pretend-decreasing.show)
+    JSList(l) -> l.show(?show=_.pretend-decreasing.show)
     JSObj(dict) -> "{" ++ dict.map(fn((k, v)) "\"" ++ k ++ "\":" ++ v.pretend-decreasing.show).join(",") ++ "}"
 
 pub fun json/pretty(j: json): doc
@@ -70,7 +70,7 @@ pub fun json/pretty(j: json): doc
     JSString(s) -> ("\"" ++ s.quote ++ "\"").text
     JSNum(s) -> s.pretty
     JSInt(i) -> i.pretty
-    JSList(l) -> "[".text |--| vcat(l.map(fn(i) i.pretend-decreasing.pretty).punctuate(",".text)).indent(2) |--| "]".text
+    JSList(l) -> "[".text |--| vcat(l.map(_.pretend-decreasing.pretty).punctuate(",".text)).indent(2) |--| "]".text
     JSObj(dict) -> "{".text |--| vcat(dict.map(fn((k, v)) ("\"" ++ k ++ "\"").text |+| colon |+| v.pretend-decreasing.pretty).punctuate(",".text)).indent(2) |--| "}".text 
 
 pub fun list/to-json(l: list<v>, ?to-json: v -> e json): e json
@@ -139,19 +139,19 @@ pub fun float64/from-json(j: json, path: string): pure float64
     _ -> throw("Expecting float64, got " ++ j.show, info=JsonDeserializationException(j, path))
 
 pub fun dict/from-json(l: list<(string, json)>, key: string, path: string, ?from-json: (j: json, path: string) -> pure a): pure a
-  match l.lookup(fn(k) k == key)
+  match l.lookup(_ == key)
     Nothing -> throw("Expecting " ++ key ++ " in " ++ JSObj(l).show, info=JsonDeserializationException(JSObj(l), path))
     Just(s) -> from-json(s, path=path ++ "->" ++ key)
 
 pub fun dict/maybe/from-json(l: list<(string, json)>, key: string, path: string, ?from-json: (j: json, path: string) -> pure a): pure maybe<a>
-  match l.lookup(fn(k) k == key)
+  match l.lookup(_ == key)
     Nothing -> Nothing
     Just(s) -> Just(from-json(s, path=path ++ "->" ++ key))
 
 pub fun either/from-json(l: list<(string, json)>, key1: string, key2: string, path: string, ?a/from-json: (j: json, path: string) -> pure a, ?b/from-json: (j: json, path: string) -> pure b): pure either<a,b> 
-  match l.lookup(fn(k) k == key1)
+  match l.lookup(_ == key1)
     Just(s) -> Left(a/from-json(s, path=path ++ "->" ++ key1))
-    Nothing -> match l.lookup(fn(k) k == key2)
+    Nothing -> match l.lookup(_ == key2)
       Just(s) -> Right(b/from-json(s, path=path ++ "->" ++ key2))
       Nothing -> throw("Expecting " ++ key1 ++ " or " ++ key2 ++ " in " ++ JSObj(l).show, info=JsonDeserializationException(JSObj(l), path))
 

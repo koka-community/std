@@ -15,7 +15,7 @@ effect each
 fun nondet(f: () -> <div,each|e> a): <div|e> ()
   with handler
     ctl each(ss)
-      ss.foreach(fn(s) resume(s))
+      ss.foreach(resume)
     final ctl none()
       ()
     return (x)

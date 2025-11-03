@@ -8,7 +8,7 @@ pub struct change-lattice<r,c>
   changes: (r) -> list<c>
 
 pub fun list/join(old: list<a>, new: a, ?(==): (a, a) -> pure bool): pure (bool, list<a>)
-  if old.any(fn(x) x == new) then (False, old) else (True, Cons(new, old))
+  if old.any(_ == new) then (False, old) else (True, Cons(new, old))
 
 pub fun list/change-lattice(?(==): (a, a) -> pure bool): pure change-lattice<list<a>, a>
   Change-lattice([], fn(r, c) list/join(r, c), fn(x) x)
@@ -18,7 +18,7 @@ pub fun set/join(old: rbset<a>, new: a, ?order2: (a, a) -> pure order2<a>): pure
   (change, l')
 
 pub fun set/change-lattice(?order2: (a, a) -> pure order2<a>): change-lattice<rbset<a>, a>
-  Change-lattice(rb-set/empty(), fn(r, c) set/join(r, c), fn(x) x.list)
+  Change-lattice(rb-set/empty(), fn(r, c) set/join(r, c), list)
 
 pub value type simple-lattice<a>
   LValue(a: a)
@@ -61,7 +61,7 @@ pub fun simple/join(a: simple-lattice<a>, b: simple-lattice<a>, ?(==): (a, a) ->
     (LValue(a'), LValue(b')) -> if a' == b' then (False, a) else (True, LTop)
 
 pub fun simple/change-lattice((==): (a, a) -> pure bool): pure change-lattice<simple-lattice<a>, simple-lattice<a>>
-  Change-lattice(LBot, fn(r, c) simple/join(r, c), fn(x) [x])
+  Change-lattice(LBot, fn(r, c) simple/join(r, c), [_])
 
 pub value type product-change<a,b>
   CLeft(a: a)
@@ -78,5 +78,5 @@ pub fun product/change-lattice(l: change-lattice<r1,c1>, r: change-lattice<r2,c2
                         val (change, r2) = (r.join)(r1, c2)
                         return (change, (l1, r2))
                    ),
-                 fn((l1,r1)) (l.changes)(l1).map(fn(x) CLeft(x)) ++ (r.changes)(r1).map(fn(x) CRight(x))
+                 fn((l1,r1)) (l.changes)(l1).map(CLeft) ++ (r.changes)(r1).map(CRight)
   )
