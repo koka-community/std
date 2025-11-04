@@ -75,17 +75,6 @@ pub fun rehash( hs : hash-set-mut<v>, buckets : vector<list<v>>, ?hash : (v, int
         Just(xs) -> hs.data.unsafe-assign( position.ssize_t, Cons( entry, xs ) )
   hs
 
-// Internal function that dictates when to resize the hash-set-mut. This can be overridden with implicits.
-pub fun when-resize( table-size : int, item-count : int ) : bool
-  if 2 * table-size <= item-count then
-    True
-  else
-    False
-
-// Internal function that determines the new size of a hash-set-mut when inserting. This can be overridden with implicits.
-pub fun resizer( table-size : int, item-count : int ) : int
-   item-count * 2
-
 // Inserts a `value` into the hash-set-mut.
 pub fun insert( hs : hash-set-mut<v>, value : v, ?hash : (v, int64) -> int, ?(==) : (v, v) -> bool, ?when-resize : (int, int) -> bool, ?resizer : (int, int) -> int ) : hash-set-mut<v>
   val the-hash = hash(value, hs.seed)
