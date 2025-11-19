@@ -18,19 +18,19 @@ pub value struct hash-map-mut<k, v>
   amount : int
   seed : int64
 
-// Creates a hash-map-mut with a specified inital `capacity`.
+// Creates a hash-map-mut with a specified initial `capacity`.
 // If zero then the hash-map-mut will set capacity to 1.
-// The seed is initalized using the thread's id.
+// The seed is initialized using the thread's id.
 pub fun hash-map-mut( capacity : int = 1 ) : hash-map-mut<k, v>
   Hash-map-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
-// Creates a hash-map-mut with a specified inital `capacity` and a user defined `seed`.
+// Creates a hash-map-mut with a specified initial `capacity` and a user defined `seed`.
 // If zero then the hash-map-mut will set capacity to 1.
 pub fun hash-map-mut-seeded( seed : int64, capacity : int = 1 ) : hash-map-mut<k, v>
   Hash-map-mut( vector( if capacity > 0 then capacity else 1, Nil ), 0, seed )
 
 // Creates a hash-map from a list `xs`. This hash-map-mut has the same capacity as the length of the list `xs`.
-// The seed is initalized from the thread's id.
+// The seed is initialized from the thread's id.
 pub fun list/hash-map-mut( xs : list<(k, v)>, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : hash-map-mut<k, v>
   from-list-helper( hash-map-mut( xs.length ), xs )
 
@@ -104,7 +104,7 @@ pub fun remove( hm : hash-map-mut<k,v>, key : k, ?hash : (k, int64) -> int, ?(==
       data.unsafe-assign( position.ssize_t, bucket )
       Hash-map-mut( data, amount - 1, seed)
 
-// Attempts to retreve a value from the hash-map-mut with a given `key`. Returns `Nothing` if the key is invalid.
+// Attempts to retrieve a value from the hash-map-mut with a given `key`. Returns `Nothing` if the key is invalid.
 pub fun get( hm : hash-map-mut<k, v>, key : k, ?hash : (k, int64) -> int, ?(==) : (k, k) -> bool ) : maybe<v>
   val the-hash = hash(key, hm.seed)
   val position = the-hash % hm.data.length
