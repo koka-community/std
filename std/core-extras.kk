@@ -16,6 +16,11 @@ extern import
 pub fun pretend-not-reachable(?kk-file-line: string): b
   impossible()
 
+pub fun no-effect-top(a: () -> pure a, ?kk-file-line: string): a
+  with pretend-no-div
+  catch(a) fn(err)
+    impossible(err.show)
+
 pub fun list/and(l: list<bool>): bool
   match l
     Nil -> True
