@@ -1,4 +1,3 @@
-import std/data/vector-list
 import std/core-extras
 
 scoped effect interner<s::S>
@@ -18,7 +17,7 @@ fun intern-creator(action: forall<s> () -> <interner<s>,pure|e> a) : <pure|e> a
   action()
 
 fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<intern<s,a>>) -> <div|e> b): <div|e> b
-  var vec: some<a> vlist<a> := vlist()
+  var vec: some<a> list<a> := []
   with r <- named handler
     fun intern(a: some<a> a)
       with find
@@ -27,10 +26,10 @@ fun with-new-pool(eq: (a,a) -> <find<intern-ref<a>>,div|e> bool, action: (ev<int
         v.foreach-indexed fn(i,x)
           if eq(a,x) then found(Interned(i,x))
           else ()
-      vec := v.push(a)
+      vec := Cons(a, vec)
       // Weak map, when the interned values are dropped, the concrete value will also be dropped, but unfortunately not the vector memory
       a.unsafe-box-drop 
-      Interned(vec.size - 1, a)
+      Interned(vec.length - 1, a)
   mask<local>{action(r)}
 
 fun (==)(x: intern-ref<a>, y: intern-ref<a>): bool
