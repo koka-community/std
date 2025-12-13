@@ -100,6 +100,10 @@ fun is-prefixed-by(a: sslice, b: sslice, acount: int, bcount: int): bool
   bcount <= acount &&
     a.take(bcount) == b
 
-pub fun show(t: trie): div string
+pub fun trie/show(t: trie): string
+  with pretend-no-div
+  show-div(t)
+
+pub fun show-div(t: trie): div string
   match t
-    Trie(p, pcount, v, is-final, m) -> "Trie(" ++ p.show ++ ", " ++ pcount.show ++ ", " ++ v.show ++ ", " ++ is-final.show ++ " " ++ m.show ++ ")"
+    Trie(p, pcount, v, is-final, m) -> "Trie(" ++ p.show ++ ", " ++ pcount.show ++ ", " ++ v.show ++ ", " ++ is-final.show ++ " " ++ m.show(?value/show=show-div) ++ ")"

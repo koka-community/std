@@ -247,8 +247,8 @@ pub fun from-list(xs: list<(int64, v)>) : intMap<v>
   xs.foldl(IMNil, fn(acc, (k, v)) set(acc, k, v))
 
 /// Convert the map to a string representation.
-pub fun show(t: intMap<v>, show-key: (int64) -> string, show-val: (v) -> string) : string
-  "{" ++ list(t).map(fn((k, v)) show-key(k) ++ ": " ++ show-val(v)).join(", ") ++ "}"
+pub fun show(t: intMap<v>, ?v/show: (v) -> e string) : e string
+  "{" ++ list(t).map(fn((k, v)) show(k) ++ ": " ++ show(v)).join(", ") ++ "}"
 
 // Check if mask m1 is shorter (more significant) than m2.
 fun shorter(m1: int64, m2: int64) : bool
