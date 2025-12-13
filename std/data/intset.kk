@@ -110,7 +110,7 @@ fip(2) fun insert-loop(t: intSet, x: int64, z: intSetZipper) : intSet
 /// empty().insert(1.int64).member(1.int64) == True
 /// empty().insert(1.int64).member(2.int64) == False
 /// ```
-pub fun member(t: intSet, x: int64) : bool
+pub tail fun member(t: intSet, x: int64) : bool
   match t
     ISNil -> False
     Tip(y) -> x == y
@@ -120,7 +120,7 @@ pub fun member(t: intSet, x: int64) : bool
       else member(r, x)
 
 // Smart constructor that avoids creating Bins with empty children.
-fun bin(p: int64, m: int64, l: intSet, r: intSet) : intSet
+inline fun bin(p: int64, m: int64, l: intSet, r: intSet) : intSet
   match l
     ISNil -> r
     _ -> match r
@@ -172,15 +172,14 @@ pub tail fun fold(t: intSet, init: a, ^f: (a, int64) -> a) : a
   with pretend-no-div
   fold-loop(t, init, f, Done)
 
-// Move up the zipper, processing the other branch if necessary.
-tail fun fold-up(z: intSetZipper, acc: a, ^f: (a, int64) -> a) : div a
-  match z
-    Done -> acc
-    BinL(_, _, up, r) -> fold-loop(r.pretend-decreasing, acc, f, up)
-    BinR(_, _, l, up) -> fold-loop(l.pretend-decreasing, acc, f, up)
-
 // Tail-recursive fold using a zipper to simulate the stack.
-tail fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : div a
+fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : a
+  // Move up the zipper, processing the other branch if necessary.
+  tail fun fold-up(z1: intSetZipper, acc1: a, ^f1: (a, int64) -> a) : a
+    match z1
+      Done -> acc1
+      BinL(_, _, up, r) -> fold-loop(r.pretend-decreasing, acc1, f1, up)
+      BinR(_, _, l, up) -> fold-loop(l.pretend-decreasing, acc1, f1, up)
   match t
     ISNil -> fold-up(z.pretend-decreasing, acc, f)
     Tip(x) -> fold-up(z.pretend-decreasing, f(acc, x), f)
@@ -190,24 +189,57 @@ tail fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : di
 pub fun from-list(xs: list<int64>) : intSet
   xs.foldl(ISNil, insert)
 
-/// Check if two sets are equal.
-pub fun (==)(t1: intSet, t2: intSet) : div bool
-  eq-loop([(t1, t2)])
+// Zipper for tail-recursive boolean checks on two trees (e.g. equality, subset, disjoint).
+// Stores pending checks for right subtrees.
+type checkZipper
+  CheckDone
+  CheckRight(r1: intSet, r2: intSet, up: checkZipper)
 
-// Tail-recursive equality check using an explicit stack.
-tail fun eq-loop(stack: list<(intSet, intSet)>) : div bool
-  match stack
-    Nil -> True
-    Cons((a, b), rest) ->
-      match (a, b)
-        (ISNil, ISNil) -> eq-loop(rest)
-        (Tip(x), Tip(y)) -> if x == y then eq-loop(rest) else False
-        (Bin(p1, m1, l1, r1), Bin(p2, m2, l2, r2)) ->
-          if p1 == p2 && m1 == m2 then
-            eq-loop(Cons((l1, l2), Cons((r1, r2), rest)))
-          else
-            False
-        _ -> False
+/// Check if two sets are equal.
+pub fun (==)(t1: intSet, t2: intSet) : bool
+  eq-loop(t1, t2, CheckDone)
+
+fun eq-loop(t1: intSet, t2: intSet, z: checkZipper): bool
+  tail fun eq-zip-up(z1: checkZipper) : bool
+    match z1
+      CheckDone -> True
+      CheckRight(r1, r2, up) -> eq-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
+  match t1
+    ISNil -> match t2
+      ISNil -> eq-zip-up(z)
+      _ -> False
+    Tip(x) -> match t2
+      Tip(y) -> if x == y then eq-zip-up(z) else False
+      _ -> False
+    Bin(p1, m1, l1, r1) -> match t2
+      Bin(p2, m2, l2, r2) ->
+        if p1 == p2 && m1 == m2 then
+          eq-loop(l1.pretend-decreasing, l2.pretend-decreasing, CheckRight(r1, r2, z))
+        else False
+      _ -> False
+
+/// Check if two sets are not equal.
+pub fun (!=)(t1: intSet, t2: intSet) : bool
+  neq-loop(t1, t2, CheckDone)
+
+fun neq-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
+  tail fun neq-zip-up(z1: checkZipper) : bool
+    match z1
+      CheckDone -> False
+      CheckRight(r1, r2, up) -> neq-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
+  match t1
+    ISNil -> match t2
+      ISNil -> neq-zip-up(z)
+      _ -> True
+    Tip(x) -> match t2
+      Tip(y) -> if x == y then neq-zip-up(z) else True
+      _ -> True
+    Bin(p1, m1, l1, r1) -> match t2
+      Bin(p2, m2, l2, r2) ->
+        if p1 == p2 && m1 == m2 then
+          neq-loop(l1.pretend-decreasing, l2.pretend-decreasing, CheckRight(r1, r2, z))
+        else True
+      _ -> True
 
 /// Convert the set to a string representation.
 pub fun show(t: intSet) : string
@@ -253,82 +285,145 @@ pub fun union(t1: intSet, t2: intSet) : div intSet
           else
             join(p1, t1, p2, t2)
 
-// Helper for intersection when t1 is a Bin and t2 is a subset of t1's prefix.
-fun intersection-collision(t1: intSet, t2: intSet) : div intSet
-  match t1
-    Bin(p1, m1, l1, r1) ->
-      val p2 = prefix-val(t2)
-      if nomatch(p2, p1, m1) then ISNil
-      else if zero-bit(p2, m1) then intersection(l1, t2)
-      else intersection(r1, t2)
-    _ -> ISNil
-
 /// Compute the intersection of two sets.
 /// ```
 /// intersection(from-list([1.int64, 2.int64]), from-list([2.int64, 3.int64])).list == [2.int64]
 /// ```
 pub fun intersection(t1: intSet, t2: intSet) : div intSet
+  intersection-loop(t1, t2, IntDone)
+
+// Zipper for tail-recursive intersection.
+type intersectZipper
+  IntDone
+  // Processing left children (l1, l2). Preserve right children (r1, r2) to process next.
+  IntSplit(pre: int64, msk: int64, r1: intSet, r2: intSet, up: intersectZipper)
+  // Processing right children (r1, r2). Preserve result of left side (l_res).
+  IntSplitRight(pre: int64, msk: int64, l_res: intSet, up: intersectZipper)
+
+fun intersection-loop(t1: intSet, t2: intSet, z: intersectZipper) : intSet
+  tail fun intersect-zip-up(z1: intersectZipper, t: intSet) : intSet
+    match z1
+      IntDone -> t
+      IntSplit(p, m, r1, r2, up) ->
+        intersection-loop(r1.pretend-decreasing, r2.pretend-decreasing, IntSplitRight(p, m, t, up))
+      IntSplitRight(p, m, l_res, up) ->
+        intersect-zip-up(up, bin(p, m, l_res, t))
   match t1
-    ISNil -> ISNil
-    Tip(x) -> if member(t2, x) then t1 else ISNil
+    ISNil -> intersect-zip-up(z, ISNil)
+    Tip(x) -> 
+      if member(t2, x) then intersect-zip-up(z, t1)
+      else intersect-zip-up(z, ISNil)
     Bin(p1, m1, l1, r1) ->
       match t2
-        ISNil -> ISNil
-        Tip(x) -> if member(t1, x) then t2 else ISNil
+        ISNil -> intersect-zip-up(z, ISNil)
+        Tip(x) -> 
+          if member(t1, x) then intersect-zip-up(z, t2)
+          else intersect-zip-up(z, ISNil)
         Bin(p2, m2, l2, r2) ->
           if shorter(m1, m2) then
-            intersection-collision(t1, t2)
+            if nomatch(p2, p1, m1) then intersect-zip-up(z, ISNil)
+            else if zero-bit(p2, m1) then intersection-loop(l1.pretend-decreasing, t2.pretend-decreasing, z)
+            else intersection-loop(r1.pretend-decreasing, t2.pretend-decreasing, z)
           else if shorter(m2, m1) then
-            intersection-collision(t2, t1)
+            if nomatch(p1, p2, m2) then intersect-zip-up(z, ISNil)
+            else if zero-bit(p1, m2) then intersection-loop(t1.pretend-decreasing, l2.pretend-decreasing, z)
+            else intersection-loop(t1.pretend-decreasing, r2.pretend-decreasing, z)
           else if p1 == p2 then
-            bin(p1, m1, intersection(l1, l2), intersection(r1, r2))
+            intersection-loop(l1.pretend-decreasing, l2.pretend-decreasing, IntSplit(p1, m1, r1, r2, z))
           else
-            ISNil
+            intersect-zip-up(z, ISNil)
 
-// Helper for difference when t1 is a Bin and t2 is a subset of t1's prefix.
-fun difference-collision(t1: intSet, t2: intSet) : div intSet
-  match t1
-    Bin(p1, m1, l1, r1) ->
-      val p2 = prefix-val(t2)
-      if nomatch(p2, p1, m1) then t1
-      else if zero-bit(p2, m1) then bin(p1, m1, difference(l1, t2), r1)
-      else bin(p1, m1, l1, difference(r1, t2))
-    _ -> t1
 
 /// Compute the difference of two sets (elements in t1 but not in t2).
+/// Implemented as a tail-recursive traversal with short-circuiting.
 /// ```
 /// difference(from-list([1.int64, 2.int64]), from-list([2.int64, 3.int64])).list == [1.int64]
 /// ```
-pub fun difference(t1: intSet, t2: intSet) : div intSet
+pub fun difference(t1: intSet, t2: intSet) : intSet
+  difference-loop(t1, t2, DifDone)
+
+// Zipper for tail-recursive difference.
+// This tracks the state of the traversal as we descend into the trees.
+type diffZipper
+  // Finished processing.
+  DifDone
+  // Processing left child of t1; t2 was wholly contained in left prefix.
+  // Preserve right child of t1 to reattach later.
+  DifPreserveR(pre: int64, msk: int64, right: intSet, up: diffZipper)
+  // Processing right child of t1; t2 was wholly contained in right prefix.
+  // Preserve left child of t1 to reattach later.
+  DifPreserveL(pre: int64, msk: int64, left: intSet, up: diffZipper)
+  // Processing left children (l1, l2) after a prefix match.
+  // Preserve right children (r1, r2) to process next.
+  DifSplit(pre: int64, msk: int64, r1: intSet, r2: intSet, up: diffZipper)
+  // Processing right children (r1, r2) after left side completed.
+  // Preserve result of left side (l_res) to combine with right result.
+  DifSplitRight(pre: int64, msk: int64, l_res: intSet, up: diffZipper)
+
+
+// Tail-recursive difference loop.
+// Maintains the invariant that we are computing `difference(t1, t2)`
+// and will plug the result into zipper `z`.
+fun difference-loop(t1: intSet, t2: intSet, z: diffZipper) : intSet
+  // Reconstruct the tree by zipping up from the current result `t`.
+  tail fun diff-zip-up(z1: diffZipper, t: intSet) : intSet
+    match z1
+      DifDone -> t
+      DifPreserveR(p, m, r, up) -> diff-zip-up(up, bin(p, m, t, r))
+      DifPreserveL(p, m, l, up) -> diff-zip-up(up, bin(p, m, l, t))
+      DifSplit(p, m, r1, r2, up) ->
+        // Left side finished (result t), now process right side (r1, r2)
+        difference-loop(r1.pretend-decreasing, r2.pretend-decreasing, DifSplitRight(p, m, t, up))
+      DifSplitRight(p, m, l_res, up) ->
+        // Right side finished (result t), combine with left result (l_res)
+        diff-zip-up(up, bin(p, m, l_res, t))
   match t1
-    ISNil -> ISNil
-    Tip(x) -> if member(t2, x) then ISNil else t1
+    ISNil -> diff-zip-up(z, ISNil)
+    Tip(x) -> 
+      if member(t2, x) then diff-zip-up(z, ISNil)
+      else diff-zip-up(z, t1)
     Bin(p1, m1, l1, r1) ->
       match t2
-        ISNil -> t1
-        Tip(x) -> remove(t1, x)
+        ISNil -> diff-zip-up(z, t1)
+        Tip(x) -> diff-zip-up(z, remove(t1, x))
         Bin(p2, m2, l2, r2) ->
           if shorter(m1, m2) then
-            difference-collision(t1, t2)
+            // t1 branches before t2; check if t2 is wholly in one subtree of t1
+            val p2_ = prefix-val(t2)
+            if nomatch(p2_, p1, m1) then diff-zip-up(z, t1)
+            else if zero-bit(p2_, m1) then difference-loop(l1.pretend-decreasing, t2.pretend-decreasing, DifPreserveR(p1, m1, r1, z))
+            else difference-loop(r1.pretend-decreasing, t2.pretend-decreasing, DifPreserveL(p1, m1, l1, z))
           else if shorter(m2, m1) then
+            // t2 branches before t1; descend into the appropriate subtree of t1
             val p1_ = prefix-val(t1)
-            if nomatch(p1_, p2, m2) then t1
-            else if zero-bit(p1_, m2) then difference(t1, l2)
-            else difference(t1, r2)
+            if nomatch(p1_, p2, m2) then diff-zip-up(z, t1)
+            else if zero-bit(p1_, m2) then difference-loop(t1.pretend-decreasing, l2.pretend-decreasing, z)
+            else difference-loop(t1.pretend-decreasing, r2.pretend-decreasing, z)
           else if p1 == p2 then
-            bin(p1, m1, difference(l1, l2), difference(r1, r2))
+            // Same prefix and mask; recursively process both subtrees
+            difference-loop(l1.pretend-decreasing, l2.pretend-decreasing, DifSplit(p1, m1, r1, r2, z))
           else
-            t1
+            // Different prefixes at same level; trees are disjoint
+            diff-zip-up(z, t1)
 
 /// Check if t1 is a subset of t2.
 /// ```
 /// is-subset-of(from-list([1.int64]), from-list([1.int64, 2.int64])) == True
 /// is-subset-of(from-list([1.int64, 2.int64]), from-list([1.int64])) == False
 /// ```
-pub fun is-subset-of(t1: intSet, t2: intSet) : div bool
+pub fun is-subset-of(t1: intSet, t2: intSet) : bool
+  subset-loop(t1, t2, CheckDone)
+
+// Tail-recursive subset loop.
+tail fun subset-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
   match t1
-    ISNil -> True
-    Tip(x) -> member(t2, x)
+    ISNil -> match z
+      CheckDone -> True
+      CheckRight(r1, r2, up) -> subset-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
+    Tip(x) -> if member(t2, x) then match z
+      CheckDone -> True
+      CheckRight(r1, r2, up) -> subset-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
+    else False
     Bin(p1, m1, l1, r1) ->
       match t2
         ISNil -> False
@@ -338,38 +433,46 @@ pub fun is-subset-of(t1: intSet, t2: intSet) : div bool
           else if shorter(m2, m1) then
             val p1_ = prefix-val(t1)
             if nomatch(p1_, p2, m2) then False
-            else if zero-bit(p1_, m2) then is-subset-of(t1, l2)
-            else is-subset-of(t1, r2)
+            else if zero-bit(p1_, m2) then subset-loop(t1.pretend-decreasing, l2.pretend-decreasing, z)
+            else subset-loop(t1.pretend-decreasing, r2.pretend-decreasing, z)
+          else if p1 == p2 then
+            subset-loop(l1.pretend-decreasing, l2.pretend-decreasing, CheckRight(r1, r2, z))
           else
-            p1 == p2 && is-subset-of(l1, l2) && is-subset-of(r1, r2)
-
-// Helper for disjoint when t1 is a Bin and t2 is a subset of t1's prefix.
-fun disjoint-collision(t1: intSet, t2: intSet) : div bool
-  match t1
-    Bin(p1, m1, l1, r1) ->
-      val p2 = prefix-val(t2)
-      if nomatch(p2, p1, m1) then True
-      else if zero-bit(p2, m1) then disjoint(l1, t2)
-      else disjoint(r1, t2)
-    _ -> True
+            False
 
 /// Check if two sets are disjoint (have no elements in common).
 /// ```
 /// disjoint(from-list([1.int64]), from-list([2.int64])) == True
 /// disjoint(from-list([1.int64]), from-list([1.int64, 2.int64])) == False
 /// ```
-pub fun disjoint(t1: intSet, t2: intSet) : div bool
+pub fun disjoint(t1: intSet, t2: intSet) : bool
+  disjoint-loop(t1, t2, CheckDone)
+
+// Tail-recursive disjoint loop.
+fun disjoint-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
+  // Continue with the next check in the zipper for disjoint.
+  tail fun disjoint-zip-up(z1: checkZipper) : bool
+    match z1
+      CheckDone -> True
+      CheckRight(r1, r2, up) -> disjoint-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
   match t1
-    ISNil -> True
-    Tip(x) -> !member(t2, x)
+    ISNil -> disjoint-zip-up(z)
+    Tip(x) -> if !member(t2, x) then disjoint-zip-up(z) else False
     Bin(p1, m1, l1, r1) ->
       match t2
-        ISNil -> True
-        Tip(x) -> !member(t1, x)
+        ISNil -> disjoint-zip-up(z)
+        Tip(x) -> if !member(t1, x) then disjoint-zip-up(z) else False
         Bin(p2, m2, l2, r2) ->
           if shorter(m1, m2) then
-            disjoint-collision(t1, t2)
+            val p2_ = prefix-val(t2)
+            if nomatch(p2_, p1, m1) then disjoint-zip-up(z)
+            else if zero-bit(p2_, m1) then disjoint-loop(l1.pretend-decreasing, t2.pretend-decreasing, z)
+            else disjoint-loop(r1.pretend-decreasing, t2.pretend-decreasing, z)
           else if shorter(m2, m1) then
-            disjoint-collision(t2, t1)
+            val p1_ = prefix-val(t1)
+            if nomatch(p1_, p2, m2) then disjoint-zip-up(z)
+            else if zero-bit(p1_, m2) then disjoint-loop(t1.pretend-decreasing, l2.pretend-decreasing, z)
+            else disjoint-loop(t1.pretend-decreasing, r2.pretend-decreasing, z)
           else
-            p1 != p2 || (disjoint(l1, l2) && disjoint(r1, r2))
+            if p1 != p2 then disjoint-zip-up(z)
+            else disjoint-loop(l1.pretend-decreasing, l2.pretend-decreasing, CheckRight(r1, r2, z))
