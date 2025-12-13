@@ -6,7 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/data/intset
-
+import std/core/undiv
 import std/num/int64
 
 abstract type intSet
@@ -24,20 +24,20 @@ pub fun is-empty(s: intSet) : bool
     ISNil -> True
     _ -> False
 
-fun mask-prefix(x: int64, m: int64) : int64
+fip fun mask-prefix(x: int64, m: int64) : int64
   x.and((m.or(m - one)).not)
 
-fun nomatch(x: int64, p: int64, m: int64) : bool
+fip fun nomatch(x: int64, p: int64, m: int64) : bool
   mask-prefix(x, m) != p
 
-fun zero-bit(x: int64, m: int64) : bool
+fip fun zero-bit(x: int64, m: int64) : bool
   x.and(m) == zero
 
-fun highest-bit-mask(x: int64) : int64
+fip fun highest-bit-mask(x: int64) : int64
   val z = clz(x)
   one.shl(63 - z)
 
-fun join(p1: int64, t1: intSet, p2: int64, t2: intSet) : intSet
+fip(1) fun join(p1: int64, t1: intSet, p2: int64, t2: intSet) : intSet
   val m = highest-bit-mask(p1.xor(p2))
   val p = mask-prefix(p1, m)
   if zero-bit(p1, m) then
@@ -45,16 +45,30 @@ fun join(p1: int64, t1: intSet, p2: int64, t2: intSet) : intSet
   else
     Bin(p, m, t2, t1)
 
+type intSetZipper
+  Done
+  BinL(pre: int64, msk: int64, up: intSetZipper, right: intSet)
+  BinR(pre: int64, msk: int64, left: intSet, up: intSetZipper)
+
+pub fip fun zip-up(z: intSetZipper, t: intSet) : intSet
+  match z
+    Done -> t
+    BinL(p, m, up, r) -> zip-up(up, Bin(p, m, t, r))
+    BinR(p, m, l, up) -> zip-up(up, Bin(p, m, l, t))
+
 pub fun insert(t: intSet, x: int64) : intSet
+  insert-loop(t, x, Done)
+
+fip(2) fun insert-loop(t: intSet, x: int64, z: intSetZipper) : intSet
   match t
-    ISNil -> Tip(x)
+    ISNil -> zip-up(z, Tip(x))
     Tip(y) ->
-      if x == y then t
-      else join(x, Tip(x), y, t)
+      if x == y then zip-up(z, Tip(y))
+      else zip-up(z, join(x, Tip(x), y, Tip(y)))
     Bin(p, m, l, r) ->
-      if nomatch(x, p, m) then join(x, Tip(x), p, t)
-      else if zero-bit(x, m) then Bin(p, m, insert(l, x), r)
-      else Bin(p, m, l, insert(r, x))
+      if nomatch(x, p, m) then zip-up(z, join(x, Tip(x), p, Bin(p, m, l, r)))
+      else if zero-bit(x, m) then insert-loop(l, x, BinL(p, m, z, r))
+      else insert-loop(r, x, BinR(p, m, l, z))
 
 pub fun member(t: intSet, x: int64) : bool
   match t
@@ -73,13 +87,22 @@ fun bin(p: int64, m: int64, l: intSet, r: intSet) : intSet
       _ -> Bin(p, m, l, r)
 
 pub fun remove(t: intSet, x: int64) : intSet
+  remove-loop(t, x, Done)
+
+fbip fun remove-loop(t: intSet, x: int64, z: intSetZipper) : intSet
   match t
-    ISNil -> ISNil
-    Tip(y) -> if x == y then ISNil else t
+    ISNil -> zip-up(z, ISNil)
+    Tip(y) ->
+      if x == y then
+        match z
+          Done -> ISNil
+          BinL(_, _, up, r) -> zip-up(up, r)
+          BinR(_, _, l, up) -> zip-up(up, l)
+      else zip-up(z, Tip(y))
     Bin(p, m, l, r) ->
-      if nomatch(x, p, m) then t
-      else if zero-bit(x, m) then bin(p, m, remove(l, x), r)
-      else bin(p, m, l, remove(r, x))
+      if nomatch(x, p, m) then zip-up(z, Bin(p, m, l, r))
+      else if zero-bit(x, m) then remove-loop(l, x, BinL(p, m, z, r))
+      else remove-loop(r, x, BinR(p, m, l, z))
 
 pub fun size(t: intSet) : int
   match t
@@ -90,23 +113,43 @@ pub fun size(t: intSet) : int
 pub fun list(t: intSet) : list<int64>
   fold(t, [], fn(acc, x) Cons(x, acc))
 
-pub fun fold(t: intSet, init: a, f: (a, int64) -> a) : a
+pub tail fun fold(t: intSet, init: a, ^f: (a, int64) -> a) : a
+  with pretend-no-div
+  fold-loop(t, init, f, Done)
+
+tail fun fold-up(z: intSetZipper, acc: a, ^f: (a, int64) -> a) : div a
+  match z
+    Done -> acc
+    BinL(_, _, up, r) -> fold-loop(r.pretend-decreasing, acc, f, up)
+    BinR(_, _, l, up) -> fold-loop(l.pretend-decreasing, acc, f, up)
+
+tail fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : div a
   match t
-    ISNil -> init
-    Tip(x) -> f(init, x)
-    Bin(_, _, l, r) -> fold(r, fold(l, init, f), f)
+    ISNil -> fold-up(z.pretend-decreasing, acc, f)
+    Tip(x) -> fold-up(z.pretend-decreasing, f(acc, x), f)
+    Bin(p, m, l, r) -> fold-loop(l.pretend-decreasing, acc, f, BinL(p, m, z, r))
+
 
 pub fun from-list(xs: list<int64>) : intSet
   xs.foldl(ISNil, insert)
 
 // Equality
 pub fun (==)(t1: intSet, t2: intSet) : div bool
-  match (t1, t2)
-    (ISNil, ISNil) -> True
-    (Tip(x), Tip(y)) -> x == y
-    (Bin(p1, m1, l1, r1), Bin(p2, m2, l2, r2)) ->
-      m1 == m2 && p1 == p2 && l1 == l2 && r1 == r2
-    _ -> False
+  eq-loop([(t1, t2)])
+
+tail fun eq-loop(stack: list<(intSet, intSet)>) : div bool
+  match stack
+    Nil -> True
+    Cons((a, b), rest) ->
+      match (a, b)
+        (ISNil, ISNil) -> eq-loop(rest)
+        (Tip(x), Tip(y)) -> if x == y then eq-loop(rest) else False
+        (Bin(p1, m1, l1, r1), Bin(p2, m2, l2, r2)) ->
+          if p1 == p2 && m1 == m2 then
+            eq-loop(Cons((l1, l2), Cons((r1, r2), rest)))
+          else
+            False
+        _ -> False
 
 // Show
 pub fun show(t: intSet) : string
