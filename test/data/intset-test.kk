@@ -97,6 +97,26 @@ fun suite()
         val s2 = from-list([2.int64, 3.int64, 4.int64])
         union(s1, s2).size
 
+    test("union disjoint high/low trees")
+      expect(4)
+        // s1 branches at bit 60 (high mask)
+        val s1 = from-list([0.int64, 1.int64.shl(60)])
+        // s2 branches at bit 0 (low mask), but has prefix with bit 61 set
+        val base = 1.int64.shl(61)
+        val s2 = from-list([base, base + 1.int64])
+        
+        val u1 = union(s1, s2)
+        val u2 = union(s2, s1)
+        
+        if u1.size != 4 then 
+          println("u1 size: " ++ u1.size.show)
+          println("u1: " ++ u1.show)
+        if u2.size != 4 then
+          println("u2 size: " ++ u2.size.show)
+          println("u2: " ++ u2.show)
+          
+        if u1.size == 4 && u2.size == 4 then 4 else 0
+
     test("intersection empty sets")
       expect(0)
         intersection(intset/empty(), intset/empty()).size
@@ -182,25 +202,25 @@ fun suite()
         disjoint(s1, s2)
 
     test("large set operations")
-      expect(500)
+      expect(5000)
         var s := intset/empty()
-        for(500) fn(i)
+        for(5000) fn(i)
           s := s.insert(i.int64)
         s.size
 
     test("large set membership")
       expect(True)
         var s := intset/empty()
-        for(500) fn(i)
+        for(5000) fn(i)
           s := s.insert(i.int64)
-        s.member(250.int64)
+        s.member(2500.int64)
 
     test("large set after remove")
-      expect(499)
+      expect(499999)
         var s := intset/empty()
-        for(500) fn(i)
+        for(500000) fn(i)
           s := s.insert(i.int64)
-        s.remove(250.int64).size
+        s.remove(2500.int64).size
 
 fun main()
   run-tests(suite)
