@@ -92,7 +92,7 @@ fun suite()
         union(s1, s2).size
 
     test("union overlapping sets")
-      expect(3)
+      expect(4)
         val s1 = from-list([1.int64, 2.int64, 3.int64])
         val s2 = from-list([2.int64, 3.int64, 4.int64])
         union(s1, s2).size
