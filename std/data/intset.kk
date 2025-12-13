@@ -121,21 +121,6 @@ fun prefix-val(t: intSet) : int64
 fun shorter(m1: int64, m2: int64) : bool
   clz(m1) < clz(m2)
 
-fun union-collision(t1: intSet, t2: intSet) : div intSet
-  match t1
-    Bin(p1, m1, l1, r1) ->
-      match t2
-        Bin(p2, m2, l2, r2) ->
-          if nomatch(p2, p1, m1) then join(p1, t1, p2, t2)
-          else if zero-bit(p2, m1) then Bin(p1, m1, union(l1, t2), r1)
-          else Bin(p1, m1, l1, union(r1, t2))
-        _ -> 
-          val p2 = prefix-val(t2)
-          if nomatch(p2, p1, m1) then join(p1, t1, p2, t2)
-          else if zero-bit(p2, m1) then Bin(p1, m1, union(l1, t2), r1)
-          else Bin(p1, m1, l1, union(r1, t2))
-    _ -> t1
-
 pub fun union(t1: intSet, t2: intSet) : div intSet
   match t1
     ISNil -> t2
