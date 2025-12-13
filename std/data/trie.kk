@@ -30,38 +30,40 @@ pub fun empty() : trie
 /// Look up a string in the trie.
 /// Returns `Just(s)` if the string `s` is in the trie, `Nothing` otherwise.
 pub fun lookup(t: trie, k: string): maybe<string>
-  with pretend-no-div
   t.lookup-node(k.slice, k.count)
 
-inline fun lookup-in-children(m: linearMap<char,trie>, is-final: bool, v: string, kn: sslice, kncount: int): div maybe<string>
-  match kn.next
-    Nothing -> if is-final then Just(v) else Nothing
-    Just((char, k')) ->
-      val sub = m.lookup(char)
-      match sub 
-        Nothing -> Nothing
-        Just(s) -> lookup-node(s, k', kncount - 1)
+fun is-prefixed-by(a: sslice, b: sslice, a-count: int, b-count: int): bool
+  b-count <= a-count && a.take(b-count) == b
 
-fun lookup-node(t: trie, k: sslice, kcount: int): div maybe<string>
+fun lookup-node(t: trie, k: sslice, kcount: int): maybe<string>
+  tail fun lookup-in-children(m: linearMap<char,trie>, is-final: bool, v: string, kn: sslice, kncount: int): maybe<string>
+    match kn.next
+      Nothing -> if is-final then Just(v) else Nothing
+      Just((char, k')) ->
+        val sub = m.lookup(char)
+        match sub 
+          Nothing -> Nothing
+          Just(s) -> lookup-node(s.pretend-decreasing, k', kncount - 1)
   match t
     Trie(p, pcount, v, is-final, m) -> 
       if k.is-prefixed-by(p.slice, kcount, pcount) then
-        // TODO: Optimize, drop + prefixed both traverse the same part of the string.
+        // TODO: In order to optimize this we need to have a slice.split-at(n), drop + prefixed both traverse the same part of the string.
         lookup-in-children(m, is-final, v, k.drop(pcount), kcount - pcount)
       else Nothing
 
 /// Add a string to the trie.
 pub fun add(t: trie, s: string): trie
-  with pretend-no-div
-  insert-node(t, s.slice, s, s.slice.count)
+  insert-loop(t, s.slice, s, s.slice.count, Done)
 
-inline fun insert-child(m: linearMap<char,trie>, is-final: bool, p: string, v: string, kchar: char, kn: sslice, ksfull: string, pcount: int, kcount': int): div trie
-  val sub = m.lookup(kchar)
-  match sub
-    Nothing -> Trie(p, pcount, v, is-final, m.set(kchar, Trie(kn.string, kcount' - 1, ksfull, True, LinearMap([]))))
-    Just(sub) -> Trie(p, pcount, v, is-final, m.set(kchar, insert-node(sub.pretend-decreasing, kn, ksfull, kcount' - 1)))
+type trieZipper
+  Done
+  Child(path: string, path-len: int, value: string, is-final: bool, children: linearMap<char, trie>, key: char, up: trieZipper)
 
-fun insert-node(t: trie, k: sslice, original: string, kcount: int): div trie
+fun insert-loop(t: trie, k: sslice, original: string, kcount: int, z: trieZipper): trie
+  tail fun zip-up(zipper: trieZipper, t': trie): trie
+    match zipper
+      Done -> t'
+      Child(p, pl, v, f, m, k', up) -> zip-up(up, Trie(p, pl, v, f, m.set(k', t')))
   match t
     Trie(p, pcount, v, is-final, m) ->
       fun common-prefix(k': sslice, p': sslice, acc: sslice, acccount: int)
@@ -72,33 +74,32 @@ fun insert-node(t: trie, k: sslice, original: string, kcount: int): div trie
               common-prefix(k''.pretend-decreasing, p'', acc.extend(1), acccount + 1)
             else
               // Characters differ. Split the node here.
-              // Create a new parent node with the common prefix `acc`.
-              // The old node becomes a child starting with `charp`.
-              // The new string becomes a child starting with `chark`.
               val m' = LinearMap([
                 (chark, Trie(k''.string, k''.count, original, True, LinearMap([]))),
                 (charp, Trie(p''.string, p''.count, v, is-final, m)) 
               ])
-              Trie(acc.string, acccount, v.slice.extend(0 - acccount).string, False, m')
+              zip-up(z, Trie(acc.string, acccount, v.slice.extend(0 - acccount).string, False, m'))
           (Just((chark, k'')), Nothing) ->
             // The node's prefix `p` is fully matched by `k`, but `k` has more characters.
             // We need to descend into the children.
-            insert-child(m, is-final, p, v, chark, k'', original, pcount, kcount - pcount)
+            val sub = m.lookup(chark)
+            match sub
+              Nothing -> 
+                val new-child = Trie(k''.string, kcount - pcount - 1, original, True, LinearMap([]))
+                zip-up(z, Trie(p, pcount, v, is-final, m.set(chark, new-child)))
+              Just(child) ->
+                insert-loop(child.pretend-decreasing, k'', original, kcount - pcount - 1, Child(p, pcount, v, is-final, m, chark, z))
           (Nothing, Just((charp, p''))) ->
             // `k` ended, but the node's prefix `p` has more characters.
-            // Split `p`. The new node will have the common prefix (which is all of `k`).
-            // The old node becomes a child of the new node.
-            // The new node is marked as final with `original`.
-            Trie(k.string, kcount, original, True, LinearMap([(charp, Trie(p''.string, pcount - kcount - 1, v, True, m))]))
+            // Split `p`.
+            val new-child = Trie(p''.string, pcount - kcount - 1, v, True, m)
+            val m' = LinearMap([(charp, new-child)])
+            zip-up(z, Trie(k.string, kcount, original, True, m'))
           (Nothing, Nothing) -> 
             // Exact match. Mark the node as final.
-            Trie(p, pcount, v, True, m)
+            zip-up(z, Trie(p, pcount, v, True, m))
           _ -> impossible()
       common-prefix(k, p.slice, k.truncate, 0)
-
-fun is-prefixed-by(a: sslice, b: sslice, acount: int, bcount: int): bool
-  bcount <= acount &&
-    a.take(bcount) == b
 
 pub fun trie/show(t: trie): string
   with pretend-no-div
