@@ -19,6 +19,14 @@ pub fun (==)(l1: linearMap<k,v>, l2: linearMap<k,v>, ?key/(==): (k, k) -> e bool
       Just(v') -> v' == x.snd
       Nothing -> False
 
+pub fun map/lookup-index(m : linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e maybe<int>
+  match m.internal.index-of(fn((kk, _)) kk == k)
+    -1 -> Nothing
+    i  -> Just(i)
+
+pub fun map/elem-at(m : linearMap<k,v>, i: int): e maybe<(k, v)>
+  m.internal[i]
+
 pub fun map/contains-key(m: linearMap<k,v>, k: k, ?(==): (k, k) -> e bool): e bool
   m.internal.any(fn((kk, _)) kk == k)
 

@@ -28,14 +28,14 @@ pub tail fun group(l: list<a>, ?(==): (a, a) -> e bool): e list<list<a>>
 pub inline fun group-by(l: list<a>, same-group: (a, a) -> e bool): e list<list<a>>
   group(l, ?(==) = same-group)
 
-pub tail fun quicksort(xs : list<a>, res : list<a>, ^?(<): (a, a) -> bool) : list<a>
+pub fun quicksort(xs : list<a>, res : list<a>, ^?(<): (a, a) -> bool) : list<a>
   match xs
     Cons(x, xx) ->
       val (lo, hi) = qpartition(x, xx)
       quicksort(lo.pretend-decreasing, Cons(x, quicksort(hi.pretend-decreasing, res)))
     Nil -> res
 
-pub tail fun qpartition(^x : a, ys : list<a>, ^?(<): (a, a) -> bool) : (list<a>, list<a>)
+pub fun qpartition(x : a, ys : list<a>, ^?(<): (a, a) -> bool) : (list<a>, list<a>)
   match ys
     Cons(y, yy) ->
       if y < x then
