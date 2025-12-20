@@ -7,7 +7,7 @@
 ----------------------------------------------------------------------------*/
 module std/data/linearmap
 
-pub value struct linearMap<k,v>
+pub reference struct linearMap<k,v>
   internal: list<(k,v)> 
 
 pub fun show(l: linearMap<k,v>, ?key/show: (k) -> e string, ?value/show: (v) -> e string): e string

@@ -10,7 +10,7 @@ module std/data/linearset
 import std/core-extras
 import std/test
 
-pub struct linearSet<v>
+pub reference struct linearSet<v>
   internal: list<v>
 
 pub fun linear-set(l: list<v>, ?(==): (v, v) -> e bool): e linearSet<v>
