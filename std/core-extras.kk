@@ -22,6 +22,19 @@ pub fun no-effect-top(a: () -> pure a, ?kk-file-line: string): a
     impossible(err.show)
   a()
 
+pub fun list/contains(l: list<a>, v: a, ?(==): (a, a) -> e bool): e bool
+  l.any(_ == v)
+
+pub fun nub(l: list<a>, ?(==): (a, a) -> e bool): e list<a>
+  fun loop( l', acc )
+    match l'
+      Nil -> acc.list/reverse
+      Cons(h, t) ->
+        if acc.contains(h)
+          then loop(t.pretend-decreasing, acc)
+          else loop(t.pretend-decreasing, Cons(h, acc))
+  loop(l, Nil)
+
 pub fun list/and(l: list<bool>): bool
   match l
     Nil -> True
