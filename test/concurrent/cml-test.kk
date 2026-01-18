@@ -5,9 +5,19 @@ import std/time/duration
 import uv/event-loop
 
 fun main()
+  with default-event-loop
+  with async/handle
   run-tests(suite)
 
 pub fun suite()
+  effectful-test("timeout")
+    val ch = cml/channel()
+    expect(())
+      select([
+        ch.send-op(1),
+        timeout-op(100.milli-seconds),
+      ])
+
   effectful-test("concurrent updates")
     val ch = cml/channel()
     expect(((), 1))
@@ -15,12 +25,14 @@ pub fun suite()
         {
           select([
             ch.send-op(1),
-            
-            // timeout-op is a little more efficient, but these two
-            // are effectively identical
             timeout-op(1.seconds),
-            async-op { wait(2.seconds) },
           ])
         },
         { select(ch.receive-op()) }
       )
+
+  effectful-test("nonterminating op")
+    // TODO: doesn't work currently
+    val ch = cml/channel()
+    expect(((), 1))
+      select(ch.receive-op())
