@@ -1,4 +1,4 @@
-import std/data/intset
+import std/data/int-set
 import std/test
 import std/num/int64
 
@@ -8,53 +8,53 @@ fun contains(xs: list<a>, elem: a, ?(==): (a, a) -> bool): bool
     Nil -> False
 
 fun suite()
-  group("intset")
+  group("int-set")
     test("empty set is empty")
       expect(True)
-        intset/empty().is-empty
+        int-set/empty().is-empty
 
     test("insert element")
       expect(True)
-        val s = intset/empty().insert(42.int64)
+        val s = int-set/empty().insert(42.int64)
         s.member(42.int64)
 
     test("member not found")
       expect(False)
-        val s = intset/empty().insert(42.int64)
+        val s = int-set/empty().insert(42.int64)
         s.member(43.int64)
 
     test("insert duplicate")
       expect(1)
-        val s = intset/empty().insert(42.int64).insert(42.int64)
+        val s = int-set/empty().insert(42.int64).insert(42.int64)
         s.size
 
     test("remove element")
       expect(False)
-        val s = intset/empty().insert(42.int64).insert(43.int64)
+        val s = int-set/empty().insert(42.int64).insert(43.int64)
         val s' = s.remove(42.int64)
         s'.member(42.int64)
 
     test("remove non-existent")
       expect(True)
-        val s = intset/empty().insert(42.int64)
+        val s = int-set/empty().insert(42.int64)
         val s' = s.remove(99.int64)
         s'.member(42.int64)
 
     test("size empty")
       expect(0)
-        intset/empty().size
+        int-set/empty().size
 
     test("size single")
       expect(1)
-        intset/empty().insert(42.int64).size
+        int-set/empty().insert(42.int64).size
 
     test("size multiple")
       expect(3)
-        intset/empty().insert(1.int64).insert(2.int64).insert(3.int64).size
+        int-set/empty().insert(1.int64).insert(2.int64).insert(3.int64).size
 
     test("size after remove")
       expect(2)
-        val s = intset/empty().insert(1.int64).insert(2.int64).insert(3.int64)
+        val s = int-set/empty().insert(1.int64).insert(2.int64).insert(3.int64)
         s.remove(2.int64).size
 
     test("from-list")
@@ -78,12 +78,12 @@ fun suite()
 
     test("union empty sets")
       expect(0)
-        union(intset/empty(), intset/empty()).size
+        union(int-set/empty(), int-set/empty()).size
 
     test("union with empty")
       expect(2)
         val s = from-list([1.int64, 2.int64])
-        union(s, intset/empty()).size
+        union(s, int-set/empty()).size
 
     test("union disjoint sets")
       expect(4)
@@ -119,7 +119,7 @@ fun suite()
 
     test("intersection empty sets")
       expect(0)
-        intersection(intset/empty(), intset/empty()).size
+        intersection(int-set/empty(), int-set/empty()).size
 
     test("intersection disjoint sets")
       expect(0)
@@ -140,12 +140,12 @@ fun suite()
 
     test("difference empty sets")
       expect(0)
-        difference(intset/empty(), intset/empty()).size
+        difference(int-set/empty(), int-set/empty()).size
 
     test("difference with empty")
       expect(2)
         val s = from-list([1.int64, 2.int64])
-        difference(s, intset/empty()).size
+        difference(s, int-set/empty()).size
 
     test("difference disjoint sets")
       expect(2)
@@ -161,7 +161,7 @@ fun suite()
 
     test("is-subset-of empty")
       expect(True)
-        is-subset-of(intset/empty(), intset/empty())
+        is-subset-of(int-set/empty(), int-set/empty())
 
     test("is-subset-of identical")
       expect(True)
@@ -182,7 +182,7 @@ fun suite()
 
     test("disjoint empty")
       expect(True)
-        disjoint(intset/empty(), intset/empty())
+        disjoint(int-set/empty(), int-set/empty())
 
     test("disjoint identical")
       expect(False)
@@ -203,21 +203,21 @@ fun suite()
 
     test("large set operations")
       expect(5000)
-        var s := intset/empty()
+        var s := int-set/empty()
         for(5000) fn(i)
           s := s.insert(i.int64)
         s.size
 
     test("large set membership")
       expect(True)
-        var s := intset/empty()
+        var s := int-set/empty()
         for(5000) fn(i)
           s := s.insert(i.int64)
         s.member(2500.int64)
 
     test("large set after remove")
       expect(499999)
-        var s := intset/empty()
+        var s := int-set/empty()
         for(500000) fn(i)
           s := s.insert(i.int64)
         s.remove(2500.int64).size

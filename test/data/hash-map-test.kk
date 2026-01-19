@@ -1,4 +1,4 @@
-import std/data/hashmap
+import std/data/hash-map
 import std/data/hash
 import std/test
 import std/num/random

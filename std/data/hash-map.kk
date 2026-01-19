@@ -6,7 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 // This module provides a bucket hashmap 
-module std/data/hashmap
+module std/data/hash-map
 import std/core-extras
 import std/num/int64
 pub import std/data/hash

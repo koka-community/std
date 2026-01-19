@@ -1,4 +1,4 @@
-import std/data/hashset
+import std/data/hash-set
 import std/data/hash
 import std/test
 
