@@ -1,4 +1,4 @@
-import std/data/linearmap
+import std/data/linear-map
 
 linear effect log
   fun log(name: string, message: string): ()

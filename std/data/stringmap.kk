@@ -6,7 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/data/stringmap
-import std/data/linearmap
+import std/data/linear-map
 import std/core/unsafe
 import std/core/undiv
 import std/core/maybe
@@ -18,7 +18,7 @@ abstract type stringMap<v>
   // `path-len`: The length of the path segment (cached for performance).
   // `value`: The value stored at this node (if any).
   // `children`: A map from the first character of the next segment to the child node.
-  Node(path: string, path-len: int, value: maybe<v>, children: linearMap<char, stringMap<v>>)
+  Node(path: string, path-len: int, value: maybe<v>, children: linear-map<char, stringMap<v>>)
 
 /// Create an empty map.
 pub fun empty() : stringMap<v>
@@ -32,7 +32,7 @@ fun is-prefixed-by(a: sslice, b: sslice, a-count: int, b-count: int): bool
   b-count <= a-count && a.take(b-count) == b
 
 fun lookup-node(t: stringMap<v>, k: sslice, kcount: int): maybe<v>
-  tail fun lookup-in-children(m: linearMap<char,stringMap<v>>, value: maybe<v>, kn: sslice, kncount: int): maybe<v>
+  tail fun lookup-in-children(m: linear-map<char,stringMap<v>>, value: maybe<v>, kn: sslice, kncount: int): maybe<v>
     match kn.next
       Nothing -> value
       Just((char, k')) ->
@@ -56,7 +56,7 @@ pub fun update(t: stringMap<v>, key: string, f: (maybe<v>) -> e v): e stringMap<
 
 type stringMapZipper<v>
   Done
-  Child(path: string, path-len: int, value: maybe<v>, children: linearMap<char, stringMap<v>>, key: char, up: stringMapZipper<v>)
+  Child(path: string, path-len: int, value: maybe<v>, children: linear-map<char, stringMap<v>>, key: char, up: stringMapZipper<v>)
 
 fun insert-loop-with(t: stringMap<v>, k: sslice, value-fn: (maybe<v>) -> e v, kcount: int, z: stringMapZipper<v>): e stringMap<v>
   tail fun zip-up(zipper: stringMapZipper<v>, t': stringMap<v>): stringMap<v>
