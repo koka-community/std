@@ -5,21 +5,21 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-module std/data/intset
+module std/data/int-set
 import std/core/undiv
 import std/num/int64
 
 /// An efficient set of integers based on Big-Endian Patricia Trees.
-abstract type intSet
+abstract type int-set
   ISNil
   Tip(key: int64)
-  Bin(pre: int64, msk: int64, left: intSet, right: intSet)
+  Bin(pre: int64, msk: int64, left: int-set, right: int-set)
 
 /// The empty set.
 pub val empty-intset = ISNil
 
 /// Create an empty set.
-pub fun empty() : intSet
+pub fun empty() : int-set
   ISNil
 
 /// Check if a set is empty.
@@ -27,7 +27,7 @@ pub fun empty() : intSet
 /// empty().is-empty == True
 /// insert(empty(), 1.int64).is-empty == False
 /// ```
-pub fun is-empty(s: intSet) : bool
+pub fun is-empty(s: int-set) : bool
   match s
     ISNil -> True
     _ -> False
@@ -59,7 +59,7 @@ fip fun highest-bit-mask(x: int64) : int64
 
 /// Join two disjoint trees `t1` and `t2` with prefixes `p1` and `p2`.
 /// Finds the highest bit where `p1` and `p2` differ and creates a new `Bin` node.
-fip(1) fun join(p1: int64, t1: intSet, p2: int64, t2: intSet) : intSet
+fip(1) fun join(p1: int64, t1: int-set, p2: int64, t2: int-set) : int-set
   val m = highest-bit-mask(p1.xor(p2))
   val p = mask-prefix(p1, m)
   if zero-bit(p1, m) then
@@ -73,31 +73,31 @@ fip(1) fun join(p1: int64, t1: intSet, p2: int64, t2: intSet) : intSet
 
 /// A zipper represents the path from the root to the current node,
 /// allowing us to reconstruct the tree (zip up) after modification.
-type intSetZipper
+type zipper
   Done
-  BinL(pre: int64, msk: int64, up: intSetZipper, right: intSet)
-  BinR(pre: int64, msk: int64, left: intSet, up: intSetZipper)
+  BinL(pre: int64, msk: int64, up: zipper, right: int-set)
+  BinR(pre: int64, msk: int64, left: int-set, up: zipper)
 
 // Zipper for tail-recursive boolean checks on two trees (e.g. equality, subset, disjoint).
 // Stores pending checks for right subtrees.
-type checkZipper
+type check-zipper
   CheckDone
-  CheckRight(r1: intSet, r2: intSet, up: checkZipper)
+  CheckRight(r1: int-set, r2: int-set, up: check-zipper)
 
 // Zipper for tail-recursive binary operations (union, intersection, difference).
-type binOpZipper
+type bin-op-zipper
   BinOpDone
   // Recursing on left child of a node, preserving the right child.
-  BinOpPreserveR(pre: int64, msk: int64, right: intSet, up: binOpZipper)
+  BinOpPreserveR(pre: int64, msk: int64, right: int-set, up: bin-op-zipper)
   // Recursing on right child of a node, preserving the left child.
-  BinOpPreserveL(pre: int64, msk: int64, left: intSet, up: binOpZipper)
+  BinOpPreserveL(pre: int64, msk: int64, left: int-set, up: bin-op-zipper)
   // Recursing on left children of both nodes.
-  BinOpSplit(pre: int64, msk: int64, r1: intSet, r2: intSet, up: binOpZipper)
+  BinOpSplit(pre: int64, msk: int64, r1: int-set, r2: int-set, up: bin-op-zipper)
   // Recursing on right children of both nodes.
-  BinOpSplitRight(pre: int64, msk: int64, l_res: intSet, up: binOpZipper)
+  BinOpSplitRight(pre: int64, msk: int64, l_res: int-set, up: bin-op-zipper)
 
 /// Reconstruct the tree by zipping up from the current position `t` using the zipper `z`.
-pub fip fun zip-up(z: intSetZipper, t: intSet) : intSet
+pub fip fun zip-up(z: zipper, t: int-set) : int-set
   match z
     Done -> t
     BinL(p, m, up, r) -> zip-up(up, Bin(p, m, t, r))
@@ -108,11 +108,11 @@ pub fip fun zip-up(z: intSetZipper, t: intSet) : intSet
 /// empty().insert(1.int64).list == [1.int64]
 /// empty().insert(1.int64).insert(1.int64).list == [1.int64]
 /// ```
-pub fun insert(t: intSet, x: int64) : intSet
+pub fun insert(t: int-set, x: int64) : int-set
   insert-loop(t, x, Done)
 
 // Tail-recursive insert using a zipper.
-fip(2) fun insert-loop(t: intSet, x: int64, z: intSetZipper) : intSet
+fip(2) fun insert-loop(t: int-set, x: int64, z: zipper) : int-set
   match t
     ISNil -> zip-up(z, Tip(x))
     Tip(y) ->
@@ -128,7 +128,7 @@ fip(2) fun insert-loop(t: intSet, x: int64, z: intSetZipper) : intSet
 /// empty().insert(1.int64).member(1.int64) == True
 /// empty().insert(1.int64).member(2.int64) == False
 /// ```
-pub tail fun member(t: intSet, x: int64) : bool
+pub tail fun member(t: int-set, x: int64) : bool
   match t
     ISNil -> False
     Tip(y) -> x == y
@@ -138,7 +138,7 @@ pub tail fun member(t: intSet, x: int64) : bool
       else member(r, x)
 
 // Smart constructor that avoids creating Bins with empty children.
-inline fun bin(p: int64, m: int64, l: intSet, r: intSet) : intSet
+inline fun bin(p: int64, m: int64, l: int-set, r: int-set) : int-set
   match l
     ISNil -> r
     _ -> match r
@@ -150,11 +150,11 @@ inline fun bin(p: int64, m: int64, l: intSet, r: intSet) : intSet
 /// empty().insert(1.int64).remove(1.int64).is-empty == True
 /// empty().insert(1.int64).remove(2.int64).list == [1.int64]
 /// ```
-pub fun remove(t: intSet, x: int64) : intSet
+pub fun remove(t: int-set, x: int64) : int-set
   remove-loop(t, x, Done)
 
 // Tail-recursive remove using a zipper.
-fbip fun remove-loop(t: intSet, x: int64, z: intSetZipper) : intSet
+fbip fun remove-loop(t: int-set, x: int64, z: zipper) : int-set
   match t
     ISNil -> zip-up(z, ISNil)
     Tip(y) ->
@@ -173,11 +173,11 @@ fbip fun remove-loop(t: intSet, x: int64, z: intSetZipper) : intSet
 /// ```
 /// empty().insert(1.int64).insert(2.int64).size == 2
 /// ```
-pub fun size(t: intSet) : int
+pub fun size(t: int-set) : int
   size-loop(t, 0, Done)
 
-fun size-loop(t: intSet, acc: int, z: intSetZipper) : int
-  tail fun size-zip-up(z1: intSetZipper, acc1: int) : int
+fun size-loop(t: int-set, acc: int, z: zipper) : int
+  tail fun size-zip-up(z1: zipper, acc1: int) : int
     match z1
       Done -> acc1
       BinL(_, _, up, r) -> size-loop(r.pretend-decreasing, acc1, up)
@@ -189,19 +189,19 @@ fun size-loop(t: intSet, acc: int, z: intSetZipper) : int
 
 /// Convert the set to a list of integers.
 /// The order of elements is not specified.
-pub fun list(t: intSet) : list<int64>
+pub fun list(t: int-set) : list<int64>
   fold(t, [], fn(acc, x) Cons(x, acc))
 
 /// Fold over the elements of the set.
 /// The order of elements is not specified.
-pub tail fun fold(t: intSet, init: a, ^f: (a, int64) -> a) : a
+pub tail fun fold(t: int-set, init: a, ^f: (a, int64) -> a) : a
   with pretend-no-div
   fold-loop(t, init, f, Done)
 
 // Tail-recursive fold using a zipper to simulate the stack.
-fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : a
+fun fold-loop(t: int-set, acc: a, ^f: (a, int64) -> a, z: zipper) : a
   // Move up the zipper, processing the other branch if necessary.
-  tail fun fold-up(z1: intSetZipper, acc1: a, ^f1: (a, int64) -> a) : a
+  tail fun fold-up(z1: zipper, acc1: a, ^f1: (a, int64) -> a) : a
     match z1
       Done -> acc1
       BinL(_, _, up, r) -> fold-loop(r.pretend-decreasing, acc1, f1, up)
@@ -212,15 +212,15 @@ fun fold-loop(t: intSet, acc: a, ^f: (a, int64) -> a, z: intSetZipper) : a
     Bin(p, m, l, r) -> fold-loop(l.pretend-decreasing, acc, f, BinL(p, m, z, r))
 
 /// Create a set from a list of integers.
-pub fun from-list(xs: list<int64>) : intSet
+pub fun from-list(xs: list<int64>) : int-set
   xs.foldl(ISNil, insert)
 
 /// Check if two sets are equal.
-pub fun (==)(t1: intSet, t2: intSet) : bool
+pub fun (==)(t1: int-set, t2: int-set) : bool
   eq-loop(t1, t2, CheckDone)
 
-fun eq-loop(t1: intSet, t2: intSet, z: checkZipper): bool
-  tail fun eq-zip-up(z1: checkZipper) : bool
+fun eq-loop(t1: int-set, t2: int-set, z: check-zipper): bool
+  tail fun eq-zip-up(z1: check-zipper) : bool
     match z1
       CheckDone -> True
       CheckRight(r1, r2, up) -> eq-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
@@ -239,11 +239,11 @@ fun eq-loop(t1: intSet, t2: intSet, z: checkZipper): bool
       _ -> False
 
 /// Check if two sets are not equal.
-pub fun (!=)(t1: intSet, t2: intSet) : bool
+pub fun (!=)(t1: int-set, t2: int-set) : bool
   neq-loop(t1, t2, CheckDone)
 
-fun neq-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
-  tail fun neq-zip-up(z1: checkZipper) : bool
+fun neq-loop(t1: int-set, t2: int-set, z: check-zipper) : bool
+  tail fun neq-zip-up(z1: check-zipper) : bool
     match z1
       CheckDone -> False
       CheckRight(r1, r2, up) -> neq-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)
@@ -262,10 +262,10 @@ fun neq-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
       _ -> True
 
 /// Convert the set to a string representation.
-pub fun show(t: intSet) : string
+pub fun show(t: int-set) : string
   "{" ++ list(t).map(show).join(", ") ++ "}"
 
-fun prefix-val(t: intSet) : int64
+fun prefix-val(t: int-set) : int64
   match t
     Tip(x) -> x
     Bin(p, _, _, _) -> p
@@ -280,11 +280,11 @@ fun shorter(m1: int64, m2: int64) : bool
 /// ```
 /// union(from-list([1.int64, 2.int64]), from-list([2.int64, 3.int64])).list == [1.int64, 2.int64, 3.int64]
 /// ```
-pub fun union(t1: intSet, t2: intSet) : intSet
+pub fun union(t1: int-set, t2: int-set) : int-set
   union-loop(t1, t2, BinOpDone)
 
-fun union-loop(t1: intSet, t2: intSet, zipper: binOpZipper) : intSet
-  inline tail fun union-zip-up(z: binOpZipper, res: intSet) : intSet
+fun union-loop(t1: int-set, t2: int-set, zipper: bin-op-zipper) : int-set
+  inline tail fun union-zip-up(z: bin-op-zipper, res: int-set) : int-set
     match z
       BinOpDone -> res
       BinOpPreserveR(p, m, r, up) -> union-zip-up(up, Bin(p, m, res, r))
@@ -316,11 +316,11 @@ fun union-loop(t1: intSet, t2: intSet, zipper: binOpZipper) : intSet
 /// ```
 /// intersection(from-list([1.int64, 2.int64]), from-list([2.int64, 3.int64])).list == [2.int64]
 /// ```
-pub fun intersection(t1: intSet, t2: intSet) : intSet
+pub fun intersection(t1: int-set, t2: int-set) : int-set
   intersection-loop(t1, t2, BinOpDone)
 
-fun intersection-loop(t1: intSet, t2: intSet, zipper: binOpZipper) : intSet
-  inline tail fun intersect-zip-up(z: binOpZipper, res: intSet) : intSet
+fun intersection-loop(t1: int-set, t2: int-set, zipper: bin-op-zipper) : int-set
+  inline tail fun intersect-zip-up(z: bin-op-zipper, res: int-set) : int-set
     match z
       BinOpDone -> res
       BinOpSplit(p, m, r1, r2, up) ->
@@ -360,15 +360,15 @@ fun intersection-loop(t1: intSet, t2: intSet, zipper: binOpZipper) : intSet
 /// ```
 /// difference(from-list([1.int64, 2.int64]), from-list([2.int64, 3.int64])).list == [1.int64]
 /// ```
-pub fun difference(t1: intSet, t2: intSet) : intSet
+pub fun difference(t1: int-set, t2: int-set) : int-set
   difference-loop(t1, t2, BinOpDone)
 
 // Tail-recursive difference loop.
 // Maintains the invariant that we are computing `difference(t1, t2)`
 // and will plug the result into zipper `z`.
-fun difference-loop(t1: intSet, t2: intSet, z: binOpZipper) : intSet
+fun difference-loop(t1: int-set, t2: int-set, z: bin-op-zipper) : int-set
   // Reconstruct the tree by zipping up from the current result `t`.
-  inline tail fun diff-zip-up(z1: binOpZipper, t: intSet) : intSet
+  inline tail fun diff-zip-up(z1: bin-op-zipper, t: int-set) : int-set
     match z1
       BinOpDone -> t
       BinOpPreserveR(p, m, r, up) -> diff-zip-up(up, bin(p, m, t, r))
@@ -413,11 +413,11 @@ fun difference-loop(t1: intSet, t2: intSet, z: binOpZipper) : intSet
 /// is-subset-of(from-list([1.int64]), from-list([1.int64, 2.int64])) == True
 /// is-subset-of(from-list([1.int64, 2.int64]), from-list([1.int64])) == False
 /// ```
-pub fun is-subset-of(t1: intSet, t2: intSet) : bool
+pub fun is-subset-of(t1: int-set, t2: int-set) : bool
   subset-loop(t1, t2, CheckDone)
 
 // Tail-recursive subset loop.
-tail fun subset-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
+tail fun subset-loop(t1: int-set, t2: int-set, z: check-zipper) : bool
   match t1
     ISNil -> match z
       CheckDone -> True
@@ -447,13 +447,13 @@ tail fun subset-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
 /// disjoint(from-list([1.int64]), from-list([2.int64])) == True
 /// disjoint(from-list([1.int64]), from-list([1.int64, 2.int64])) == False
 /// ```
-pub fun disjoint(t1: intSet, t2: intSet) : bool
+pub fun disjoint(t1: int-set, t2: int-set) : bool
   disjoint-loop(t1, t2, CheckDone)
 
 // Tail-recursive disjoint loop.
-fun disjoint-loop(t1: intSet, t2: intSet, z: checkZipper) : bool
+fun disjoint-loop(t1: int-set, t2: int-set, z: check-zipper) : bool
   // Continue with the next check in the zipper for disjoint.
-  tail fun disjoint-zip-up(z1: checkZipper) : bool
+  tail fun disjoint-zip-up(z1: check-zipper) : bool
     match z1
       CheckDone -> True
       CheckRight(r1, r2, up) -> disjoint-loop(r1.pretend-decreasing, r2.pretend-decreasing, up)

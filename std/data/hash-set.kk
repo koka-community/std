@@ -6,7 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 // This module provides an immutable bucket hashset implementation.
-module std/data/hashset
+module std/data/hash-set
 import std/num/int64
 import std/core-extras
 pub import std/data/hash

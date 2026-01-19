@@ -5,7 +5,7 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-module std/data/stringmap
+module std/data/string-map
 import std/data/linear-map
 import std/core/unsafe
 import std/core/undiv
@@ -13,26 +13,26 @@ import std/core/maybe
 import std/core/show
 
 /// A Map from strings to values based on a Patricia Trie (Radix Tree).
-abstract type stringMap<v>
+abstract type string-map<v>
   // `path`: The string segment associated with the incoming edge.
   // `path-len`: The length of the path segment (cached for performance).
   // `value`: The value stored at this node (if any).
   // `children`: A map from the first character of the next segment to the child node.
-  Node(path: string, path-len: int, value: maybe<v>, children: linear-map<char, stringMap<v>>)
+  Node(path: string, path-len: int, value: maybe<v>, children: linear-map<char, string-map<v>>)
 
 /// Create an empty map.
-pub fun empty() : stringMap<v>
+pub fun empty() : string-map<v>
   Node("", 0, Nothing, LinearMap([]))
 
 /// Look up a value in the map.
-pub fun lookup(t: stringMap<v>, k: string): maybe<v>
+pub fun lookup(t: string-map<v>, k: string): maybe<v>
   t.lookup-node(k.slice, k.count)
 
 fun is-prefixed-by(a: sslice, b: sslice, a-count: int, b-count: int): bool
   b-count <= a-count && a.take(b-count) == b
 
-fun lookup-node(t: stringMap<v>, k: sslice, kcount: int): maybe<v>
-  tail fun lookup-in-children(m: linear-map<char,stringMap<v>>, value: maybe<v>, kn: sslice, kncount: int): maybe<v>
+fun lookup-node(t: string-map<v>, k: sslice, kcount: int): maybe<v>
+  tail fun lookup-in-children(m: linear-map<char,string-map<v>>, value: maybe<v>, kn: sslice, kncount: int): maybe<v>
     match kn.next
       Nothing -> value
       Just((char, k')) ->
@@ -47,19 +47,19 @@ fun lookup-node(t: stringMap<v>, k: sslice, kcount: int): maybe<v>
       else Nothing
 
 /// Set a value in the map.
-pub fun set(t: stringMap<v>, key: string, value: v): stringMap<v>
+pub fun set(t: string-map<v>, key: string, value: v): string-map<v>
   insert-loop-with(t, key.slice, fn(_) value, key.count, Done)
 
 /// Update a value in the map using a function that takes the old value.
-pub fun update(t: stringMap<v>, key: string, f: (maybe<v>) -> e v): e stringMap<v>
+pub fun update(t: string-map<v>, key: string, f: (maybe<v>) -> e v): e string-map<v>
   insert-loop-with(t, key.slice, f, key.count, Done)
 
-type stringMapZipper<v>
+type zipper<v>
   Done
-  Child(path: string, path-len: int, value: maybe<v>, children: linear-map<char, stringMap<v>>, key: char, up: stringMapZipper<v>)
+  Child(path: string, path-len: int, value: maybe<v>, children: linear-map<char, string-map<v>>, key: char, up: zipper<v>)
 
-fun insert-loop-with(t: stringMap<v>, k: sslice, value-fn: (maybe<v>) -> e v, kcount: int, z: stringMapZipper<v>): e stringMap<v>
-  tail fun zip-up(zipper: stringMapZipper<v>, t': stringMap<v>): stringMap<v>
+fun insert-loop-with(t: string-map<v>, k: sslice, value-fn: (maybe<v>) -> e v, kcount: int, z: zipper<v>): e string-map<v>
+  tail fun zip-up(zipper: zipper<v>, t': string-map<v>): string-map<v>
     match zipper
       Done -> t'
       Child(p, pl, v, m, k', up) -> zip-up(up, Node(p, pl, v, m.set(k', t')))
@@ -100,11 +100,11 @@ fun insert-loop-with(t: stringMap<v>, k: sslice, value-fn: (maybe<v>) -> e v, kc
           _ -> impossible()
       common-prefix(k, p.slice, k.truncate, 0)
 
-pub fun show(t: stringMap<v>, ?show: (v) -> e string): e string
+pub fun show(t: string-map<v>, ?show: (v) -> e string): e string
   with pretend-no-div
   show-div(t, ?show=fn(v) mask<div>{show(v)})
 
-fun show-div(t: stringMap<v>, ?show: (v) -> <div|e> string): <div|e> string
+fun show-div(t: string-map<v>, ?show: (v) -> <div|e> string): <div|e> string
   match t
     Node(p, pcount, v, m) -> 
       val ps = p.show

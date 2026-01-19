@@ -5,25 +5,25 @@
    use this file except in compliance with the License. A copy of the License
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
-module std/data/intmap
+module std/data/int-map
 import std/core/undiv
 import std/num/int64
 
 /// An efficient map from integers to values based on Big-Endian Patricia Trees.
-abstract type intMap<v>
+abstract type int-map<v>
   IMNil
   Tip(key: int64, value: v)
-  Bin(pre: int64, msk: int64, left: intMap<v>, right: intMap<v>)
+  Bin(pre: int64, msk: int64, left: int-map<v>, right: int-map<v>)
 
 /// The empty map.
 pub val empty-intmap = IMNil
 
 /// Create an empty map.
-pub fun empty() : intMap<v>
+pub fun empty() : int-map<v>
   IMNil
 
 /// Check if a map is empty.
-pub fun is-empty(m: intMap<v>) : bool
+pub fun is-empty(m: int-map<v>) : bool
   match m
     IMNil -> True
     _ -> False
@@ -55,7 +55,7 @@ fip fun highest-bit-mask(x: int64) : int64
 
 /// Join two disjoint trees `t1` and `t2` with prefixes `p1` and `p2`.
 /// Finds the highest bit where `p1` and `p2` differ and creates a new `Bin` node.
-fip(1) fun join(p1: int64, t1: intMap<v>, p2: int64, t2: intMap<v>) : intMap<v>
+fip(1) fun join(p1: int64, t1: int-map<v>, p2: int64, t2: int-map<v>) : int-map<v>
   val m = highest-bit-mask(p1.xor(p2))
   val p = mask-prefix(p1, m)
   if zero-bit(p1, m) then
@@ -69,18 +69,19 @@ fip(1) fun join(p1: int64, t1: intMap<v>, p2: int64, t2: intMap<v>) : intMap<v>
 
 /// A zipper represents the path from the root to the current node,
 /// allowing us to reconstruct the tree (zip up) after modification.
-type intMapZipper<v>
+type zipper<v>
   Done
-  BinL(pre: int64, msk: int64, up: intMapZipper<v>, right: intMap<v>)
-  BinR(pre: int64, msk: int64, left: intMap<v>, up: intMapZipper<v>)
+  BinL(pre: int64, msk: int64, up: zipper<v>, right: int-map<v>)
+  BinR(pre: int64, msk: int64, left: int-map<v>, up: zipper<v>)
 
-type mapZipper<v, w>
+// A zipper that maps from v to w
+type map-zipper<v, w>
   MapDone
-  MapBinL(pre: int64, msk: int64, up: mapZipper<v, w>, right: intMap<v>)
-  MapBinR(pre: int64, msk: int64, left: intMap<w>, up: mapZipper<v, w>)
+  MapBinL(pre: int64, msk: int64, up: map-zipper<v, w>, right: int-map<v>)
+  MapBinR(pre: int64, msk: int64, left: int-map<w>, up: map-zipper<v, w>)
 
 /// Reconstruct the tree by zipping up from the current position `t` using the zipper `z`.
-pub fip fun zip-up(z: intMapZipper<v>, t: intMap<v>) : intMap<v>
+pub fip fun zip-up(z: zipper<v>, t: int-map<v>) : int-map<v>
   match z
     Done -> t
     BinL(p, m, up, r) -> zip-up(up, Bin(p, m, t, r))
@@ -90,10 +91,10 @@ pub fip fun zip-up(z: intMapZipper<v>, t: intMap<v>) : intMap<v>
 /// The function `f` is applied to the current value (if any).
 /// If `f` returns `Just(v)`, the value is updated/inserted.
 /// If `f` returns `Nothing`, the value is removed.
-pub fun update(t: intMap<v>, key: int64, f: maybe<v> -> maybe<v>) : intMap<v>
+pub fun update(t: int-map<v>, key: int64, f: maybe<v> -> maybe<v>) : int-map<v>
   update-loop(t, key, f, Done)
 
-fun update-loop(t: intMap<v>, key: int64, f: maybe<v> -> maybe<v>, z: intMapZipper<v>) : intMap<v>
+fun update-loop(t: int-map<v>, key: int64, f: maybe<v> -> maybe<v>, z: zipper<v>) : int-map<v>
   match t
     IMNil -> 
       match f(Nothing)
@@ -121,10 +122,10 @@ fun update-loop(t: intMap<v>, key: int64, f: maybe<v> -> maybe<v>, z: intMapZipp
       else update-loop(r, key, f, BinR(p, m, l, z))
 
 /// Set a value in the map, overwriting if it exists.
-pub fun set(t: intMap<v>, key: int64, value: v) : intMap<v>
+pub fun set(t: int-map<v>, key: int64, value: v) : int-map<v>
   set-loop(t, key, value, Done)
 
-fun set-loop(t: intMap<v>, key: int64, value: v, z: intMapZipper<v>) : intMap<v>
+fun set-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, Tip(key, value))
     Tip(k, v) ->
@@ -136,10 +137,10 @@ fun set-loop(t: intMap<v>, key: int64, value: v, z: intMapZipper<v>) : intMap<v>
       else set-loop(r, key, value, BinR(p, m, l, z))
 
 /// Add a value to the map, only if the key is not already present.
-pub fun add(t: intMap<v>, key: int64, value: v) : intMap<v>
+pub fun add(t: int-map<v>, key: int64, value: v) : int-map<v>
   add-loop(t, key, value, Done)
 
-fun add-loop(t: intMap<v>, key: int64, value: v, z: intMapZipper<v>) : intMap<v>
+fun add-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, Tip(key, value))
     Tip(k, v) ->
@@ -151,7 +152,7 @@ fun add-loop(t: intMap<v>, key: int64, value: v, z: intMapZipper<v>) : intMap<v>
       else add-loop(r, key, value, BinR(p, m, l, z))
 
 /// Lookup a value in the map.
-pub tail fun lookup(t: intMap<v>, key: int64) : maybe<v>
+pub tail fun lookup(t: int-map<v>, key: int64) : maybe<v>
   match t
     IMNil -> Nothing
     Tip(k, v) -> if key == k then Just(v) else Nothing
@@ -161,7 +162,7 @@ pub tail fun lookup(t: intMap<v>, key: int64) : maybe<v>
       else lookup(r, key)
 
 /// Check if a key is in the map.
-pub tail fun member(t: intMap<v>, key: int64) : bool
+pub tail fun member(t: int-map<v>, key: int64) : bool
   match t
     IMNil -> False
     Tip(k, _) -> key == k
@@ -171,10 +172,10 @@ pub tail fun member(t: intMap<v>, key: int64) : bool
       else member(r, key)
 
 /// Remove a key from the map.
-pub fun remove(t: intMap<v>, key: int64) : intMap<v>
+pub fun remove(t: int-map<v>, key: int64) : int-map<v>
   remove-loop(t, key, Done)
 
-fun remove-loop(t: intMap<v>, key: int64, z: intMapZipper<v>) : intMap<v>
+fun remove-loop(t: int-map<v>, key: int64, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, IMNil)
     Tip(k, v) ->
@@ -190,11 +191,11 @@ fun remove-loop(t: intMap<v>, key: int64, z: intMapZipper<v>) : intMap<v>
       else remove-loop(r, key, BinR(p, m, l, z))
 
 /// Get the number of elements in the map.
-pub fun size(t: intMap<v>) : int
+pub fun size(t: int-map<v>) : int
   size-loop(t, 0, Done)
 
-fun size-loop(t: intMap<v>, acc: int, z: intMapZipper<v>) : int
-  tail fun size-zip-up(z1: intMapZipper<v>, acc1: int) : int
+fun size-loop(t: int-map<v>, acc: int, z: zipper<v>) : int
+  tail fun size-zip-up(z1: zipper<v>, acc1: int) : int
     match z1
       Done -> acc1
       BinL(_, _, up, r) -> size-loop(r.pretend-decreasing, acc1, up)
@@ -205,11 +206,11 @@ fun size-loop(t: intMap<v>, acc: int, z: intMapZipper<v>) : int
     Bin(p, m, l, r) -> size-loop(l.pretend-decreasing, acc, BinL(p, m, z, r))
 
 /// Map a function over the values in the map.
-pub fun map(t: intMap<v>, ^f: (v) -> e w) : e intMap<w>
+pub fun map(t: int-map<v>, ^f: (v) -> e w) : e int-map<w>
   map-loop(t, f, MapDone)
 
-fun map-loop(t: intMap<v>, ^f: (v) -> e w, z: mapZipper<v, w>) : e intMap<w>
-  tail fun map-zip-up(z1: mapZipper<v, w>, ^f1: (v) -> e w, res: intMap<w>) : e intMap<w>
+fun map-loop(t: int-map<v>, ^f: (v) -> e w, z: map-zipper<v, w>) : e int-map<w>
+  tail fun map-zip-up(z1: map-zipper<v, w>, ^f1: (v) -> e w, res: int-map<w>) : e int-map<w>
     match z1
       MapDone -> res
       MapBinL(p, m, up, r) -> 
@@ -223,16 +224,16 @@ fun map-loop(t: intMap<v>, ^f: (v) -> e w, z: mapZipper<v, w>) : e intMap<w>
     Bin(p, m, l, r) -> map-loop(l.pretend-decreasing, f, MapBinL(p, m, z, r))
 
 /// Convert the map to a list of (key, value) pairs.
-pub fun list(t: intMap<v>) : list<(int64, v)>
+pub fun list(t: int-map<v>) : list<(int64, v)>
   fold(t, [], fn(acc, k, v) Cons((k, v), acc))
 
 /// Fold over the elements of the map.
-pub tail fun fold(t: intMap<v>, init: a, ^f: (a, int64, v) -> a) : a
+pub tail fun fold(t: int-map<v>, init: a, ^f: (a, int64, v) -> a) : a
   with pretend-no-div
   fold-loop(t, init, f, Done)
 
-fun fold-loop(t: intMap<v>, acc: a, ^f: (a, int64, v) -> a, z: intMapZipper<v>) : a
-  tail fun fold-up(z1: intMapZipper<v>, acc1: a, ^f1: (a, int64, v) -> a) : a
+fun fold-loop(t: int-map<v>, acc: a, ^f: (a, int64, v) -> a, z: zipper<v>) : a
+  tail fun fold-up(z1: zipper<v>, acc1: a, ^f1: (a, int64, v) -> a) : a
     match z1
       Done -> acc1
       BinL(_, _, up, r) -> fold-loop(r.pretend-decreasing, acc1, f1, up)
@@ -243,11 +244,11 @@ fun fold-loop(t: intMap<v>, acc: a, ^f: (a, int64, v) -> a, z: intMapZipper<v>) 
     Bin(p, m, l, r) -> fold-loop(l.pretend-decreasing, acc, f, BinL(p, m, z, r))
 
 /// Create a map from a list of (key, value) pairs.
-pub fun from-list(xs: list<(int64, v)>) : intMap<v>
+pub fun from-list(xs: list<(int64, v)>) : int-map<v>
   xs.foldl(IMNil, fn(acc, (k, v)) set(acc, k, v))
 
 /// Convert the map to a string representation.
-pub fun show(t: intMap<v>, ?v/show: (v) -> e string) : e string
+pub fun show(t: int-map<v>, ?v/show: (v) -> e string) : e string
   "{" ++ list(t).map(fn((k, v)) show(k) ++ ": " ++ show(v)).join(", ") ++ "}"
 
 // Check if mask m1 is shorter (more significant) than m2.
@@ -255,22 +256,22 @@ fun shorter(m1: int64, m2: int64) : bool
   clz(m1) < clz(m2)
 
 // Zipper for tail-recursive binary operations (union, intersection, difference).
-type intMapBinOpZipper<v>
+type bin-op-zipper<v>
   BinOpDone
   // Recursing on left child of a node, preserving the right child.
-  BinOpPreserveR(pre: int64, msk: int64, right: intMap<v>, up: intMapBinOpZipper<v>)
+  BinOpPreserveR(pre: int64, msk: int64, right: int-map<v>, up: bin-op-zipper<v>)
   // Recursing on right child of a node, preserving the left child.
-  BinOpPreserveL(pre: int64, msk: int64, left: intMap<v>, up: intMapBinOpZipper<v>)
+  BinOpPreserveL(pre: int64, msk: int64, left: int-map<v>, up: bin-op-zipper<v>)
   // Recursing on left children of both nodes.
-  BinOpSplit(pre: int64, msk: int64, r1: intMap<v>, r2: intMap<v>, up: intMapBinOpZipper<v>)
+  BinOpSplit(pre: int64, msk: int64, r1: int-map<v>, r2: int-map<v>, up: bin-op-zipper<v>)
   // Recursing on right children of both nodes.
-  BinOpSplitRight(pre: int64, msk: int64, l_res: intMap<v>, up: intMapBinOpZipper<v>)
+  BinOpSplitRight(pre: int64, msk: int64, l_res: int-map<v>, up: bin-op-zipper<v>)
 
 /// Insert with a combining function.
-pub fun insert-with(t: intMap<v>, key: int64, value: v, combine: (v, v) -> e v) : e intMap<v>
+pub fun insert-with(t: int-map<v>, key: int64, value: v, combine: (v, v) -> e v) : e int-map<v>
   insert-with-loop(t, key, value, combine, Done)
 
-fun insert-with-loop(t: intMap<v>, key: int64, value: v, combine: (v, v) -> e v, z: intMapZipper<v>) : e intMap<v>
+fun insert-with-loop(t: int-map<v>, key: int64, value: v, combine: (v, v) -> e v, z: zipper<v>) : e int-map<v>
   match t
     IMNil -> zip-up(z, Tip(key, value))
     Tip(k, v) ->
@@ -282,29 +283,29 @@ fun insert-with-loop(t: intMap<v>, key: int64, value: v, combine: (v, v) -> e v,
       else insert-with-loop(r, key, value, combine, BinR(p, m, l, z))
 
 // Smart constructor that avoids creating Bins with empty children.
-inline fun bin(p: int64, m: int64, l: intMap<v>, r: intMap<v>) : intMap<v>
+inline fun bin(p: int64, m: int64, l: int-map<v>, r: int-map<v>) : int-map<v>
   match l
     IMNil -> r
     _ -> match r
       IMNil -> l
       _ -> Bin(p, m, l, r)
 
-fun prefix-val(t: intMap<v>) : int64
+fun prefix-val(t: int-map<v>) : int64
   match t
     Tip(x, _) -> x
     Bin(p, _, _, _) -> p
     IMNil -> zero
 
 /// Union of two maps. Left-biased.
-pub fun union(t1: intMap<v>, t2: intMap<v>) : intMap<v>
+pub fun union(t1: int-map<v>, t2: int-map<v>) : int-map<v>
   union-with(t1, t2, fn(v1, _) v1)
 
 /// Union with a combining function.
-pub fun union-with(t1: intMap<v>, t2: intMap<v>, ^combine: (v, v) -> e v) : e intMap<v>
+pub fun union-with(t1: int-map<v>, t2: int-map<v>, ^combine: (v, v) -> e v) : e int-map<v>
   union-loop(t1, t2, combine, BinOpDone)
 
-fun union-loop(t1: intMap<v>, t2: intMap<v>, ^combine: (v, v) -> e v, zipper: intMapBinOpZipper<v>) : e intMap<v>
-  inline tail fun union-zip-up(z: intMapBinOpZipper<v>, ^combine2: (v, v) -> e v, res: intMap<v>) : e intMap<v>
+fun union-loop(t1: int-map<v>, t2: int-map<v>, ^combine: (v, v) -> e v, zipper: bin-op-zipper<v>) : e int-map<v>
+  inline tail fun union-zip-up(z: bin-op-zipper<v>, ^combine2: (v, v) -> e v, res: int-map<v>) : e int-map<v>
     match z
       BinOpDone -> res
       BinOpPreserveR(p, m, r, up) -> union-zip-up(up, combine2, Bin(p, m, res, r))
@@ -335,12 +336,12 @@ fun union-loop(t1: intMap<v>, t2: intMap<v>, ^combine: (v, v) -> e v, zipper: in
             union-zip-up(zipper, combine, join(p1, t1, p2, t2))
 
 /// Compute the difference of two maps (keys in t1 but not in t2).
-pub fun difference(t1: intMap<v>, t2: intMap<v>) : intMap<v>
+pub fun difference(t1: int-map<v>, t2: int-map<v>) : int-map<v>
   difference-loop(t1, t2, BinOpDone)
 
 // Tail-recursive difference loop.
-fun difference-loop(t1: intMap<v>, t2: intMap<v>, z: intMapBinOpZipper<v>) : intMap<v>
-  inline tail fun diff-zip-up(z1: intMapBinOpZipper<v>, t: intMap<v>) : intMap<v>
+fun difference-loop(t1: int-map<v>, t2: int-map<v>, z: bin-op-zipper<v>) : int-map<v>
+  inline tail fun diff-zip-up(z1: bin-op-zipper<v>, t: int-map<v>) : int-map<v>
     match z1
       BinOpDone -> t
       BinOpPreserveR(p, m, r, up) -> diff-zip-up(up, bin(p, m, t, r))
