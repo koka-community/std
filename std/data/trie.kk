@@ -6,7 +6,7 @@
    can be found in the LICENSE file at the root of this distribution.
 ----------------------------------------------------------------------------*/
 module std/data/trie
-import std/data/linearmap
+import std/data/linear-map
 import std/core/unsafe
 import std/core/undiv
 
@@ -21,7 +21,7 @@ abstract type trie
   // `value`: The full string value stored at this node (if `is-final` is true).
   // `is-final`: Whether a string ends at this node.
   // `children`: A map from the first character of the next segment to the child node.
-  Trie(path: string, path-len: int, value: string, is-final: bool, children: linearMap<char,trie>)
+  Trie(path: string, path-len: int, value: string, is-final: bool, children: linear-map<char,trie>)
 
 /// Create an empty trie.
 pub fun empty() : trie
@@ -36,7 +36,7 @@ fun is-prefixed-by(a: sslice, b: sslice, a-count: int, b-count: int): bool
   b-count <= a-count && a.take(b-count) == b
 
 fun lookup-node(t: trie, k: sslice, kcount: int): maybe<string>
-  tail fun lookup-in-children(m: linearMap<char,trie>, is-final: bool, v: string, kn: sslice, kncount: int): maybe<string>
+  tail fun lookup-in-children(m: linear-map<char,trie>, is-final: bool, v: string, kn: sslice, kncount: int): maybe<string>
     match kn.next
       Nothing -> if is-final then Just(v) else Nothing
       Just((char, k')) ->
@@ -57,7 +57,7 @@ pub fun add(t: trie, s: string): trie
 
 type trieZipper
   Done
-  Child(path: string, path-len: int, value: string, is-final: bool, children: linearMap<char, trie>, key: char, up: trieZipper)
+  Child(path: string, path-len: int, value: string, is-final: bool, children: linear-map<char, trie>, key: char, up: trieZipper)
 
 fun insert-loop(t: trie, k: sslice, original: string, kcount: int, z: trieZipper): trie
   tail fun zip-up(zipper: trieZipper, t': trie): trie

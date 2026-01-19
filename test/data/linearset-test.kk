@@ -1,9 +1,9 @@
-import std/data/linearset
+import std/data/linear-set
 import std/test
 
 
 fun suite()
-  group("linearset")
+  group("linear-set")
     test("Basics")
       val s = linear-set([1, 2, 3])
       val s2 = linear-set([2, 3, 4])
