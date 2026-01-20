@@ -18,7 +18,7 @@ pub fun pretend-not-reachable(?kk-file-line: string): b
 
 pub fun no-effect-top(a: () -> pure a, ?kk-file-line: string): a
   with pretend-no-div
-  catch(a) fn(err)
+  try(a) fn(err)
     impossible(err.show)
 
 pub fun list/and(l: list<bool>): bool
