@@ -1,9 +1,10 @@
 import std/test
 import std/exn/ctx
 
-fun expect-ex(expected: string, action: () -> exn ()): <exn,expect> ()
-  try({ action(); throw("Test didn't throw an error") }) fn(ex)
-    expect(expected) { show-with-ctx(ex) }
+fun expect-ex(expected: string, action: () -> <exn,div|e> ()): <div,expect|e> ()
+  match try({ mask<expect>(action) })
+    Ok(_) -> fail("Test didn't throw an error")
+    Error(e) -> expect(expected) { show-with-ctx(e) }
 
 fun raise() { throw("File not found") }
 

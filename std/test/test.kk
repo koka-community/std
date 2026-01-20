@@ -21,7 +21,7 @@ pub effect test-report
   fun report-start<a>(test: test-identity): ()
   fun report-hint<a>(test: test-identity, hint: string): ()
   fun report-iteration(test: test-identity): ()
-  fun report-failure<a>(test: test-identity, expectation: expect-value<a>): ()
+  fun report-failure<a>(test: test-identity, expectation: expectation): ()
   fun report-end<a>(test: test-identity, failures: int): ()
   fun report-summary<a>(summary: suite-summary): ()
 
@@ -34,7 +34,7 @@ pub effect test<e>
 
 // The effect available within a test, for making expectations / assertions
 pub effect expect
-  ctl test-expect(v: expect-value<a>): a
+  ctl test-expect(v: expectation): ()
   fun test-hint(hint: string): ()
 
   // utilities for property tests
@@ -87,81 +87,62 @@ pub fun scope/full-name(scope: test-scope): div string
 pub fun test/full-name(test: test-identity): div string
   test.scope.map(_.full-name ++ " ").default("") ++ test.name
 
-pub value type expectation<a>
-  ExpectedValue(a: a)
-  ExpectedError(str: string)
-  ExpectedAssertion(str: string)
-
-pub fun show(a: expectation<a>, ?show: a -> div string): div string
-  match a
-    ExpectedValue(a) -> a.show
-    ExpectedError(a) -> "error: " ++ a
-    ExpectedAssertion(a) -> "assertion: " ++ a
-
-// An expected value for a test
-abstract struct expect-value<a>
-  run-value: error<a> // The value of the computation when run
-  expectation: expectation<a> // The expected value
-  details: maybe<string> // An additional error message providing context of the expectation
-  continue-on-error: bool // Whether to continue with the expected value (test recovery!)
+// An expectation in a test
+abstract struct expectation
+  result: either<string,()> // The expectation error message (or unit for success)
   location: string // The line where the expectation was made
-  eq: (a,a) -> div bool // The equality function for the value
-  show: (a) -> div string; // The show function for the value
 
-pub fun show-failed(failed: expect-value<a>): div string
-  val b = failed.expectation
-  val location = failed.location
-  val showa = failed.show
-  val err = failed.details
-  val actual = match failed.run-value
-    Error(e) ->
-      "threw an exception: " ++ e.exn/show
-    Ok(a) ->
-      "     got: " ++ a.showa
-  "Expectation failed ("++ location ++ ")\nexpected: " ++ b.show(?show=showa) ++ "\n" ++ actual ++ err.map("\nDetails: " ++ _).default("")
+pub fun show(expectation: expectation): div string
+  val location = expectation.location
+  match expectation.result
+    Left(msg) -> "Expectation failed ("++ location ++ ")\n" ++ msg
+    Right(()) -> "Expectation succeeded ( " ++ location ++ ")"
+
+pub fun fail(assertion: string = "", ?kk-line: string, ?kk-module: string)
+  test-expect(
+    Left("Assertion failed" ++ (if assertion == "" then "" else ": " ++ assertion)),
+    ?kk-module ++ ":" ++ ?kk-line
+  )
+
+// base expectation API
+pub fun api/test-expect(result: either<string,()>, ?kk-line: string, ?kk-module: string)
+  test-expect(Expectation(result, ?kk-module ++ ":" ++ ?kk-line))
+
+fun but-raised(e: exception): string
+  "but raised: " ++ e.show
 
 // Expects a computation to return a value
 //
 // The expected type must have an `(==)` function as well as a `show` function defined for it
-pub fun expect-result(expected: a, run: () -> <exn,expect|e> a, details: string = "", continue-on-error=True, ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect|e> a
-  val res = try({run()})
-  test-expect(Expect-value(
-    res, 
-    ExpectedValue(expected), 
-    if details == "" then Nothing else Just(details), 
-    continue-on-error,
-    ?kk-module ++ ":" ++ ?kk-line, 
-    (==), show))
+pub fun expect(expected: a, run: () -> <exn,expect,div|e> a, details: string = "", ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect,div|e> ()
+  val actual = try({run()})
+  val expected-str = "expected:" ++ expected.show
+  val result = match actual
+    Ok(a) ->
+      if a == expected then
+        Right(())
+      else
+        Left(expected-str ++ "\n     got: " ++ a.show)
+    Error(e) -> Left(expected-str ++ "\n" ++ but-raised(e))
+  test-expect(result, ?kk-module, ?kk-line)
 
-pub fun assert-error(assertion: string, ?kk-line: string, ?kk-module: string)
-  test-expect(Expect-value(Ok(False), ExpectedValue(True), Just("Assertion failed: " ++ assertion), False, ?kk-module ++ ":" ++ ?kk-line, (==), show))
-  ()
-
-pub fun expect-that(assertion: string, predicate: (a) -> <exn|e> bool, run: () -> <exn,expect|e> a, details: string = "", ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect|e> a
-  val res = try({run()})
-  match res
-    Ok(res) -> 
-      val good = try({mask<expect>{predicate(res)}})
-      test-expect(Expect-value(
-        Ok(res), 
-        ExpectedAssertion(assertion), 
-        if details == "" then Nothing else Just(details), 
-        False,
-        ?kk-module ++ ":" ++ ?kk-line, 
-        (==), show))
+// Expect a predicate over some value to return true.
+// Assertion is an optional string to describe the predicate.
+// On error, the value is printed.
+pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expect|e> a, assertion: string = "", ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect,div|e> ()
+  val value = try({run()})
+  val expected-str = "expected: " ++ (if assertion == "" then "predicate to pass" else assertion)
+  val result = match value
+    Ok(res) ->
+      val success = try({mask<expect>{predicate(res)}})
+      val base = expected-str ++ "\nfor value: " ++ res.show
+      match success
+        Ok(True) -> Right(())
+        Ok(False) -> Left(base ++ "\nbut predicate returned False")
+        Error(e) -> Left(base ++ "\nbut predicate raised: " ++ e.show)
     Error(e) ->
-      test-expect(Expect-value(
-        Error(e), 
-        ExpectedAssertion(assertion), 
-        if details == "" then Nothing else Just(details), 
-        False,
-        ?kk-module ++ ":" ++ ?kk-line, 
-        (==), show))
-
-// Same as expect-result but does not return the result of the computation, and defaults to not continue on error
-pub fun expect(expected: a, run: () -> <exn,expect|e> a, details: string = "", continue-on-error=False, ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect|e> ()
-  expect-result(expected, run, details, continue-on-error)
-  ()
+      Left(expected-str ++ "\n" ++ but-raised(e))
+  test-expect(result, ?kk-module, ?kk-line)
 
 // group of tests, requires (and overrides) test-scope
 pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-module: string, ?kk-line: string): <test<e>|e> ()
@@ -241,7 +222,7 @@ pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int
   val tid = test.identity
   report-start(tid)
   val fail-count = ref(0)
-  fun result(): _ suite-summary
+  fun test-result(): _ suite-summary
     if !fail-count == 0 then
       summary(successes = summary.successes + 1)
     else
@@ -259,36 +240,17 @@ pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int
     fun test-iteration()
       report-iteration(tid)
 
-    ctl test-expect(v)
-      val a = v.run-value
-      val b = v.expectation
-      match a
-        Error(_) ->
+    ctl test-expect(v: expectation)
+      match v.result
+        Left(_) ->
           fail-count := !fail-count + 1
           report-failure(tid, v)
-          if v.continue-on-error then
-            match b
-              ExpectedValue(b') -> resume(b')
-              _ -> result()
-          else result()
-        Ok(a') ->
-          val good = match b
-            ExpectedValue(b') -> (v.eq)(a', b')
-            ExpectedError(_) -> False
-            ExpectedAssertion(_) -> True
-          if good then
-            resume(a')
-          else
-            fail-count := !fail-count + 1
-            report-failure(tid, v)
-            if v.continue-on-error then
-              match b
-                ExpectedValue(b') -> resume(b')
-                _ -> result()
-            else result()
+          return test-result()
+        Right(()) ->
+          resume(())
   }
   with mask<test-report>
   expect((), ?kk-line=tid.location.line, ?kk-module=tid.location.mod)
     with mask<local>
     (test.body)()
-  result()
+  test-result()
