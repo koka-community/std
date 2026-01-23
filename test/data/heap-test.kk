@@ -90,12 +90,12 @@ fun suite()
       expect(Just(1))
         heap.min
       match heap.delete-min()
-        Nothing -> assert-error("No more elements when there should be 2 more.")
+        Nothing -> fail("No more elements when there should be 2 more.")
         Just((_, heap')) ->
           expect(Just(2))
             heap'.min
           match heap'.delete-min()
-            Nothing -> assert-error("No more elements when there should be 1 more.")
+            Nothing -> fail("No more elements when there should be 1 more.")
             Just((_, heap@)) ->
               expect(Just(3))
                 heap@.min
@@ -104,12 +104,12 @@ fun suite()
       expect(Just(3))
         heap.max
       match heap.delete-max()
-        Nothing -> assert-error("No more elements when there should be 2 more.")
+        Nothing -> fail("No more elements when there should be 2 more.")
         Just((_, heap')) ->
           expect(Just(2))
             heap'.max
           match heap'.delete-max()
-            Nothing -> assert-error("No more elements when there should be 1 more.")
+            Nothing -> fail("No more elements when there should be 1 more.")
             Just((_, heap@)) ->
               expect(Just(1))
                 heap@.max

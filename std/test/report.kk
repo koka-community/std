@@ -37,7 +37,7 @@ pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
       println(infomsg ++ " " ++ result)
 
     fun report-failure(test: test-identity, failed-expectation)
-      println(test.scope.indentation() ++ "  " ++ failed-expectation.show-failed())
+      println(test.scope.indentation() ++ "  " ++ failed-expectation.show)
 
     fun report-summary(summary: suite-summary)
       println(summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes")
@@ -78,7 +78,7 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
         failed-test-names := Cons(test.full-name, failed-test-names)
 
     fun report-failure(test: test-identity, failed-expectation)
-      println-colored(test.scope.indentation() ++ failed-expectation.show-failed(), Red)
+      println-colored(test.scope.indentation() ++ failed-expectation.show, Red)
 
     fun report-summary(summary: suite-summary)
       val color = if summary.failures > 0 then Red else Green
