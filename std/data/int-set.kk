@@ -195,7 +195,6 @@ pub fun list(t: int-set) : list<int64>
 /// Fold over the elements of the set.
 /// The order of elements is not specified.
 pub tail fun fold(t: int-set, init: a, ^f: (a, int64) -> a) : a
-  with pretend-no-div
   fold-loop(t, init, f, Done)
 
 // Tail-recursive fold using a zipper to simulate the stack.

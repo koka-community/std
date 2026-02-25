@@ -8,10 +8,10 @@
       "name": "(lldb) Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/.koka/v3.1.2/clang-debug-183072/tests_trees_rb_dash_tree__main",
+      "program": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-641de4/test_syntax_parse__main",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/.koka/v3.1.2/clang-debug-183072/",
+      "cwd": "${workspaceFolder}/../compiler/.koka/v3.2.3-vscode/clang-debug-641de4/",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb"

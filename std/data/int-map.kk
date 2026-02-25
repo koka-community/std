@@ -229,7 +229,6 @@ pub fun list(t: int-map<v>) : list<(int64, v)>
 
 /// Fold over the elements of the map.
 pub tail fun fold(t: int-map<v>, init: a, ^f: (a, int64, v) -> a) : a
-  with pretend-no-div
   fold-loop(t, init, f, Done)
 
 fun fold-loop(t: int-map<v>, acc: a, ^f: (a, int64, v) -> a, z: zipper<v>) : a
