@@ -122,10 +122,10 @@ fun update-loop(t: int-map<v>, key: int64, f: maybe<v> -> maybe<v>, z: zipper<v>
       else update-loop(r, key, f, BinR(p, m, l, z))
 
 /// Set a value in the map, overwriting if it exists.
-pub fun set(t: int-map<v>, key: int64, value: v) : int-map<v>
+pub fbip(2) fun set(t: int-map<v>, key: int64, value: v) : int-map<v>
   set-loop(t, key, value, Done)
 
-fun set-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
+fbip(2) fun set-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, Tip(key, value))
     Tip(k, v) ->
@@ -137,10 +137,10 @@ fun set-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
       else set-loop(r, key, value, BinR(p, m, l, z))
 
 /// Add a value to the map, only if the key is not already present.
-pub fun add(t: int-map<v>, key: int64, value: v) : int-map<v>
+pub fbip(2) fun add(t: int-map<v>, key: int64, value: v) : int-map<v>
   add-loop(t, key, value, Done)
 
-fun add-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
+fbip(2) fun add-loop(t: int-map<v>, key: int64, value: v, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, Tip(key, value))
     Tip(k, v) ->
@@ -175,7 +175,7 @@ pub tail fun member(t: int-map<v>, key: int64) : bool
 pub fun remove(t: int-map<v>, key: int64) : int-map<v>
   remove-loop(t, key, Done)
 
-fun remove-loop(t: int-map<v>, key: int64, z: zipper<v>) : int-map<v>
+fbip fun remove-loop(t: int-map<v>, key: int64, z: zipper<v>) : int-map<v>
   match t
     IMNil -> zip-up(z, IMNil)
     Tip(k, v) ->
