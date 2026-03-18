@@ -107,7 +107,7 @@ pub fun vector-init-list( ^n: int, xs: list<(int, a)>): vector<a>
   fun assigns(xs': some<a> list<(int,a)>) : total ()
     match xs'
       Cons((i,x), xss) -> 
-        unsafe-assign(v, i.ssize_t, x)
+        core-extras/unsafe-assign(v, i.ssize_t, x)
         assigns(xss)
       Nil -> ()
   assigns(xs)
@@ -144,45 +144,45 @@ pub extern unsafe-vector-clear-at( v : vector<a>, position : ssize_t ) : ()
 pub fun unique/map( v : vector<a>, f : a -> b ) : vector<b>
   if v.is-vec-unique then
     // trace("unique/map: vector is unique")
-    v.foreach-indexedz(fn(i,x) v.unsafe-assign(i, f(x).unsafe-ignore-type)) 
+    v.foreach-indexedz(fn(i,x) v.core-extras/unsafe-assign(i, f(x).unsafe-ignore-type)) 
     v.unsafe-ignore-type
   else
     // trace("unique/map: vector is not unique")
     val w = unsafe-vector(v.length.ssize_t)
     v.foreach-indexedz fn(i,x)
-      unsafe-assign(w,i,f(x))
+      core-extras/unsafe-assign(w,i,f(x))
     w
 
 // Set the element at position `index` in vector `v` without bounds check!
 pub fun unsafe-set( v : vector<a>, ^index : int, value : a ) : vector<a>
   if v.is-vec-unique then
     // trace("unsafe-set: vector is unique")
-    v.unsafe-assign(index.ssize_t, value)
+    v.core-extras/unsafe-assign(index.ssize_t, value)
     v
   else 
     // trace("unsafe-set: vector is not unique")
     val v' = v.copy
-    v'.unsafe-assign(index.ssize_t, value)
+    v'.core-extras/unsafe-assign(index.ssize_t, value)
     v'
 
 pub fun a/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : vector<a>
   if v.is-vec-unique then
-    val item1 = v.unsafe-idx( idx1.ssize_t )
-    v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
-    v.unsafe-assign( idx2.ssize_t, item1 )
+    val item1 = v.core-extras/unsafe-idx( idx1.ssize_t )
+    v.core-extras/unsafe-assign( idx1.ssize_t, v.core-extras/unsafe-idx( idx2.ssize_t ))
+    v.core-extras/unsafe-assign( idx2.ssize_t, item1 )
     v
   else 
     val v' = v.copy
-    val item1 = v'.unsafe-idx( idx1.ssize_t )
-    v'.unsafe-assign( idx1.ssize_t, v'.unsafe-idx( idx2.ssize_t ))
-    v'.unsafe-assign( idx2.ssize_t, item1 )
+    val item1 = v'.core-extras/unsafe-idx( idx1.ssize_t )
+    v'.core-extras/unsafe-assign( idx1.ssize_t, v'.core-extras/unsafe-idx( idx2.ssize_t ))
+    v'.core-extras/unsafe-assign( idx2.ssize_t, item1 )
     v'
 
 // This variant mutates in-place
 pub fun unit/unsafe-swap( v : vector<a>, ^idx1 : int, ^idx2 : int ) : ()
-  val item1 = v.unsafe-idx( idx1.ssize_t )
-  v.unsafe-assign( idx1.ssize_t, v.unsafe-idx( idx2.ssize_t ))
-  v.unsafe-assign( idx2.ssize_t, item1 )
+  val item1 = v.core-extras/unsafe-idx( idx1.ssize_t )
+  v.core-extras/unsafe-assign( idx1.ssize_t, v.core-extras/unsafe-idx( idx2.ssize_t ))
+  v.core-extras/unsafe-assign( idx2.ssize_t, item1 )
 
 pub inline extern is-ref-unique(^x: a): bool
   c inline "!kk_box_is_ptr(#1, kk_context()) || kk_block_is_unique(kk_box_to_ptr(#1, kk_context()))"
@@ -227,7 +227,7 @@ pub inline extern lengthz( ^v : vector<a> ) : ssize_t
 
 pub fun foreach-indexedz( v : vector<a>, f : (ssize_t,a) -> e () ) : e ()
   forz( v.lengthz ) fn(i)
-    f(i,v.unsafe-idx(i))
+    f(i,v.core-extras/unsafe-idx(i))
 
 // Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
 // If `n <= 0`  the function returns without any call to `action` .
