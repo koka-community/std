@@ -43,10 +43,10 @@ pub effect expect
 
 abstract value struct location
   mod: string
-  line: string
-  
+  line: int
+
 pub fun location/show(l: location): string
-  l.mod ++ ":" ++ l.line
+  l.mod ++ ":" ++ l.line.show
 
 pub struct test-scope
   scope-id: int
@@ -98,15 +98,15 @@ pub fun show(expectation: expectation): div string
     Left(msg) -> "Expectation failed ("++ location ++ ")\n" ++ msg
     Right(()) -> "Expectation succeeded ( " ++ location ++ ")"
 
-pub fun fail(assertion: string = "", ?kk-line: string, ?kk-module: string)
-  test-expect(
+pub fun fail(assertion: string = "", ?kk-line: int, ?kk-module: string)
+  test-expect(Expectation(
     Left("Assertion failed" ++ (if assertion == "" then "" else ": " ++ assertion)),
-    ?kk-module ++ ":" ++ ?kk-line
-  )
+    ?kk-module ++ ":" ++ ?kk-line.show
+  ))
 
 // base expectation API
-pub fun api/test-expect(result: either<string,()>, ?kk-line: string, ?kk-module: string)
-  test-expect(Expectation(result, ?kk-module ++ ":" ++ ?kk-line))
+pub fun api/test-expect(result: either<string,()>, ?kk-line: int, ?kk-module: string)
+  test-expect(Expectation(result, ?kk-module ++ ":" ++ ?kk-line.show))
 
 fun but-raised(e: exception): string
   "but raised: " ++ e.show
@@ -114,7 +114,7 @@ fun but-raised(e: exception): string
 // Expects a computation to return a value
 //
 // The expected type must have an `(==)` function as well as a `show` function defined for it
-pub fun expect(expected: a, run: () -> <exn,expect,div|e> a, details: string = "", ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect,div|e> ()
+pub fun expect(expected: a, run: () -> <exn,expect,div|e> a, details: string = "", ?(==): (a,a) -> div bool, ?show: (a) -> div string, ?kk-line: int, ?kk-module: string): <expect,div|e> ()
   val actual = try({run()})
   val expected-str = "expected:" ++ expected.show
   val result = match actual
@@ -124,12 +124,12 @@ pub fun expect(expected: a, run: () -> <exn,expect,div|e> a, details: string = "
       else
         Left(expected-str ++ "\n     got: " ++ a.show)
     Error(e) -> Left(expected-str ++ "\n" ++ but-raised(e))
-  test-expect(result, ?kk-module, ?kk-line)
+  api/test-expect(result, ?kk-line=?kk-line, ?kk-module=?kk-module)
 
 // Expect a predicate over some value to return true.
 // Assertion is an optional string to describe the predicate.
 // On error, the value is printed.
-pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expect|e> a, assertion: string = "", ?show: (a) -> div string, ?kk-line: string, ?kk-module: string): <expect,div|e> ()
+pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expect|e> a, assertion: string = "", ?show: (a) -> div string, ?kk-line: int, ?kk-module: string): <expect,div|e> ()
   val value = try({run()})
   val expected-str = "expected: " ++ (if assertion == "" then "predicate to pass" else assertion)
   val result = match value
@@ -142,10 +142,10 @@ pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expe
         Error(e) -> Left(base ++ "\nbut predicate raised: " ++ e.show)
     Error(e) ->
       Left(expected-str ++ "\n" ++ but-raised(e))
-  test-expect(result, ?kk-module, ?kk-line)
+  api/test-expect(result, ?kk-line=?kk-line, ?kk-module=?kk-module)
 
 // group of tests, requires (and overrides) test-scope
-pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-module: string, ?kk-line: string): <test<e>|e> ()
+pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-module: string, ?kk-line: int): <test<e>|e> ()
   val scope = Test-scope(
     scope-id = gen-test-id(),
     parent = current-scope,
@@ -168,10 +168,10 @@ pub fun hint(value: string): expect ()
 // (the call to `effectful-test`) and test execution (the call to `run-tests`).
 //
 // Use `test` function where possible, as it ensures that the test body doesn't accidentally make use of an inherited effect.
-pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-module: string, ?kk-line: string): <test<<io|e>>|e> ()
+pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-module: string, ?kk-line: int): <test<<io|e>>|e> ()
   register-test(Test-identity(gen-test-id(), current-scope, name, Location(?kk-module, ?kk-line)), f)
 
-pub fun test(name: string, f: () -> <expect,io,random> (), ?kk-module: string, ?kk-line: string): test<io> ()
+pub fun test(name: string, f: () -> <expect,io,random> (), ?kk-module: string, ?kk-line: int): test<io> ()
   effectful-test(name, f)
 
 // Property test:
@@ -183,7 +183,7 @@ pub fun prop-test(
   action: () -> <random,expect,io> (),
   count: int = default-sample-count,
   ?kk-module: string,
-  ?kk-line: string
+  ?kk-line: int
 ): <test<<io>>,io> ()
   fun run()
     val seed-value = next-seed()
