@@ -55,6 +55,13 @@ fun cache(comp: () -> <pure,cache<k,r>|e> d, ?order2: (k, k) -> pure order2<k>,
   comp()
 
 
+// Push a result to a key, initializing the key if needed.
+// Use this when a relation is populated externally (e.g., a store)
+// rather than through memo/depend.
+pub fun push(key: k, result: r): <cache<k,r>> ()
+  is-cached(key)
+  add-result(key, result)
+
 // Inserts a memoization point at a recursive invocation
 fun memo(key : k, func : ((list<() -> <cache<k,r>|e> r>) -> <cache<k,r>|e> r) -> <cache<k,r>|e> r): <cache<k,r>|e> r
   match is-cached(key)
