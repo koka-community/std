@@ -47,6 +47,8 @@ fun cache(comp: () -> <pure,cache<k,r>|e> d, ?order2: (k, k) -> pure order2<k>,
         Just(resumes) ->
           val ress = Cons(resume, resumes)
           deps := deps.set(key, ress)
+        _ -> 
+          deps := deps.set(key, [resume])
       match cache.lookup(key)
         Just(r) -> r.changes.foreach(resume)
     ctl do-each(ss) ss.foreach(resume)
