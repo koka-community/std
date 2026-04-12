@@ -140,12 +140,11 @@ pub effect async
   // React to cancelation of this expression
   final ctl discontinue(): a
 
-// A type alias for asynchronous operations which are both `ndet` and `div` (may never return).
-// This is common for almost all `:async` operations due to concurrency and cancelation.
-// TODO: remove st<global> from this alias
-pub alias asyncx = <async,ndet,div,st<global>>
+// Backwards compatibility, no longer needed
+// pub alias asyncx = <async,exn,ndet>
+pub alias asyncx = <async>
 
-pub alias async-exn = <asyncx,exn>
+pub alias async-exn = <async,exn>
 
 pub fun on-cancel(fin: () -> <async|e> (), action: () -> <async|e> a): <async|e> a
   handle<async>({ mask behind<async>(action) })
@@ -159,6 +158,9 @@ pub fun on-cancel(fin: () -> <async|e> (), action: () -> <async|e> a): <async|e>
     fun no-await(setup, scope, f) no-await(setup,scope, f)
     fun async-iox(x) async-iox(x)
     fun cancel-scope(scope) cancel-scope(scope)
+
+fun async-st(action: () -> st<global> a): async a
+  async-iox(action)
 
 // ----------------------------------------------------------------------------
 // Async effect
@@ -181,7 +183,7 @@ fun strand-result/show(s: strand-result<a>)
     Finalize(_) -> "Finalize(...)"
     Complete(_) -> "Complete(_)"
 
-fun continue-await(v: await-result<a>): asyncx a
+fun continue-await(v: await-result<a>): async a
   match v
     Result(value) -> value
     Cancel -> discontinue()
@@ -203,12 +205,13 @@ alias maybe-dispose-fn = (maybe<dispose-fn>)
 alias await-setup<a> = (cb : (await-result<a>, bool) -> io-noexn ()) -> io-noexn maybe-dispose-fn
 
 // Prevents cancelation, but invokes a hook immediately for notification
-fun unsafe-override-cancel(on-cancel-hook: () -> <io-noexn> (), action: () -> <asyncx|e> a): <asyncx|e> a
-  val dangling-cb: ref<global,_> = ref(Nothing)
+fun unsafe-override-cancel(on-cancel-hook: () -> <io-noexn> (), action: () -> <async|e> a): <async|e> a
+  val dangling-cb: ref<global,_> = async-st { ref(Nothing) }
   with finally {
     // ensure dangling-cb gets invoked so we don't leak uninvoked and uncancelled callbacks
+    with async-iox
     match !dangling-cb
-      Just(cb) -> async-iox { cb(Result(()), True) }
+      Just(cb) -> cb(Result(()), True)
       Nothing -> ()
   }
 
@@ -255,12 +258,12 @@ fun unsafe-override-cancel(on-cancel-hook: () -> <io-noexn> (), action: () -> <a
 
 // defer cancelation of the child-scoped `action` until the end of `action`. Note that
 // cancelation cannot be ignored, only deferred.
-pub fun defer-cancelation(action: () -> <asyncx|e> a): <asyncx|e> a
-  val canceled: ref<global,_> = ref(False)
+pub fun defer-cancelation(action: () -> <async|e> a): <async|e> a
+  val canceled: ref<global,_> = async-st { ref(False) }
   fun on-cancel()
     canceled := True
   val result = unsafe-override-cancel(on-cancel, action)
-  if !canceled then
+  if (async-st { !canceled }) then
     discontinue()
   result
 
@@ -282,11 +285,11 @@ abstract value type promise-state<a>
 
 // Create a new promise.
 pub fun promise() : async promise<a>
-  async-iox { Promise(ref(Awaiting([]))) }
+  async-st { Promise(ref(Awaiting([]))) }
 
 // Await a promise; returns immediately if the promise was already resolved and otherwise
 // waits asynchronously.
-pub fun promise/await( p : promise<a> ) : asyncx a
+pub fun promise/await( p : promise<a> ) : async a
   fun setup(cb : _ -> io-noexn ()): io-noexn ()
     val r = p.state
     match (!r)
@@ -297,7 +300,7 @@ pub fun promise/await( p : promise<a> ) : asyncx a
     Nothing -> await1(setup)
 
 // Returns immediately if the promise was already resolved and otherwise return `Nothing`.
-pub fun try-await( p : promise<a> ) : <async,ndet> maybe<a>
+pub fun try-await( p : promise<a> ) : <async> maybe<a>
   async-io-noexn
     val r = p.state
     match !r
@@ -305,7 +308,7 @@ pub fun try-await( p : promise<a> ) : <async,ndet> maybe<a>
       _ -> Nothing
 
 // Resolve a promise to `value`. Raises an exception if the promise was already resolved.
-pub fun resolve( p : promise<a>, value : a ) : <asyncx,exn> ()
+pub fun resolve( p : promise<a>, value : a ) : <async,exn> ()
   async-io
     if !try-resolve-io(p, value) then
       throw("Promise was already resolved")
@@ -323,7 +326,7 @@ pub fun try-resolve-io( p : promise<a>, value : a ) : io bool
     _ -> False
 
 // Perform an I/O operation at the outer level; exceptions are propagated back.
-fun async-io( f : () -> io a ) : <asyncx,exn> a
+fun async-io( f : () -> io a ) : <async,exn> a
   async-io-noexn( { try(f) } ).untry
 
 // ----------------------------------------------------------------------------
@@ -360,7 +363,7 @@ pub fun channel() : async channel<a>
 
 // Receive (and remove) a value from the channel: returns immediately if a value is available and otherwise
 // waits asynchronously until a value becomes available.
-fun receive( ch : channel<a>) : asyncx a
+fun receive( ch : channel<a>) : <async,div,ndet> a
   val setup: await-setup<_> = fn(cb : (_,_) -> io-noexn () )
     fun cbr(x) cb(Result(x),True)
     val r = ch.state
@@ -396,7 +399,7 @@ fun emit-io( ch : channel<a>, value : a ) : io-noexn ()
       l(value)
 
 // Emit a value asynchronously into a channel.
-pub fun emit( ch : channel<a>, value : a ) : <asyncx> ()
+pub fun emit( ch : channel<a>, value : a ) : <async,div> ()
   async-io-noexn
     emit-io(ch,value)
 
@@ -423,12 +426,12 @@ fun trace-anyx( s : string, x : a ) : async ()
 // `cancel` it (and return `Nothing`). Due to the generality of `cancel`, this `timeout`
 // abstraction can reliably time out over any composition of asynchronous operations
 // and is therefore quite expressive.
-pub fun timeout( secs : duration, action : () -> <asyncx,io-noexn|e> a, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : <asyncx,io-noexn|e> maybe<a>
+pub fun timeout( secs : duration, action : () -> <async,io-noexn|e> a, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : <async,io-noexn|e> maybe<a>
   firstof { duration/wait(secs); Nothing} { Just(action()) }
 
 // Execute `a` and `b` interleaved. As soon as one of them finishes,
 // `cancel` the other one and return the result of the first.
-pub fun firstof( a : () -> <asyncx|e> a, b : () -> <asyncx|e> a) : <asyncx|e> a
+pub fun firstof( a : () -> <async,ndet|e> a, b : () -> <async,ndet|e> a) : <async,ndet|e> a
   fun runner(f)
     fn(scope)
       with finally { scope.cancel() } // cancel regardless of exn or result
@@ -447,12 +450,12 @@ pub fun firstof( a : () -> <asyncx|e> a, b : () -> <asyncx|e> a) : <asyncx|e> a
 
 // Wait (asynchronously) for `secs` seconds as a `:double`.
 // Use `yield()` to yield to other asynchronous operations.
-pub fun float/wait( secs : float64, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : asyncx ()
+pub fun float/wait( secs : float64, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : async ()
   wait(secs.duration)
 
 // Wait (asynchronously) for optional `secs` seconds `:duration` (`= 0.seconds`).
 // Use `yield()` to yield generally to other asynchronous operations.
-pub fun duration/wait( secs : duration = zero, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : asyncx ()
+pub fun duration/wait( secs : duration = zero, ?set-timeout: (unit-cb, int32) -> io-noexn any, ?clear-timeout: (any) -> io-noexn () ) : async ()
   if secs <= duration/zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
@@ -460,7 +463,7 @@ pub fun duration/wait( secs : duration = zero, ?set-timeout: (unit-cb, int32) ->
     Just( { async/clear-timeout(tid) } )
 
 // Yield to other asynchronous operations. Same as `wait(0)`.
-pub fun yield(?set-timeout: (unit-cb, int32) -> io-noexn any) : asyncx ()
+pub fun yield(?set-timeout: (unit-cb, int32) -> io-noexn any) : async ()
   await0 fn(cb)
     async/set-timeout( cb, int32/zero )
     ()
@@ -484,7 +487,7 @@ fun async/clear-timeout( tid : timeout-id , ?clear-timeout: (any) -> io-noexn ()
 // ----------------------------------------------------------------------------
 
 // Interleave two actions around their asynchronous operations.
-pub fun two/interleaved( action1 : () -> <asyncx,io-noexn|e> a, action2 : () -> <asyncx,io-noexn|e> b ) : <asyncx,io-noexn|e> (a,b)
+pub fun two/interleaved( action1 : () -> <async,io-noexn|e> a, action2 : () -> <async,io-noexn|e> b ) : <async,io-noexn|e> (a,b)
   fun act1() Left(action1())
   fun act2() Right(action2())
   match interleaved([act1, act2])
@@ -498,14 +501,14 @@ value struct interleaving<a>
 fun interleaving/show(i: interleaving<_>)
   "Interleaving(incomplete=" ++ i.incomplete.show ++ ", " ++ i.results.show ++ ")"
 
-pub fun list/interleaved(xs : list<() -> <asyncx,io-noexn|e> a> ) : <asyncx,io-noexn|e> list<a>
+pub fun list/interleaved(xs : list<() -> <async|e> a> ) : <async|e> list<a>
   fun runner(f)
     fn(_)
       f()
   xs.map(runner).interleaved-raw.map fn(result)
     result.continue-await
 
-fun list/interleaved-raw(xs : list<(scope) -> <asyncx|e> a> ) : <asyncx|e> list<await-result<a>>
+fun list/interleaved-raw(xs : list<(scope) -> <async|e> a> ) : <async|e> list<await-result<a>>
   var state : some<a> interleaving<a> := Interleaving(xs.length, [])
   with handler<strands<_>>
     finally()
@@ -560,7 +563,13 @@ inline extern unsafe-no-ndet-div-cast : forall<a,e> (() -> <ndet,div|e> a) -> ((
 fun unsafe-no-ndet-div( action : () -> <ndet,div|e> a ) : e a 
   unsafe-no-ndet-div-cast(action)()
 
-inline extern inject-effects : forall<a,h,e> (() -> e a) -> total (() -> <strands<a>|e> a)
+inline extern unsafe-no-ndet-cast: forall<a,e> (() -> <ndet|e> a) -> (() -> e a) 
+  inline "#1" 
+
+fun unsafe-no-ndet( action : () -> <ndet|e> a ) : e a 
+  unsafe-no-ndet-cast(action)()
+
+inline extern inject-strand-effect : forall<a,h,e> (() -> e a) -> total (() -> <strands<a>|e> a)
   inline "#1"
 
 // Warning: Cancelation should not be caught unless you're carefully maintaining
@@ -579,21 +588,12 @@ pub fun unsafe-catch-cancel(a: () -> <async|e> a): <async|e> await-result<a>
     fun async-iox(x) async-iox(x)
     fun cancel-scope(scope) cancel-scope(scope)
 
-// fun unsafe-pretend-stateless(a: () -> <st<global>|e> a): e a
-//   unsafe-total(a)
-
-// fun mask-global-state(a: () -> e a): <st<global>|e> a
-//   with mask<read<global>>
-//   with mask<write<global>>
-//   with mask<alloc<global>>
-//   a()
-
 // TODO is there a better way to inform the caller of scope than having every item in the list accept it?
-fun interleave-strands(xs : list<(scope) -> <asyncx|e> a> ) : <asyncx,strands<a>|e> ()
-  val inner-scope: ref<global,_> = ref(Nothing)
-  val keep-spawning: ref<global,_> = ref(True)
-  val ch : some<a,e> channel<() -> <async|e> a> = channel()
-  
+fun interleave-strands(xs : list<(scope) -> <async|e> a> ) : <async,strands<a>|e> ()
+  val inner-scope: ref<global,maybe<scope-id>> = async-st { ref(Nothing) }
+  val keep-spawning: ref<global,bool> = async-st { ref(True) }
+  val ch : some<e> channel<() -> <async|e> ()> = channel()
+
   // interleave has custom cancelation handling. When the scope
   // is canceled, we don't discontinue() but instead
   // perform explicit cancelation of the child scope, and
@@ -603,14 +603,15 @@ fun interleave-strands(xs : list<(scope) -> <asyncx|e> a> ) : <asyncx,strands<a>
     // Note we can't cancel() directly in this hook because cancel is async,
     // but we can add it to the queue of actions to run
     keep-spawning := False
-    ch.emit-io
-      (!inner-scope).foreach(cancel-scope)
+    fun cancel-action(): <async> ()
+      async-st { !inner-scope }.foreach(cancel-scope)
+    ch.emit-io(cancel-action)
   }
 
   val sentinel-scope = async-scope
 
-  child-scope-without-auto-cancel fn(cid) // introduce a child scope which doesn't cancel-on-finalize
-    inner-scope.set(Just(cid))
+  child-scope-without-auto-cancel fn(cid): <async,strands<_>|_> () // introduce a child scope which doesn't cancel-on-finalize
+    async-st { inner-scope.set(Just(cid)) }
     fun yield-on-await(action)
       (handler<async> {
         raw ctl do-await(setup,scope)
@@ -632,22 +633,24 @@ fun interleave-strands(xs : list<(scope) -> <asyncx|e> a> ) : <asyncx,strands<a>
       }
 
     xs.foreach-indexed fn(i, action)
-      if !(!keep-spawning) then
+      if (async-st { !(!keep-spawning) }) then
         // Finalization has occurred synchronously, don't
         // keep spawning actions.
         strand-done(i, Complete(Cancel))
       else
         with yield-on-await
-        val res = strand-exec(inject-effects { action(sentinel-scope) })
+        val res = strand-exec(inject-strand-effect { action(sentinel-scope) })
         strand-done(i, res)
         if res.is-finalize then
-          keep-spawning := False
+          async-st { keep-spawning := False }
           cancel-scope(cid)
       ()
 
   // this runs outside of the `child-scope` (unaffected by `cancel-scope(cid)`)
+  with pretend-no-div
   while { strands-are-busy() } // while there are resumptions on the strands..
-    val strand-resume = ch.receive
+    val strand-resume = unsafe-no-ndet { ch.receive }
+    with mask<div> // don't interfere if generic `e` includes `div`
     strand-resume()
   ()
 
@@ -674,14 +677,14 @@ fun unnull( nexn : null<exception>, x : a  ) : error<a>
     Just(exn) -> Error(exn)
 
 // Convenience function for awaiting a zero argument callback.
-pub fun await0( setup : (cb : () -> io-noexn () ) -> io-noexn () ) : asyncx ()
+pub fun await0( setup : (cb : () -> io-noexn () ) -> io-noexn () ) : async ()
   setup/await fn(cb)
     setup( fn() cb(Result(())) )
     Nothing
   .continue-await
 
 // // Convenience function for awaiting a single argument callback.
-pub fun await1( setup : (cb : (a) -> io-noexn () ) -> io-noexn () ) : asyncx a
+pub fun await1( setup : (cb : (a) -> io-noexn () ) -> io-noexn () ) : async a
   setup/await fn(cb)
     setup( fn(x) cb(Result(x)) )
     Nothing
@@ -692,7 +695,7 @@ pub fun await1( setup : (cb : (a) -> io-noexn () ) -> io-noexn () ) : asyncx a
 // it takes either an exception or a result `a`. Usually `setup` returns `Nothing` but you can return a `Just(cleanup)`
 // value where the `cleanup` functions is invoked on cancellation to dispose of any resources (see the implementation of `wait`).
 // The callback should be invoked exactly once -- when that happens `await-exn` is resumed with the result.
-pub fun setup/await( setup : (cb : (a) -> io-noexn ()) -> io-noexn (maybe<() -> io-noexn ()>) ) : asyncx a
+pub fun setup/await( setup : (cb : (a) -> io-noexn ()) -> io-noexn (maybe<() -> io-noexn ()>) ) : async a
   val result = do-await(fn(cb) { setup(fn(res) cb(Result(res),True)) }, async-scope)
   result.continue-await
 
@@ -710,7 +713,7 @@ pub fun setup/await( setup : (cb : (a) -> io-noexn ()) -> io-noexn (maybe<() -> 
 //     ch.emit-io(f(res.continue-await))
 //   ch
 
-fun async-io-noexn( f : () -> io-noexn a ) : <async,ndet> a
+fun async-io-noexn( f : () -> io-noexn a ) : <async> a
   async-iox(f)
 
 // // ----------------------------------------------------------------------------
@@ -754,7 +757,7 @@ fun noop(): ()
 // The outer `:async` effect handler. This is automatically applied by the compiler
 // around the `main` function if it has an `:async` effect.
 pub fun async/handle(action : () -> <async,io-noexn> a ) : io-noexn ()
-  val cancel-functions : ref<global,list<(scope,() -> <io-noexn|_> ())>> = unsafe-total{ref([])}
+  val cancel-functions : ref<global,list<(scope,() -> <io-noexn|_> ())>> = ref([])
   fun handle-await( setup : await-setup<a>, scope : scope, f : await-result<a> -> io-noexn ()) : io-noexn ()
     // Each callback gets its own scope so we can tell when a given
     // callback can be removed from `cancel-functions`
