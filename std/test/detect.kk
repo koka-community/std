@@ -70,7 +70,8 @@ pub fun generate-test-runner()
   val lines = import-lines ++ [
       "import std/test",
       "fun main()",
-      "  with run-tests"
+      "  run-tests(generated-suite)",
+      "fun generated-suite()"
     ] ++ test-lines
 
   // TODO: proper tempname to avoid clashes
