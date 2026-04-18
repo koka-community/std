@@ -146,7 +146,7 @@ pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expe
   test-expect(result, ?kk-file, ?kk-line)
 
 // group of tests, requires (and overrides) test-scope
-pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-file: string, ?kk-line: int): <test<e>|e> ()
+pub fun group(name: string, f: () -> <test<<io|e>>|e> (), ?kk-file: string, ?kk-line: int): <test<<io|e>>|e> ()
   val scope = Test-scope(
     scope-id = gen-test-id(),
     parent = current-scope,
@@ -185,7 +185,7 @@ pub fun prop-test(
   count: int = default-sample-count,
   ?kk-file: string,
   ?kk-line: int
-): <test<<io>>,io> ()
+): <test<<io>>> ()
   fun run()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
