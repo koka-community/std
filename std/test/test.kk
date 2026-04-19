@@ -146,7 +146,7 @@ pub fun expect-that(predicate: (a) -> <exn,div|e> bool, run: () -> <exn,div,expe
   test-expect(result, ?kk-file, ?kk-line)
 
 // group of tests, requires (and overrides) test-scope
-pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-file: string, ?kk-line: int): <test<e>|e> ()
+pub fun group(name: string, f: () -> <test<e>> (), ?kk-file: string, ?kk-line: int): <test<e>> ()
   val scope = Test-scope(
     scope-id = gen-test-id(),
     parent = current-scope,
@@ -169,7 +169,7 @@ pub fun hint(value: string): expect ()
 // (the call to `effectful-test`) and test execution (the call to `run-tests`).
 //
 // Use `test` function where possible, as it ensures that the test body doesn't accidentally make use of an inherited effect.
-pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-file: string, ?kk-line: int): <test<<io|e>>|e> ()
+pub fun effectful-test<e>(name: string, f: () -> <expect,random,io|e> (), ?kk-file: string, ?kk-line: int): <test<<io|e>>> ()
   register-test(Test-identity(gen-test-id(), current-scope, name, Location(?kk-file, ?kk-line)), f)
 
 pub fun test(name: string, f: () -> <expect,io,random> (), ?kk-file: string, ?kk-line: int): test<io> ()
@@ -185,7 +185,7 @@ pub fun prop-test(
   count: int = default-sample-count,
   ?kk-file: string,
   ?kk-line: int
-): <test<<io>>,io> ()
+): <test<<io>>> ()
   fun run()
     val seed-value = next-seed()
     with pseudo-random(seed-value)
