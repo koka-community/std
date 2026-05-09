@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -11,9 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Koka
         uses: koka-community/setup-koka@v1
-        with: 
+        with:
+          koka_ref: "dev"
           packages: ""
-          run_tests: true
+      - name: Run tests
+        run: |
+          koka --verbose=0 --console=ansi -e std/test/detect
