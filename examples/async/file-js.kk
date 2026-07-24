@@ -3,7 +3,7 @@ import std/jsextern
 extern import
   js file "file-js.js"
 
-extern ext/read-file(path: string): io-noexn any
+extern ext/read-file(path: string): ioc any
   js inline "readfile(#1)"
 
 fun js/read-file(path: string): <io,async> string

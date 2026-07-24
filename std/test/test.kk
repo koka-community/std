@@ -152,7 +152,7 @@ pub fun group(name: string, f: () -> <test<e>|e> (), ?kk-module: string, ?kk-lin
     scope-name = name,
     location = Location(?kk-module, ?kk-line)
   )
-  with override<some<e> test<e>>
+  with override handler<some<e> test<e>>
     val default-sample-count = default-sample-count
     val current-scope = Just(scope)
     fun gen-test-id() gen-test-id()
@@ -218,7 +218,7 @@ pub fun collect-tests(default-sample-count: int, f: () -> <test<<io|e>>,io|e> ()
   tests-rev.reverse
 
 // Executes a single test. Returns an updated suite summary
-pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int>): <test-report,io-noexn|e> suite-summary
+pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int>): <test-report,ioc|e> suite-summary
   val tid = test.identity
   report-start(tid)
   val fail-count = ref(0)

@@ -20,33 +20,33 @@ abstract struct timer (
 )
 
 // Sets a timeout for libuv / wasm / javscript / C# event loops
-pub extern set-timeout( cb : () -> io-noexn (), ms : int32 ) : io-noexn any
+pub extern set-timeout( cb : () -> ioc (), ms : int32 ) : ioc any
   cs "_Async.SetTimeout"
   js "setTimeout"
   c "kk_set_timeout"
 
 // Clears a timeout for libuv / wasm / javscript / C# event loops
-pub extern clear-timeout( tid : any) : io-noexn ()
+pub extern clear-timeout( tid : any) : ioc ()
   cs "_Async.ClearTimeout"
   js "clearTimeout"
   c "kk_clear_timeout"
 
-pub extern timer-init(): io-noexn timer
+pub extern timer-init(): ioc timer
   js inline "_init_timer()"
 
 // Start the timer. timeout and repeat are in milliseconds.
 //
 // If timeout is zero, the callback fires on the next event loop iteration.
 // If repeat is non-zero, the callback fires first after timeout milliseconds and then repeatedly after repeat milliseconds.
-pub extern timer-start(^t: timer, timeout: int64, repeat: int64, cb: () -> io-noexn ()): io-noexn error<()>
+pub extern timer-start(^t: timer, timeout: int64, repeat: int64, cb: () -> ioc ()): ioc error<()>
   js inline "_start_timer(#1,#2,#3,#4)"
 
-pub extern timer-stop(t: timer): io-noexn ()
+pub extern timer-stop(t: timer): ioc ()
   js inline "_stop_timer(#1)"
 
 // Stop the timer, and if it is repeating restart it using the repeat value as the timeout.
 // If the timer has never been started before it returns UV_EINVAL
-extern timer-again(^t: timer): io-noexn error<()>
+extern timer-again(^t: timer): ioc error<()>
   js inline ""
 
 // Set the repeat interval value in milliseconds.
@@ -63,21 +63,21 @@ extern timer-again(^t: timer): io-noexn error<()>
 // NOTE: If the repeat value is set from a timer callback it does not immediately take effect.
 // If the timer was non-repeating before, it will have been stopped. If it was repeating,
 // then the old repeat value will have been used to schedule the next timeout
-extern timer-set-repeat(^t: timer, repeat: int64): io-noexn ()
+extern timer-set-repeat(^t: timer, repeat: int64): ioc ()
   js inline ""
 
-extern timer-get-repeat(^t: timer): io-noexn int64
+extern timer-get-repeat(^t: timer): ioc int64
   js inline ""
 
 // Get the timer due value or 0 if it has expired. -1 is returned on unsupported platforms
 // The time is relative to uv_now()
-extern timer-get-due-in(^t: timer): io-noexn int64
+extern timer-get-due-in(^t: timer): ioc int64
   js inline ""
 
 // Creates a timer that repeats every `d` duration and calls `f` with the timer as argument.
 //
 // The timer stops repeating when `f` returns `False`.
-pub fun timer(d: duration, f: (timer) -> io-noexn bool): io-noexn timer
+pub fun timer(d: duration, f: (timer) -> ioc bool): ioc timer
   val ms = d.milli-seconds.int64
   val t = timer-init()
   t.timer-start(ms, ms) fn()

@@ -406,8 +406,8 @@ pub inline fun js-promise/resolve(value: jsobject<t>): jspromise<t>
 inline extern any/resolve(value: any): any
   js inline "Promise.resolve(#1)"
 
-pub inline fun js-promise/on-resolve(value: jspromise<t>, success: (jsobject<t>) -> io-noexn (), error: (jsobject<e>) -> io-noexn ()): io-noexn ()
+pub inline fun js-promise/on-resolve(value: jspromise<t>, success: (jsobject<t>) -> ioc (), error: (jsobject<e>) -> ioc ()): ioc ()
   value.internal.any/on-resolve(fn(output) success(Jsobject(output)), fn(err) error(Jsobject(err)))
 
-inline extern any/on-resolve(promise: any, success: (any) -> io-noexn (), error: (any) -> io-noexn ()): io-noexn ()
+inline extern any/on-resolve(promise: any, success: (any) -> ioc (), error: (any) -> ioc ()): ioc ()
   js inline "#1.then(#2).catch(#3)"

@@ -16,7 +16,7 @@ effect prompt
 // Prompt for input, with retry until successful result 
 // - `message` is the original prompt 
 // - `err-message` is the error shown on failure
-fun prompt(message: string, err-message: string, action: (string) -> <io,prompt|e> a): <io-noexn|e> a
+fun prompt(message: string, err-message: string, action: (string) -> <io,prompt|e> a): <ioc|e> a
   var reattempt := fn() impossible() // We ensure all paths include a delimiter
   with handler
     raw ctl delimit()

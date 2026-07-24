@@ -61,7 +61,7 @@ fun testopts/should-include(opts: testopts, test: test-identity)
         test.full-name.contains(pattern)
 
 
-fun execute-tests<e>(opts: testopts, tests: list<test-case<<io|e>>>): <test-report,io-noexn|e> ()
+fun execute-tests<e>(opts: testopts, tests: list<test-case<<io|e>>>): <test-report,ioc|e> ()
   var summary := suite-summary()
   tests.foreach fn(test)
     if opts.fail-fast && summary.any-failures then return ()
@@ -113,12 +113,13 @@ pub fun parse-opts(args = get-args()): io testopts
 
 // Main entrypoint for running tests. Parses CLI arguments and runs the relevant tests.
 // Exits the process with a nonzero exit code if any tests fail.
-pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <io-noexn|e> ()
-  // convert exceptions to exit(), for consistency (and so this function can be io-noexn)
+pub fun run-tests(f: () -> <test<<io|e>>,io|e> (), reporter: test-reporter<<io|e>> = color-reporter): <ioc|e> ()
+  // convert exceptions to exit(), for consistency (and so this function can be ioc)
   with fn(action)
-    try(action) fn(e)
+    fun on-exn(e: exception)
       println(e.message)
       core-extras/exit(1)
+    try(on-exn, action)
 
   val opts = parse-opts()
   val tests = collect-tests(opts.sample-count, f)

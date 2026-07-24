@@ -78,7 +78,7 @@ pub fun show-with-ctx(e: exception): string
 // Wrap an exception effect to report it and exit the process on
 // failure. Ideal for use as `with trace-handler` on the first line of
 // a `main` function
-pub fun error-ctx-handler(action: () -> <io|e> ()): <io-noexn|e> ()
+pub fun error-ctx-handler(action: () -> <io|e> ()): <ioc|e> ()
   try(action) fn(e)
     print("Uncaught exception: ")
     println(e.show-with-ctx)

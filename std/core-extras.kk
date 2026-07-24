@@ -248,7 +248,7 @@ pub extern read-byte-file(path: string): vector<int8>
   c "kk_os_read_byte_file"
 
 // TODO: use core/std/exit after https://github.com/koka-lang/koka/pull/703 is released
-pub extern exit(i: int): io-noexn ()
+pub extern exit(i: int): ioc ()
   c inline "exit(kk_integer_clamp32(#1, kk_context()))"
   js inline "(function(){throw(`Exited with code: ${#1}`)})()"
 
