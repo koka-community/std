@@ -312,7 +312,7 @@ pub fun doc-ends-withT(l:list<string>, rpost: string, n:int)
 pub fun texts(d: doc): list<string>
   match d
     Empty -> []
-    Char(c) -> [c.show-char]
+    Char(c) -> [c.string]
     Text(s) -> [s]
     Line(br) -> if br then [] else ["\n"]
     Union(x, _) -> x.texts
@@ -326,7 +326,7 @@ pub fun texts(d: doc): list<string>
 pub fun rtexts(d: doc): list<string> // reversed text fragments
   match d
     Empty -> []
-    Char(c) -> [c.show-char]
+    Char(c) -> [c.string]
     Text(s) -> [s.reverse]
     Line(br) -> if br then [] else ["\n"]
     Union(x, _) -> x.rtexts
@@ -366,8 +366,8 @@ pub fun render-pretty-b(rfrac: float64, w: int, xdoc: doc): div string
       Cons((i, d), ds) ->
         match d
           Empty -> best(b, n, k, ds)
-          Char(c) -> c.show-char ++ best(b, n, k + 1, ds)
-          Text(s) -> s.show ++ best(b, n, k + s.count, ds)
+          Char(c) -> c.string ++ best(b, n, k + 1, ds)
+          Text(s) -> s ++ best(b, n, k + s.count, ds)
           Line(_) -> "\n" ++ best(b, i, i, ds)
           Cat(x, y) -> best(b, n, k, Cons((i, x), Cons((i, y), ds)))
           Nest(j, x) ->
@@ -452,7 +452,7 @@ pub fun as-string(d: doc)
 pub fun display-string(simple: simpleDoc): string
   match simple
     SEmpty -> ""
-    SChar(_, c, x) -> c.show-char ++ x.display-string
+    SChar(_, c, x) -> c.string ++ x.display-string
     SText(_, s, x) -> s ++ x.display-string
     SLine(i, x) -> "\n" ++ spaces(i) ++ x.display-string
     SColorOpen(_, _, x) -> x.display-string
@@ -477,7 +477,7 @@ pub fun display-pretty(w: int, simple: simpleDoc): <coloredPrinter,printer,div> 
         if curCol + 1 >= w  && i + 1 < w then
           display(curCol, SLine(i + 1, simp.skip-spaces))
         else
-          write(c.show-char)
+          write(c.string)
           display(curCol + 1, x)
       SText(i, s, x) ->
         if curCol + s.count >= w && i + s.count < w then
