@@ -7,6 +7,9 @@
 ----------------------------------------------------------------------------*/
 module std/data/linear-map
 
+import std/core/undiv
+import std/data/sort
+
 pub type linear-map<k,v>
   LinearMap(
     internal: list<(k,v)> 
@@ -88,6 +91,32 @@ pub fun map/map(m: linear-map<k,v>, f: (k, v) -> e v1): e linear-map<k,v1>
 pub fun unions(l: list<linear-map<k,v>>, ?(==): (k, k) -> e bool): e linear-map<k,v>
   val fst = l.head.default(LinearMap([]))
   l.foldl(fst, fn(x, y) x.add-all(y.internal))
+
+// Union many maps in O(n log n) by sorting the keys once, instead of the O(n^2)
+// repeated `union-with` (each `update` scans the whole growing accumulator).
+// Values under equal keys are merged with `combine`, folded left-to-right so this
+// matches `l.foldl(empty, fn(acc, m) m.union-with(acc, combine))` — i.e. for a
+// shared key, the values contributed by maps later in `l` come first.
+pub fun unions-with(l: list<linear-map<k,v>>, combine: (v, v) -> e v, ?key/(<): (k, k) -> e bool, ?(==): (k, k) -> e bool): e linear-map<k,v>
+  // reverse so later maps' entries sort ahead of earlier ones under equal keys
+  // (the sort is stable), reproducing the left-fold's ordering
+  val all = l.reverse.flatmap(fn(m) m.internal)
+  val sorted = all.sort(?(<) = fn(a, b) key/(<)(a.fst, b.fst))
+  LinearMap(sorted.collapse-runs(combine))
+
+// Collapse maximal runs of equal keys in a key-sorted assoc list, folding the
+// values of each run left-to-right with `combine`.
+fun collapse-runs(xs: list<(k,v)>, combine: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
+  match xs
+    Nil -> Nil
+    Cons((k, v), rest) -> collapse-go(k, v, rest, combine)
+
+fun collapse-go(k: k, acc: v, xs: list<(k,v)>, combine: (v, v) -> e v, ?(==): (k, k) -> e bool): e list<(k,v)>
+  match xs
+    Cons((k2, v2), rest) ->
+      if k2 == k then collapse-go(k, combine(acc, v2), rest.pretend-decreasing, combine)
+      else Cons((k, acc), collapse-go(k2, v2, rest.pretend-decreasing, combine))
+    Nil -> [(k, acc)]
 
 pub fun list-add/(+)(l1: linear-map<k,v>, l2: list<(k,v)>, ?(==): (k, k) -> e bool): e linear-map<k,v>
   l1.add-all(l2)
