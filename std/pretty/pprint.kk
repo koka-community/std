@@ -450,13 +450,18 @@ pub fun as-string(d: doc)
 // Displayers: displayS and displayIO
 
 pub fun display-string(simple: simpleDoc): string
-  match simple
-    SEmpty -> ""
-    SChar(_, c, x) -> c.string ++ x.display-string
-    SText(_, s, x) -> s ++ x.display-string
-    SLine(i, x) -> "\n" ++ spaces(i) ++ x.display-string
-    SColorOpen(_, _, x) -> x.display-string
-    SColorClose(x) -> x.display-string
+  // accumulator style: the naive right-recursive `s ++ x.display-string`
+  // overflows the C stack on very large documents (e.g. a compiler emitting
+  // a large module interface as one doc)
+  fun go(s: simpleDoc, acc: list<string>): list<string>
+    match s
+      SEmpty -> acc
+      SChar(_, c, x) -> go(x, Cons(c.string, acc))
+      SText(_, t, x) -> go(x, Cons(t, acc))
+      SLine(i, x) -> go(x, Cons("\n" ++ spaces(i), acc))
+      SColorOpen(_, _, x) -> go(x, acc)
+      SColorClose(x) -> go(x, acc)
+  go(simple, []).reverse.join
 
 pub fun skip-spaces(simple: simpleDoc): simpleDoc
   match simple
