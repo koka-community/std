@@ -191,6 +191,28 @@ fbip fun remove-loop(t: int-map<v>, key: int64, z: zipper<v>) : int-map<v>
       else remove-loop(r, key, BinR(p, m, l, z))
 
 /// Get the number of elements in the map.
+// Short-circuiting universal quantification over the entries.
+//
+// The point is to test a predicate over the map WITHOUT materialising it:
+// `t.list.all(...)` allocates the whole association list first, which for a
+// membership-style test costs more than the test itself. This walks the trie
+// and stops at the first `False`.
+//
+// The map is borrowed, so no entry is dup'd for the traversal.
+pub fun all(^t: int-map<v>, ^pred: (int64, v) -> e bool) : e bool
+  match t
+    IMNil -> True
+    Tip(k, v) -> pred(k, v)
+    Bin(_, _, l, r) -> if all(l, pred) then all(r, pred) else False
+
+// Short-circuiting existential; `any(t,p) == !all(t, fn(k,v) !p(k,v))` but
+// avoids building the negated closure.
+pub fun any(^t: int-map<v>, ^pred: (int64, v) -> e bool) : e bool
+  match t
+    IMNil -> False
+    Tip(k, v) -> pred(k, v)
+    Bin(_, _, l, r) -> if any(l, pred) then True else any(r, pred)
+
 pub fun size(t: int-map<v>) : int
   size-loop(t, 0, Done)
 
