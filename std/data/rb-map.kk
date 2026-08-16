@@ -24,9 +24,11 @@ pub fun insert(s: rbmap<k,v>, k: k, f: (maybe<v>) -> e v, ^?order2: (k,k) -> e o
   val Rbmap(tree) = s 
   Rbmap(tree.insert(k, f))
 
-pub fun contains(s: rbmap<k,v>, k: k, ^?order2: (k,k) -> e order2<k>): e bool
+// cmp-based: read-only, so `order2`'s ownership preservation is unnecessary
+// overhead here (see rbtree.kk `cmp/contains`)
+pub fun contains(s: rbmap<k,v>, ^k: k, ^?cmp: (k,k) -> e order): e bool
   val Rbmap(tree) = s 
-  tree.contains(k)
+  cmp/contains(tree, k)
 
 pub fun empty(): rbmap<k,v>
   Rbmap(empty())
@@ -43,9 +45,19 @@ pub fun values(s: rbmap<k,v>) : list<v>
   val Rbmap(tree) = s
   tree.values
 
-pub fun lookup(s: rbmap<k,v>, k: k, ^?order2: (k,k) -> e order2<k>): e maybe<v>
+pub fun lookup(s: rbmap<k,v>, ^k: k, ^?cmp: (k,k) -> e order): e maybe<v>
   val Rbmap(tree) = s 
-  tree.lookup(k)
+  cmp/lookup(tree, k)
+
+// Delete via the bottom-up zipper (`rbtree-bu`). An absent key rebuilds the
+// tree unchanged (`Leaf -> rebuild(z, Leaf)`), matching the usual map
+// semantics. Total: every helper in the delete path already was, and nothing
+// in it throws -- the `exn` on rbtree-bu's entry points was over-annotation.
+// Keeps `order2` -- unlike lookup, this MUTATES, and returning the
+// compared keys is what preserves ownership for the in-place rebalance.
+pub fun remove(s: rbmap<k,v>, k: k, ^?order2: (k,k) -> order2<k>): rbmap<k,v>
+  val Rbmap(tree) = s
+  Rbmap(bu/remove(tree, k))
 
 pub fun show(s: rbmap<k,v>, ?k/show: k -> e string, ?v/show: v -> e string): e string
   val Rbmap(tree) = s 
