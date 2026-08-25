@@ -70,7 +70,7 @@ value type tup2<k,v>
   DB(rbtree: rbtree<k,v>, k: k, v: v)
   T(rbtree: rbtree<k,v>)
 
-pub tail fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k) -> order2<k>) : exn rbtree<k,v>
+pub tail fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   match t
     Node(c, l, kx, vx, r) ->
       match order2(key, kx)
@@ -80,7 +80,7 @@ pub tail fun zip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?order2: (k,k) 
           do-remove(c, z, l, r) // Actually do the removing
     Leaf -> rebuild(z, Leaf) // Not found - Figure 3
 
-pub tail fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>) : exn rbtree<k,v>
+pub tail fun bu/remove(t: rbtree<k,v>, key: k, ^?order2: (k,k) -> order2<k>) : rbtree<k,v>
   t.remove(key, Done)
 
 // Balance final zipper

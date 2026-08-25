@@ -251,6 +251,5 @@ pub fun execute(summary: suite-summary, test: test-case<<io|e>>, seed: maybe<int
   }
   with mask<test-report>
   expect((), ?kk-line=tid.location.line, ?kk-module=tid.location.mod)
-    with mask<local>
     (test.body)()
   test-result()
