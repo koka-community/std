@@ -42,7 +42,10 @@ pub fun plain-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
     fun report-summary(summary: suite-summary)
       println(summary.failures.show ++ " failures, " ++ summary.successes.show ++ " successes")
 
-  mask<local>(action)
+  // no `mask<local>`: `mask<l>` ADDS `l` to the row, and the `ref` above is at
+  // `global`, whose effects `io` already covers. The mask was compensating for
+  // an `isolate` inference bug that has since been fixed upstream.
+  action()
 
 pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
   val reported-scopes = ref([])
@@ -94,6 +97,6 @@ pub fun color-reporter(action: () -> <test-report,io|e> ()): <io|e> ()
 
   with mask<printer>
   with mask<coloredPrinter>
-  with mask<local>
+  // see `plain-reporter`: `mask<local>` added `local<h>` to a row declared `<io|e>`
   action()
 

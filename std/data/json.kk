@@ -47,7 +47,11 @@ fun char/quote(c: char): string
     '\n' -> "\\n"
     '\r' -> "\\r"
     '\t' -> "\\t"
-    _ -> c.string
+    // JSON forbids RAW control characters in a string (RFC 8259: any character
+    // below 0x20 must be escaped). Emitting one produces output no conforming
+    // parser will accept -- a language server whose diagnostic happens to carry
+    // an ESC, a form feed or a NUL then drops the client's connection.
+    _ -> if c.int < 0x20 then "\\u" ++ c.int.show-hex(4, use-capitals = False, pre = "") else c.string
 
 // quote essential and whitespace characters in a JSON string
 fun string/quote(s: string): string
