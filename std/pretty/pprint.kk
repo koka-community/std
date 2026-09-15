@@ -176,7 +176,7 @@ pub fun triple/pretty((a,b,c): (a, b, c), ?a/pretty: a -> e doc, ?b/pretty: b ->
 
 pub fun maybe/pretty(a: maybe<a>, prefix-space: bool = False, ?pretty: a -> e doc): e doc
   match a
-    Just(x) -> if prefix-space then " ".text |.| x.pretty else x.pretty
+    Just(x) -> if prefix-space then empty |+| x.pretty else x.pretty
     Nothing -> empty
 
 // Semi primitive: fill and fill-break

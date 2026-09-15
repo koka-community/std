@@ -23,3 +23,6 @@ fun suite()
         for(50000) fn(i)
           buffer := buffer.append(random-int())
         True
+
+fun main()
+  run-tests(suite)
