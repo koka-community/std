@@ -395,3 +395,30 @@ fun difference-loop(t1: int-map<v>, t2: int-map<v>, z: bin-op-zipper<v>) : int-m
             difference-loop(l1.pretend-decreasing, l2.pretend-decreasing, BinOpSplit(p1, m1, r1, r2, z))
           else
             diff-zip-up(z, t1)
+
+/// Intersection with a combining function: keeps only the keys present in BOTH
+/// maps, with `combine(v1, v2)` as the value.
+///
+/// Matches `Data.IntMap.intersectionWith`: a key present in both is KEPT even
+/// when `combine` produces a value the caller would consider empty. Filter
+/// afterwards if that is not what you want.
+///
+/// Walks `t1` and looks each key up in `t2` (O(n log m)). The zipper-based
+/// `union-with`/`difference` merge above is the faster shape; this one stays
+/// simple until a profile says otherwise. It also accepts an EFFECTFUL
+/// `combine`, which `fold` cannot.
+pub fun intersection-with(t1: int-map<v>, t2: int-map<w>, ^combine: (v, w) -> e x) : e int-map<x>
+  match t1
+    IMNil -> IMNil
+    Tip(k, v) ->
+      match t2.lookup(k)
+        Just(w) -> Tip(k, combine(v, w))
+        Nothing -> IMNil
+    Bin(p, m, l, r) ->
+      val l' = l.pretend-decreasing.intersection-with(t2, combine)
+      val r' = r.pretend-decreasing.intersection-with(t2, combine)
+      bin(p, m, l', r')
+
+/// Intersection of two maps, left-biased (the value from `t1` wins).
+pub fun intersection(t1: int-map<v>, t2: int-map<v>) : int-map<v>
+  intersection-with(t1, t2, fn(v1, _) v1)

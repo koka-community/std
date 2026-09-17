@@ -477,3 +477,7 @@ fun disjoint-loop(t1: int-set, t2: int-set, z: check-zipper) : bool
           else
             if p1 != p2 then disjoint-zip-up(z)
             else disjoint-loop(l1.pretend-decreasing, l2.pretend-decreasing, CheckRight(r1, r2, z))
+
+/// Union of a list of sets. `[]` is the empty set.
+pub fun unions(ts: list<int-set>) : int-set
+  ts.foldl(empty(), union)

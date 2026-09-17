@@ -14,7 +14,7 @@ pub fun list/change-lattice(?(==): (a, a) -> pure bool): pure change-lattice<lis
   Change-lattice([], fn(r, c) list/join(r, c), fn(x) x)
 
 pub fun set/join(old: rbset<a>, new: a, ?order2: (a, a) -> pure order2<a>): pure (bool, rbset<a>)
-  val (change, l') = old.check/add(new)
+  val (change, l') = old.check-add(new)
   (change, l')
 
 pub fun set/change-lattice(?order2: (a, a) -> pure order2<a>): change-lattice<rbset<a>, a>
