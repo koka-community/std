@@ -66,6 +66,62 @@ pub fbip(1) fun bu/add(t: rbtree<k,v>, key: k, value: v, ^?order2: (k,k) -> e or
 pub fbip(1) fun bu/insert(t: rbtree<k,v>, key: k, f: (maybe<v>) -> e v, ^?order2: (k,k) -> e order2<k>): e rbtree<k,v>
   t.insert(key, Done, f)
 
+// The same bottom-up zipper writes, driven by a plain `?cmp` with the keys
+// borrowed. `order2` hands the compared keys back so the rebalance keeps
+// ownership of them, but allocates an `Lt2`/`Gt2`/`Eq2` per comparison; for
+// keys that are cheap to keep (names, ints) that allocation dominates. Both
+// build identical trees.
+pub fun cmpzip/set(t: rbtree<k,v>, key: k, value: v, z: zipper<k,v>, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  match t
+    Node(c, l, kx, vx, r) ->
+      match cmp(key, kx)
+        Lt -> cmpzip/set(l, key, value, ZNodeL(c, z, kx, vx, r))
+        Gt -> cmpzip/set(r, key, value, ZNodeR(c, l, kx, vx, z))
+        Eq -> rebuild(z, Node(c, l, key, value, r))
+    Leaf -> balance(z, Root(Red, Leaf, key, value, Leaf))
+
+// a present key keeps its value
+pub fun cmpzip/add(t: rbtree<k,v>, key: k, value: v, z: zipper<k,v>, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  match t
+    Node(c, l, kx, vx, r) ->
+      match cmp(key, kx)
+        Lt -> cmpzip/add(l, key, value, ZNodeL(c, z, kx, vx, r))
+        Gt -> cmpzip/add(r, key, value, ZNodeR(c, l, kx, vx, z))
+        Eq -> rebuild(z, Node(c, l, key, vx, r))
+    Leaf -> balance(z, Root(Red, Leaf, key, value, Leaf))
+
+// `f` sees the present value, if any
+pub fun cmpzip/insert(t: rbtree<k,v>, key: k, z: zipper<k,v>, f: (maybe<v>) -> e v, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  match t
+    Node(c, l, kx, vx, r) ->
+      match cmp(key, kx)
+        Lt -> cmpzip/insert(l, key, ZNodeL(c, z, kx, vx, r), f)
+        Gt -> cmpzip/insert(r, key, ZNodeR(c, l, kx, vx, z), f)
+        Eq -> rebuild(z, Node(c, l, key, f(Just(vx)), r))
+    Leaf -> balance(z, Root(Red, Leaf, key, f(Nothing), Leaf))
+
+// an absent key rebuilds the tree unchanged
+pub fun cmpzip/remove(t: rbtree<k,v>, key: k, z: zipper<k,v>, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  match t
+    Node(c, l, kx, vx, r) ->
+      match cmp(key, kx)
+        Lt -> cmpzip/remove(l, key, ZNodeL(c, z, kx, vx, r))
+        Gt -> cmpzip/remove(r, key, ZNodeR(c, l, kx, vx, z))
+        Eq -> do-remove(c, z, l, r)
+    Leaf -> rebuild(z, Leaf)
+
+pub fun cmp/set(t: rbtree<k,v>, key: k, value: v, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  cmpzip/set(t, key, value, Done)
+
+pub fun cmp/add(t: rbtree<k,v>, key: k, value: v, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  cmpzip/add(t, key, value, Done)
+
+pub fun cmp/insert(t: rbtree<k,v>, key: k, f: (maybe<v>) -> e v, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  cmpzip/insert(t, key, Done, f)
+
+pub fun cmp/remove(t: rbtree<k,v>, key: k, ^?cmp: (k,k) -> e order): e rbtree<k,v>
+  cmpzip/remove(t, key, Done)
+
 value type tup2<k,v>
   DB(rbtree: rbtree<k,v>, k: k, v: v)
   T(rbtree: rbtree<k,v>)

@@ -1,4 +1,4 @@
-import std/data/rb-map
+import std/data/rb-map-order2
 
 effect cache<s,r>
   fun add-result(s: s, r: r): ()
@@ -21,7 +21,7 @@ fun nondet(f: () -> <div,each|e> a): <div|e> ()
   f()
 
 fun cache(f: () -> <div,cache<s,r>,each|e> r, ?order2: (s, s) -> div order2<s>): <div|e> rbmap<s,r>
-  var m := rb-map/empty()
+  var m := rb-map-order2/empty()
   with handler
     fun add-result(s, r)
       m := m.set(s, r)

@@ -1,4 +1,4 @@
-import std/data/rb-map
+import std/data/rb-map-order2
 import std/fixpoint/lattice
 
 // k = key, c = change, r = result

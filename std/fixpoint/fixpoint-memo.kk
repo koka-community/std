@@ -1,4 +1,4 @@
-pub import std/data/rb-map
+pub import std/data/rb-map-order2
 import std/fixpoint/lattice
 
 // k = key, r = result
@@ -10,7 +10,7 @@ effect cache<k,r>
   ctl depend(key: k): r
 
 fun update(deps: rbmap<k, list<(c -> <pure|e> ())>>, key: k, change: c, ?order2: (k, k) -> pure order2<k>): <pure|e> ()
-  match deps.rb-map/lookup(key)
+  match deps.rb-map-order2/lookup(key)
     Just(resumes) -> 
       // trace("Updating " ++ resumes.length.show ++ " deps for " ++ s.show ++ " with " ++ c.c/show)
       resumes.list/foreach(fn(resumption) {resumption(change); ()})

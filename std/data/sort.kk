@@ -9,13 +9,40 @@ module std/data/sort
 
 import std/core/undiv
 
+// Stable merge sort: O(n log n) comparisons (the behavior of Haskell's
+// `Data.List.sortBy`); equal elements keep their input order, as they did in
+// the quicksort this replaces, so results are unchanged.
+//
+// That quicksort took the FIRST element as pivot: O(n^2) with O(n) recursion
+// depth on already (nearly) sorted input -- the common case, e.g. a range map
+// built in source order, where it made one LSP hover take ~50s.
 pub fun sort(l: list<a>, ^?(<): (a, a) -> e bool): e list<a>
   match l
     Nil -> Nil
-    Cons(h, Nil) -> Cons(h, Nil)
-    Cons(pivot, rst) -> 
-      val (smaller, greater) = rst.partition fn(it) { it < pivot }
-      sort(smaller.pretend-decreasing) ++ Cons(pivot, sort(greater.pretend-decreasing))
+    Cons(_, Nil) -> l
+    _ -> merge-all(l.map(fn(x) Cons(x, Nil)))
+
+// merge adjacent runs pairwise until one run is left
+fun merge-all(runs: list<list<a>>, ^?(<): (a, a) -> e bool): e list<a>
+  match runs
+    Nil -> Nil
+    Cons(r, Nil) -> r
+    _ -> merge-all(merge-pairs(runs).pretend-decreasing)
+
+fun merge-pairs(runs: list<list<a>>, ^?(<): (a, a) -> e bool): e list<list<a>>
+  match runs
+    Cons(xs, Cons(ys, rest)) -> Cons(merge(xs, ys), merge-pairs(rest))
+    _ -> runs
+
+// stable: on a tie the LEFT element goes first
+fun merge(xs: list<a>, ys: list<a>, ^?(<): (a, a) -> e bool): e list<a>
+  match xs
+    Nil -> ys
+    Cons(x, xx) -> match ys
+      Nil -> xs
+      Cons(y, yy) ->
+        if y < x then Cons(y, merge(xs, yy.pretend-decreasing))
+        else Cons(x, merge(xx.pretend-decreasing, ys))
 
 pub tail fun group(l: list<a>, ?(==): (a, a) -> e bool): e list<list<a>>
   match l

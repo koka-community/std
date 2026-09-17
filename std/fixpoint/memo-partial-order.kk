@@ -1,5 +1,5 @@
-import std/data/rb-set
-import std/data/rb-map
+import std/data/rb-set-order2
+import std/data/rb-map-order2
 
 // k = key, r = result
 effect cache<k,r>

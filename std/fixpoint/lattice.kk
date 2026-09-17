@@ -1,6 +1,6 @@
 module std/fixpoint/lattice
 
-import std/data/rb-set
+import std/data/rb-set-order2
 
 pub struct change-lattice<r,c>
   bottom: r
@@ -18,7 +18,7 @@ pub fun set/join(old: rbset<a>, new: a, ?order2: (a, a) -> pure order2<a>): pure
   (change, l')
 
 pub fun set/change-lattice(?order2: (a, a) -> pure order2<a>): change-lattice<rbset<a>, a>
-  Change-lattice(rb-set/empty(), fn(r, c) set/join(r, c), list)
+  Change-lattice(rb-set-order2/empty(), fn(r, c) set/join(r, c), list)
 
 pub value type simple-lattice<a>
   LValue(a: a)
